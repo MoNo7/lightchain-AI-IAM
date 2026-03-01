@@ -235,17 +235,39 @@ async function verifySelf() {
 async function initGallery() {
     if(!contract) return;
     const grid = document.getElementById('gallery-grid');
-    grid.innerHTML = "SCANNING...";
+    grid.innerHTML = "SCANNING NETWORK...";
     try {
-        const events = await contract.queryFilter("InferenceRequested", -10000);
-        grid.innerHTML = events.length === 0 ? "EMPTY" : "";
+        // Increased range to ensure recent transactions are caught
+        const events = await contract.queryFilter("InferenceRequested", -50000); 
+        
+        if (events.length === 0) {
+            grid.innerHTML = "GALLERY EMPTY - NO RECENT INFERENCE DETECTED";
+            return;
+        }
+
+        grid.innerHTML = "";
         events.reverse().forEach(ev => {
-            grid.innerHTML += `<div style="background:#000; padding:10px; border-radius:6px; border:1px solid var(--border);"><img src="https://picsum.photos/seed/${ev.transactionHash}/200/150" style="width:100%; border-radius:4px;"></div>`;
+            const promptText = ev.args.prompt;
+            const txHash = ev.transactionHash;
+            
+            grid.innerHTML += `
+                <div style="background:#000; padding:10px; border-radius:6px; border:1px solid var(--border); transition: 0.3s;">
+                    <img src="https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=400&height=300&nologo=true&seed=${txHash}" 
+                         style="width:100%; border-radius:4px; cursor: pointer;" 
+                         onclick="window.open(this.src, '_blank')">
+                    <p style="font-size:0.6rem; color:var(--text-dim); margin-top:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${promptText}">
+                        ${promptText}
+                    </p>
+                </div>`;
         });
-    } catch (e) { grid.innerHTML = "OFFLINE"; }
+    } catch (e) { 
+        log("GALLERY SYNC ERROR", "error");
+        grid.innerHTML = "OFFLINE - RETRYING..."; 
+    }
 }
 
 window.addEventListener('load', () => setTimeout(connectWallet, 500));
 </script>
 </body>
 </html>
+
