@@ -41,7 +41,6 @@
     <header>
         <div class="pill">
             MODEL: <span id="active-model">AIVM-THETA</span> | 
-            REV: <span id="nav-rev">0.00</span> LCAI | 
             STATE: <span id="status-txt">IDLE</span>
         </div>
         <div class="header-right"><button id="wallet-btn" class="wallet-pill" onclick="connectWallet()">CONNECT WALLET</button></div>
@@ -72,14 +71,7 @@
 
     <div id="admin-view" class="view-pane">
         <div class="card">
-            <h2>TREASURY & ADMIN</h2>
-            <div style="background:#000; padding:20px; border-radius:8px; margin-bottom:20px; border:1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <p style="font-size: 0.6rem; color: var(--text-dim); margin: 0;">VAULT BALANCE</p>
-                    <h3 id="vault-bal" style="margin: 5px 0 0 0; color: var(--accent);">0.00 LCAI</h3>
-                </div>
-                <button class="action-btn" onclick="runWithdraw()" style="width: auto; padding: 10px 30px;">WITHDRAW</button>
-            </div>
+            <h2>ADMIN PANEL</h2>
             <input type="text" class="panel-input" id="admin-addr" placeholder="0x...">
             <div style="display:flex; gap:10px;">
                 <button class="action-btn" onclick="runAdmin('query')" style="flex:1">QUERY STATUS</button>
@@ -95,7 +87,6 @@ const CONFIG = {
     abi: [
         "function owner() public view returns (address)",
         "function setVerification(address user, bool status) external",
-        "function withdraw() external",
         "function manualVerified(address) public view returns (bool)",
         "event InferenceRequested(address indexed user, string prompt)"
     ]
@@ -126,48 +117,28 @@ async function connectWallet() {
         roles.isVerified = await contract.manualVerified(user);
 
         log(`STREAK_SYNC: ${user.slice(0, 10)}`, "success");
-        updateMenu(); updateIdentity(); initGallery(); refreshBalances();
+        updateMenu(); updateIdentity(); initGallery();
     } catch (e) { log("HANDSHAKE FAILED", "error"); }
 }
 
-async function refreshBalances() {
-    try {
-        const vBal = await provider.getBalance(CONFIG.addr);
-        document.getElementById('nav-rev').innerText = ethers.formatEther(vBal).slice(0,4);
-        document.getElementById('vault-bal').innerText = `${ethers.formatEther(vBal).slice(0,6)} LCAI`;
-    } catch (e) { console.error("Balance Sync Error", e); }
-}
-
-async function runWithdraw() {
-    try {
-        const tx = await contract.withdraw();
-        await tx.wait(); log("VAULT WITHDRAWN", "success"); refreshBalances();
-    } catch (e) { log("WITHDRAW FAILED", "error"); }
-}
-
 function updateIdentity() {
-    const meta = { 
-        "identity": user, 
-        "role": roles.isOwner ? "OWNER" : "OPERATOR", 
-        "status": roles.isVerified ? "VERIFIED" : "GUEST",
-        "auth_method": "ZK-SBT-HANDSHAKE" 
-    };
+    const meta = { "identity": user, "status": roles.isVerified ? "VERIFIED" : "GUEST" };
     document.getElementById('id-json').innerText = JSON.stringify(meta, null, 4);
     document.getElementById('qr-target').innerHTML = "";
-    new QRCode(document.getElementById("qr-target"), { text: JSON.stringify(meta), width: 140, height: 140 });
+    new QRCode(document.getElementById("qr-target"), { text: user, width: 140, height: 140 });
 }
 
 function downloadJSON() {
     const blob = new Blob([document.getElementById('id-json').innerText], {type: 'application/json'});
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = `LCAI_Identity_${user.slice(0,6)}.json`; a.click();
+    a.href = URL.createObjectURL(blob); a.download = 'LCAI_ID.json'; a.click();
 }
 
 function downloadQR() {
     const canvas = document.querySelector('#qr-target canvas');
     if(canvas) {
         const a = document.createElement('a');
-        a.href = canvas.toDataURL("image/png"); a.download = 'LCAI_ZK_QR.png'; a.click();
+        a.href = canvas.toDataURL("image/png"); a.download = 'LCAI_QR.png'; a.click();
     }
 }
 
@@ -200,11 +171,9 @@ async function runAdmin(type) {
     const target = document.getElementById('admin-addr').value;
     if(!target) return;
     try {
-        if(type === 'query') {
-            const res = await contract.manualVerified(target);
-            log(`USER ${target.slice(0,6)}: ${res ? 'VERIFIED' : 'UNVERIFIED'}`);
-        }
-    } catch (e) { log("ADMIN ACTION FAILED", "error"); }
+        const res = await contract.manualVerified(target);
+        log(`USER: ${res ? 'VERIFIED' : 'UNVERIFIED'}`);
+    } catch (e) { log("QUERY FAILED", "error"); }
 }
 
 async function initGallery() {
