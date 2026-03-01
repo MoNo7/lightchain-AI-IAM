@@ -126,24 +126,42 @@ async function connectWallet() {
     if (!window.ethereum) return log("METAMASK MISSING", "error");
     try {
         log("INITIATING HANDSHAKE...");
+        
+        // 1. Request Accounts First
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        if (accounts.length === 0) {
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
-        }
-        user = accounts[0] || (await window.ethereum.request({ method: 'eth_requestAccounts' }))[0];
+        user = accounts[0];
+        
+        // 2. Initialize Provider and Signer
         provider = new ethers.BrowserProvider(window.ethereum);
+        
+        // 3. CHECK NETWORK BEFORE CALLING CONTRACT
+        const network = await provider.getNetwork();
+        if (Number(network.chainId) !== 504) {
+            log(`WRONG NETWORK: SWITCH TO CHAIN 504 (Current: ${network.chainId})`, "error");
+            return; 
+        }
+
         signer = await provider.getSigner();
         contract = new ethers.Contract(CONFIG.addr, CONFIG.abi, signer);
         
-        const ownerAddr = await contract.owner();
-        roles.isOwner = (user.toLowerCase() === ownerAddr.toLowerCase());
-        roles.isVerified = await contract.manualVerified(user);
-
-        log(`STREAK_SYNC: ${user.slice(0, 10)}`, "success");
-        updateMenu(); updateIdentity(); initGallery(); updateWalletPill();
+        log("SYNCING WITH CONTRACT...");
+        try {
+            // Only call these if the network is confirmed
+            const ownerAddr = await contract.owner();
+            roles.isOwner = (user.toLowerCase() === ownerAddr.toLowerCase());
+            roles.isVerified = await contract.manualVerified(user);
+            
+            log(`STREAK_SYNC: ${user.slice(0, 10)}`, "success");
+            updateMenu(); 
+            updateIdentity(); 
+            initGallery(); 
+            updateWalletPill();
+        } catch (callErr) {
+            log("CONTRACT NOT FOUND AT ADDRESS - CHECK IDE", "error");
+        }
     } catch (e) { 
-        log("CONTRACT CALL REVERTED - CHECK ADDRESS", "error"); 
-        console.error(e);
+        log("HANDSHAKE FAILED", "error"); 
+        console.error("Wallet Error:", e);
     }
 }
 
@@ -260,3 +278,4 @@ window.addEventListener('load', () => setTimeout(() => connectWallet(), 500));
 </script>
 </body>
 </html>
+
