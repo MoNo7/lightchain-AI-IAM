@@ -100,7 +100,8 @@
 
 <script>
 const CONFIG = {
-    addr: "0xB6FbB06e865f1784A74F5953051C3782729FD04E",
+    // Exact match from AIARTSTUDIO deployment
+    addr: "0xB6FbB06e865f1784A74F5953051C3782729FD04E", 
     abi: [
         "function owner() public view returns (address)",
         "function setVerification(address user, bool status) external",
@@ -278,4 +279,5 @@ window.addEventListener('load', () => setTimeout(() => connectWallet(), 500));
 </script>
 </body>
 </html>
+
 
