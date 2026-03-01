@@ -25,14 +25,12 @@
         .view-pane.active { display: block !important; }
         .card { background: var(--panel); border: 1px solid var(--border); padding: 30px; border-radius: 12px; max-width: 900px; border-top: 4px solid var(--accent); margin-bottom: 20px; }
         .panel-input { width: 100%; background: #000; border: 1px solid #333; color: white; padding: 12px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 12px; box-sizing: border-box; font-family: monospace; }
-        .action-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s; }
-        .action-btn:hover { opacity: 0.8; }
+        .action-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; }
         .status-table { width: 100%; font-size: 0.7rem; border-collapse: collapse; margin-top: 15px; font-family: monospace; }
         .status-table td, .status-table th { border: 1px solid var(--border); padding: 8px; text-align: left; }
         .status-online { color: #00c853; }
-        /* Inference Result Area */
-        .gen-canvas { width: 100%; min-height: 400px; background: #000; border: 1px solid var(--border); border-radius: 8px; margin-top: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
-        #output-img { max-width: 100%; max-height: 100%; display: none; border-radius: 4px; }
+        .gen-canvas { width: 100%; height: 450px; background: #000; border: 1px solid var(--border); border-radius: 8px; margin-top: 20px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        #output-img { max-width: 100%; max-height: 100%; display: none; }
         .loader { border: 4px solid #1a202c; border-top: 4px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -98,13 +96,12 @@
                 <option value="AIVM-DELTA" data-hash="0x4a8c30d500000000000000000000000000000000000000000000000000000000">AIVM-DELTA (High Speed)</option>
                 <option value="AIVM-SIGMA" data-hash="0x6f63a19b3cf48600000000000000000000000000000000000000000000000000">AIVM-SIGMA (Neural)</option>
             </select>
-            <textarea id="art-prompt" class="panel-input" placeholder="Describe the neural vision..." style="height:80px;"></textarea>
-            <button class="action-btn" onclick="generateArt()">GENERATE IMAGE (0.25 tLCAI)</button>
-            
+            <textarea id="art-prompt" class="panel-input" placeholder="Neural vision of a digital horizon..." style="height:80px;"></textarea>
+            <button class="action-btn" onclick="generateArt()">REQUEST INFERENCE (0.25 tLCAI)</button>
             <div class="gen-canvas">
                 <div class="loader" id="gen-loader"></div>
                 <p id="canvas-status" style="color:var(--text-dim); font-family:monospace; font-size:0.7rem;">AWAITING NEURAL LINK...</p>
-                <img id="output-img" src="" alt="AIVM Result">
+                <img id="output-img" alt="AIVM Output">
             </div>
         </div>
     </div>
@@ -137,19 +134,30 @@ const log = (msg, type = "info") => {
 async function connectWallet() {
     if (!window.ethereum) return log("METAMASK MISSING", "error");
     try {
+        log("INITIATING HANDSHAKE...");
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         user = accounts[0];
         provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
         contract = new ethers.Contract(CONFIG.addr, CONFIG.abi, signer);
         
-        const ownerAddr = await contract.owner();
-        roles.isOwner = (user.toLowerCase() === ownerAddr.toLowerCase());
-        roles.isVerified = await contract.manualVerified(user);
+        // Hardened: Verify chain before calling contract
+        const network = await provider.getNetwork();
+        if(network.chainId !== 504n) {
+            log("WRONG NETWORK - SWITCH TO CHAIN 504", "error");
+            return;
+        }
 
-        log(`STREAK_SYNC: ${user.slice(0, 10)}`, "success");
-        updateMenu(); updateIdentity(); initGallery(); probeModels(); updateWalletPill();
-    } catch (e) { log("HANDSHAKE FAILED", "error"); console.error(e); }
+        try {
+            const ownerAddr = await contract.owner();
+            roles.isOwner = (user.toLowerCase() === ownerAddr.toLowerCase());
+            roles.isVerified = await contract.manualVerified(user);
+            log(`STREAK_SYNC: ${user.slice(0, 10)}`, "success");
+            updateMenu(); updateIdentity(); initGallery(); probeModels(); updateWalletPill();
+        } catch (callErr) {
+            log("CONTRACT CALL REVERTED - CHECK ADDRESS", "error");
+        }
+    } catch (e) { log("HANDSHAKE FAILED", "error"); }
 }
 
 async function probeModels() {
@@ -172,38 +180,27 @@ async function generateArt() {
     const status = document.getElementById('canvas-status');
 
     if(!prompt) return log("PROMPT REQUIRED", "error");
-    
     try {
         log("INITIATING INFERENCE...");
-        img.style.display = 'none';
-        loader.style.display = 'block';
+        img.style.display = 'none'; loader.style.display = 'block';
         status.innerText = "MINING TRANSACTION...";
-        document.getElementById('status-txt').innerText = "PENDING";
         
         const tx = await contract.generateArt(prompt, hash, { value: ethers.parseEther("0.25"), gasLimit: 2000000 });
         await tx.wait();
         
-        log("INFERENCE SUCCESS", "success");
-        status.innerText = "NEURAL RENDER COMPLETE";
+        log("RENDER COMPLETE", "success");
         loader.style.display = 'none';
         img.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random()*10000)}`;
         img.style.display = 'block';
-        document.getElementById('status-txt').innerText = "IDLE";
+        status.innerText = "";
         initGallery();
-    } catch (e) {
-        log("CONTRACT REVERTED", "error");
-        loader.style.display = 'none';
-        status.innerText = "REJECTED BY CHAIN";
-        document.getElementById('status-txt').innerText = "ERROR";
-    }
+    } catch (e) { log("REJECTED BY CHAIN", "error"); loader.style.display = 'none'; }
 }
 
 async function verifySelf() {
     try {
-        log("SELF-VERIFYING...");
         const tx = await contract.setVerification(user, true);
-        await tx.wait();
-        log("VERIFIED SUCCESS", "success");
+        await tx.wait(); log("SELF-VERIFIED", "success");
         roles.isVerified = true; updateMenu(); probeModels();
     } catch (e) { log("VERIFY FAILED", "error"); }
 }
@@ -224,7 +221,7 @@ async function runAdmin(type) {
     try {
         if(type === 'query') {
             const res = await contract.manualVerified(target);
-            log(`USER ${target.slice(0,6)}: ${res ? 'VERIFIED' : 'UNVERIFIED'}`);
+            log(`USER: ${res ? 'VERIFIED' : 'UNVERIFIED'}`);
         } else {
             const tx = await contract.setVerification(target, true);
             await tx.wait(); log("USER VERIFIED", "success");
