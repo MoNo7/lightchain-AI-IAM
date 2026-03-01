@@ -10,7 +10,7 @@
         body { margin: 0; background: var(--bg); color: white; font-family: 'Inter', sans-serif; display: flex; height: 100vh; overflow: hidden; }
         nav { width: 280px; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 25px; background: var(--panel); box-sizing: border-box; }
         .nav-logo { font-weight: 900; letter-spacing: 2px; color: var(--accent); margin-bottom: 25px; font-size: 1.1rem; text-align: center; }
-        .system-console { background: var(--console-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.65rem; height: 180px; overflow-y: auto; margin-bottom: 20px; color: #4e5d75; line-height: 1.5; }
+        .system-console { background: var(--console-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.65rem; height: 160px; overflow-y: auto; margin-bottom: 20px; color: #4e5d75; line-height: 1.5; }
         .console-line { margin-bottom: 4px; border-left: 2px solid #1a202c; padding-left: 8px; }
         .console-line.success { border-left-color: var(--accent); color: #fff; }
         .console-line.error { border-left-color: #ff4444; color: #ff4444; }
@@ -25,12 +25,10 @@
         .view-pane.active { display: block !important; }
         .card { background: var(--panel); border: 1px solid var(--border); padding: 30px; border-radius: 12px; max-width: 900px; border-top: 4px solid var(--accent); margin-bottom: 20px; }
         .panel-input { width: 100%; background: #000; border: 1px solid #333; color: white; padding: 12px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 12px; box-sizing: border-box; font-family: monospace; }
-        .action-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; }
-        .status-table { width: 100%; font-size: 0.7rem; border-collapse: collapse; margin-top: 15px; font-family: monospace; }
-        .status-table td, .status-table th { border: 1px solid var(--border); padding: 8px; text-align: left; }
-        .status-online { color: #00c853; }
-        .gen-canvas { width: 100%; height: 450px; background: #000; border: 1px solid var(--border); border-radius: 8px; margin-top: 20px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-        #output-img { max-width: 100%; max-height: 100%; display: none; }
+        .action-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s; }
+        /* Integrated Canvas Styles */
+        .gen-canvas { width: 100%; min-height: 400px; background: #000; border: 1px solid var(--border); border-radius: 8px; margin-top: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+        #output-img { max-width: 100%; max-height: 100%; display: none; border-radius: 4px; }
         .loader { border: 4px solid #1a202c; border-top: 4px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -67,7 +65,7 @@
 
     <div id="admin-view" class="view-pane">
         <div class="card">
-            <h2>ADMIN & TELEMETRY</h2>
+            <h2>ADMIN PANEL</h2>
             <input type="text" class="panel-input" id="admin-addr" placeholder="Target Address / Model Hash (0x...)">
             <div style="display:flex; gap:10px;">
                 <button class="action-btn" onclick="runAdmin('query')" style="flex:1">QUERY STATUS</button>
@@ -77,14 +75,6 @@
                 <button class="action-btn" onclick="runAdmin('verify')" style="flex:1; background:transparent; border:1px solid var(--accent); color:var(--accent);">VERIFY TARGET</button>
                 <button class="action-btn" onclick="registerModelUI()" style="flex:1; background:transparent; border:1px solid #ffaa00; color:#ffaa00;">REGISTER MODEL</button>
             </div>
-            <table class="status-table">
-                <thead><tr><th>MODEL</th><th>DIGEST</th><th>STATE</th></tr></thead>
-                <tbody id="telemetry-body">
-                    <tr><td>THETA</td><td>0x2bf0...</td><td id="stat-theta">WAITING...</td></tr>
-                    <tr><td>DELTA</td><td>0x4a8c...</td><td id="stat-delta">WAITING...</td></tr>
-                    <tr><td>SIGMA</td><td>0x6f63...</td><td id="stat-sigma">WAITING...</td></tr>
-                </tbody>
-            </table>
         </div>
     </div>
 
@@ -97,11 +87,12 @@
                 <option value="AIVM-SIGMA" data-hash="0x6f63a19b3cf48600000000000000000000000000000000000000000000000000">AIVM-SIGMA (Neural)</option>
             </select>
             <textarea id="art-prompt" class="panel-input" placeholder="Neural vision of a digital horizon..." style="height:80px;"></textarea>
-            <button class="action-btn" onclick="generateArt()">REQUEST INFERENCE (0.25 tLCAI)</button>
+            <button class="action-btn" onclick="generateArt()">GENERATE IMAGE (0.25 tLCAI)</button>
+            
             <div class="gen-canvas">
                 <div class="loader" id="gen-loader"></div>
                 <p id="canvas-status" style="color:var(--text-dim); font-family:monospace; font-size:0.7rem;">AWAITING NEURAL LINK...</p>
-                <img id="output-img" alt="AIVM Output">
+                <img id="output-img" src="" alt="AIVM Result">
             </div>
         </div>
     </div>
@@ -136,38 +127,23 @@ async function connectWallet() {
     try {
         log("INITIATING HANDSHAKE...");
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        user = accounts[0];
+        if (accounts.length === 0) {
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+        }
+        user = accounts[0] || (await window.ethereum.request({ method: 'eth_requestAccounts' }))[0];
         provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
         contract = new ethers.Contract(CONFIG.addr, CONFIG.abi, signer);
         
-        // Hardened: Verify chain before calling contract
-        const network = await provider.getNetwork();
-        if(network.chainId !== 504n) {
-            log("WRONG NETWORK - SWITCH TO CHAIN 504", "error");
-            return;
-        }
+        const ownerAddr = await contract.owner();
+        roles.isOwner = (user.toLowerCase() === ownerAddr.toLowerCase());
+        roles.isVerified = await contract.manualVerified(user);
 
-        try {
-            const ownerAddr = await contract.owner();
-            roles.isOwner = (user.toLowerCase() === ownerAddr.toLowerCase());
-            roles.isVerified = await contract.manualVerified(user);
-            log(`STREAK_SYNC: ${user.slice(0, 10)}`, "success");
-            updateMenu(); updateIdentity(); initGallery(); probeModels(); updateWalletPill();
-        } catch (callErr) {
-            log("CONTRACT CALL REVERTED - CHECK ADDRESS", "error");
-        }
-    } catch (e) { log("HANDSHAKE FAILED", "error"); }
-}
-
-async function probeModels() {
-    const hashes = {theta: "0x2bf0539500000000000000000000000000000000000000000000000000000000", delta: "0x4a8c30d500000000000000000000000000000000000000000000000000000000", sigma: "0x6f63a19b3cf48600000000000000000000000000000000000000000000000000"};
-    for (let m in hashes) {
-        const el = document.getElementById(`stat-${m}`);
-        try {
-            await contract.generateArt.staticCall("probe", hashes[m], { value: ethers.parseEther("0.25") });
-            el.innerText = "ACTIVE"; el.style.color = "#00c853";
-        } catch (e) { el.innerText = "LOCKED"; el.style.color = "#ff4444"; }
+        log(`STREAK_SYNC: ${user.slice(0, 10)}`, "success");
+        updateMenu(); updateIdentity(); initGallery(); updateWalletPill();
+    } catch (e) { 
+        log("CONTRACT CALL REVERTED - CHECK ADDRESS", "error"); 
+        console.error(e);
     }
 }
 
@@ -180,9 +156,11 @@ async function generateArt() {
     const status = document.getElementById('canvas-status');
 
     if(!prompt) return log("PROMPT REQUIRED", "error");
+    
     try {
         log("INITIATING INFERENCE...");
-        img.style.display = 'none'; loader.style.display = 'block';
+        img.style.display = 'none';
+        loader.style.display = 'block';
         status.innerText = "MINING TRANSACTION...";
         
         const tx = await contract.generateArt(prompt, hash, { value: ethers.parseEther("0.25"), gasLimit: 2000000 });
@@ -194,14 +172,20 @@ async function generateArt() {
         img.style.display = 'block';
         status.innerText = "";
         initGallery();
-    } catch (e) { log("REJECTED BY CHAIN", "error"); loader.style.display = 'none'; }
+    } catch (e) {
+        log("CONTRACT REVERTED", "error");
+        loader.style.display = 'none';
+        status.innerText = "REJECTED BY CHAIN";
+    }
 }
 
 async function verifySelf() {
     try {
+        log("SELF-VERIFYING...");
         const tx = await contract.setVerification(user, true);
-        await tx.wait(); log("SELF-VERIFIED", "success");
-        roles.isVerified = true; updateMenu(); probeModels();
+        await tx.wait();
+        log("VERIFIED SUCCESS", "success");
+        roles.isVerified = true; updateMenu();
     } catch (e) { log("VERIFY FAILED", "error"); }
 }
 
@@ -211,7 +195,6 @@ async function registerModelUI() {
     try {
         const tx = await contract.registerModel(hash, true);
         await tx.wait(); log("MODEL REGISTERED", "success");
-        probeModels();
     } catch (e) { log("REGISTRATION FAILED", "error"); }
 }
 
