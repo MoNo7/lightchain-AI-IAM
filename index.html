@@ -50,10 +50,10 @@
 <div class="viewport">
     <header>
         <div class="pill sys" style="color:var(--accent)">
-            MODEL: <span id="sys-model">AIVM-V1</span> | STATE: <span id="status-txt">ACTIVE</span> | LOAD: <span id="sys-load">42%</span>
+            MODEL: <span id="sys-model">AIVM-V1</span> | STATE: <span id="status-txt">ACTIVE</span>
         </div>
         <div class="pill price">
-            ETH: <span id="eth-price">Loading...</span> | LCAI: <span id="lcai-price">$0.00198</span>
+            ETH: <span id="eth-price">SYNCING...</span> | LCAI: <span id="lcai-price">SYNCING...</span>
         </div>
         <button id="wallet-btn" class="wallet-pill" onclick="connectWallet()">CONNECT WALLET</button>
     </header>
@@ -82,9 +82,9 @@
                 <h2>ADMINISTRATION</h2>
                 <button class="action-btn" style="background:#00c853;" onclick="verifySelf()">VERIFY SELF (ART PERMISSION)</button>
                 <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
-                <textarea id="admin-target" class="panel-input" style="height:60px;" placeholder="0x... Wallet (or comma-separated for Batch)"></textarea>
-                <button class="action-btn" onclick="batchApprove()">RUN BATCH AUTHORIZATION</button>
-                <button class="action-btn" style="background:#ff4444;" onclick="resetIdentity()">FORCE RESET ID (WIPE DATA)</button>
+                <textarea id="admin-target" class="panel-input" style="height:60px;" placeholder="0x... Wallet Address"></textarea>
+                <button class="action-btn" onclick="batchApprove()">AUTHORIZE TARGET</button>
+                <button class="action-btn" style="background:#ff4444;" onclick="resetIdentity()">FORCE RESET ID (WIPE)</button>
             </div>
             
             <div class="card" id="owner-panel" style="display:none; border-top-color:#ffaa00;">
@@ -98,38 +98,28 @@
     <div id="aivm-view" class="view-pane">
         <div class="card" style="max-width: 900px;">
             <h2>AIVM NEURAL ENGINE</h2>
-            <textarea id="art-prompt" class="panel-input" style="height:80px;" placeholder="Enter vivid prompt (e.g., Cyberpunk cityscape neon lights 4k)"></textarea>
+            <textarea id="art-prompt" class="panel-input" style="height:80px;" placeholder="Describe your vision..."></textarea>
             <button class="action-btn" onclick="generateArt()">REQUEST INFERENCE (0.25 tLCAI)</button>
             <div id="render-box" style="margin-top:20px; text-align:center;">
-                <img id="output-img" style="max-width:100%; border-radius:8px; display:none; border: 1px solid var(--border);">
+                <img id="output-img" style="max-width:100%; border-radius:8px; display:none;">
             </div>
         </div>
     </div>
 </div>
 
 <script>
-// 🔥 PASTE YOUR NEW DEPLOYED ADDRESSES HERE 🔥
 const CONFIG = {
-    idAddr: "0xc6BE8f911a923003d53Ab64EDf557FAc4AA888ca", 
+    idAddr: "0xc6BE8f911a923003d53Ab64EDf557FAc4AA888ca",
     artAddr: "0xC477360020176a2D37669c328F9547c285B9fBF2",
-    artAbi: [
-        "function owner() view returns (address)",
-        "function manualVerified(address) view returns (bool)",
-        "function setVerification(address, bool) external",
-        "function generateArt(string, bytes32) payable external",
-        "function withdraw() external",
-        "event InferenceRequested(address indexed user, string prompt, bytes32 modelDigest)"
-    ],
-    idAbi: [
-        "function profiles(address) view returns (string username, string did, bool isVerified, bool exists)",
-        "function createProfile(string username, string did) external",
-        "function verifyIdentity(address) external",
-        "function deleteProfile(address) external",
-        "function isAdmin(address) view returns (bool)"
-    ]
+    sbtAddr: "0xd71462F0002Ee9373fCe05B568583Ed13e75f600",
+    lcaiPair: "0x0d047a370611437a1b8e6c2a95ea36f69fdda3be", // LCAI/WETH or LCAI/USDT Pair
+    
+    artAbi: ["function owner() view returns (address)","function manualVerified(address) view returns (bool)","function setVerification(address, bool) external","function generateArt(string, bytes32) payable external","function withdraw() external","event InferenceRequested(address indexed user, string prompt, bytes32 modelDigest)"],
+    idAbi: ["function profiles(address) view returns (string username, string did, bool isVerified, bool exists)","function createProfile(string username, string did) external","function deleteProfile(address) external"],
+    sbtAbi: ["function hasMinted(address) view returns (bool)","function mintSBT(address) external"]
 };
 
-let user, provider, signer, artContract, idContract;
+let user, provider, signer, artContract, idContract, sbtContract;
 
 const log = (msg, type = "") => {
     const cb = document.getElementById('console');
@@ -140,15 +130,23 @@ const log = (msg, type = "") => {
     cb.scrollTop = cb.scrollHeight;
 };
 
-// Fetch real ETH price
+// LIVE PRICE ENGINE (Dexscreener + CoinGecko)
 async function fetchPrices() {
     try {
-        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-        const data = await res.json();
-        document.getElementById('eth-price').innerText = `$${data.ethereum.usd.toLocaleString()}`;
-    } catch (e) {
-        document.getElementById('eth-price').innerText = "$...";
-    }
+        // Fetch ETH Price
+        const ethRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+        const ethData = await ethRes.json();
+        document.getElementById('eth-price').innerText = `$${ethData.ethereum.usd.toLocaleString()}`;
+
+        // Fetch LCAI Price via Dexscreener
+        const lcaiRes = await fetch(`https://api.dexscreener.com/latest/dex/pairs/ethereum/${CONFIG.lcaiPair}`);
+        const lcaiData = await lcaiRes.json();
+        if (lcaiData.pair) {
+            document.getElementById('lcai-price').innerText = `$${parseFloat(lcaiData.pair.priceUsd).toFixed(5)}`;
+        } else {
+            document.getElementById('lcai-price').innerText = "$0.00198"; // Fallback
+        }
+    } catch (e) { console.error("Price Sync Error"); }
 }
 
 async function connectWallet() {
@@ -156,8 +154,7 @@ async function connectWallet() {
     if (window.ethereum?.providers) {
         ethereumProvider = window.ethereum.providers.find((p) => p.isMetaMask) || window.ethereum;
     }
-
-    if (!ethereumProvider) return log("METAMASK NOT DETECTED", "error");
+    if (!ethereumProvider) return log("METAMASK MISSING", "error");
 
     try {
         const accounts = await ethereumProvider.request({ method: 'eth_requestAccounts' });
@@ -165,23 +162,18 @@ async function connectWallet() {
         provider = new ethers.BrowserProvider(ethereumProvider);
         signer = await provider.getSigner();
         
-        if(CONFIG.idAddr.startsWith("0x_")) return log("PLEASE UPDATE CONTRACT ADDRESSES IN CODE", "error");
-
         artContract = new ethers.Contract(CONFIG.artAddr, CONFIG.artAbi, signer);
         idContract = new ethers.Contract(CONFIG.idAddr, CONFIG.idAbi, signer);
+        sbtContract = new ethers.Contract(CONFIG.sbtAddr, CONFIG.sbtAbi, signer);
         
         const owner = await artContract.owner();
-        if(user.toLowerCase() === owner.toLowerCase()) {
-            document.getElementById('owner-panel').style.display = 'block';
-            const bal = await provider.getBalance(CONFIG.artAddr);
-            document.getElementById('contract-rev').innerText = ethers.formatEther(bal);
-        }
+        if(user.toLowerCase() === owner.toLowerCase()) document.getElementById('owner-panel').style.display = 'block';
 
         updateBalanceDisplay();
         updateIdentity();
         initGallery();
-        log("WALLET CONNECTED: " + user.slice(0,10), "success");
-    } catch (e) { log("CONNECTION REFUSED", "error"); }
+        log("READY: " + user.slice(0,10), "success");
+    } catch (e) { log("CONNECTION ERROR", "error"); }
 }
 
 async function updateBalanceDisplay() {
@@ -190,145 +182,80 @@ async function updateBalanceDisplay() {
 }
 
 async function updateIdentity() {
-    if(!user || !idContract) return;
+    if(!user) return;
     try {
         const profile = await idContract.profiles(user);
-        const isVerifiedArt = await artContract.manualVerified(user);
-        
-        const meta = {
-            "address": user,
-            "username": profile.exists ? profile.username : "UNREGISTERED",
-            "did": (profile.exists && profile.did) ? profile.did : `did:lcai:${user.slice(2,8)}`,
-            "verified_id": profile.isVerified,
-            "verified_art": isVerifiedArt
-        };
-
+        const hasSBT = await sbtContract.hasMinted(user);
+        const meta = { "address": user, "username": profile.exists ? profile.username : "UNREGISTERED", "sbt_minted": hasSBT };
         document.getElementById('id-json').innerText = JSON.stringify(meta, null, 4);
-        document.getElementById('qr-target').innerHTML = "";
-        new QRCode(document.getElementById("qr-target"), { text: JSON.stringify(meta), width: 120, height: 120 });
-
+        
         const zone = document.getElementById('id-action-zone');
-        if(!profile.exists || profile.username === "") {
-            zone.innerHTML = `
-                <input id="reg-user" class="panel-input" placeholder="Desired Username">
-                <input id="reg-did" class="panel-input" placeholder="Custom DID (blank for default)">
-                <button class="action-btn" onclick="registerProfile()">REGISTER & INITIALIZE ID</button>`;
-        } else if(!profile.isVerified) {
-            zone.innerHTML = `<button class="action-btn" style="background:#ffaa00;" onclick="mintZkVerify()">MINT ZK-VERIFY ATTESTATION</button>`;
+        if(!profile.exists) {
+            zone.innerHTML = `<input id="reg-user" class="panel-input" placeholder="Username"><button class="action-btn" onclick="registerProfile()">INITIALIZE IDENTITY</button>`;
+        } else if(!hasSBT) {
+            zone.innerHTML = `<button class="action-btn" style="background:#ffaa00;" onclick="mintSbtToken()">MINT LCAI-ZK0KYC SBT</button>`;
         } else {
-            zone.innerHTML = `<p style="color:#00c853; font-size:0.8rem; font-weight:bold;">✓ IDENTITY FULLY VERIFIED</p>`;
+            zone.innerHTML = `<p style="color:#00c853; font-weight:bold;">✓ LCAI-ZK IDENTITY ANCHORED</p>`;
         }
     } catch (e) { console.error(e); }
 }
 
-async function registerProfile() {
-    const u = document.getElementById('reg-user').value || "ANONYMOUS";
-    let d = document.getElementById('reg-did').value || `did:lcai:${user.slice(2,8)}`;
+async function mintSbtToken() {
     try {
-        log(`ANCHORING IDENTITY: ${u}...`);
-        const tx = await idContract.createProfile(u, d, { gasLimit: 500000 });
+        log("MINTING IDENTITY TOKEN...");
+        const tx = await sbtContract.mintSBT(user);
         await tx.wait();
-        log("IDENTITY REGISTERED", "success");
+        log("SBT MINTED", "success");
         updateIdentity();
-    } catch (e) { log("REGISTRATION FAILED", "error"); }
+    } catch (e) { log("MINT FAILED: Admin Only", "error"); }
 }
 
 async function resetIdentity() {
     const target = document.getElementById('admin-target').value || user;
     try {
-        log(`WIPING DATA FOR: ${target.slice(0,8)}...`);
-        const tx = await idContract.deleteProfile(target, { gasLimit: 200000 });
+        log("WIPING PROFILE...");
+        const tx = await idContract.deleteProfile(target);
         await tx.wait();
-        log("ID RESET SUCCESSFUL", "success");
+        log("PROFILE RESET", "success");
         updateIdentity();
-    } catch (e) { log("RESET REVERTED (Requires Admin)", "error"); }
-}
-
-async function mintZkVerify() {
-    try {
-        log("MINTING ZK-SBT...");
-        const tx = await idContract.verifyIdentity(user, { gasLimit: 200000 });
-        await tx.wait();
-        log("ZK-VERIFY MINTED", "success");
-        updateIdentity();
-    } catch (e) { log("MINTING FAILED", "error"); }
-}
-
-async function batchApprove() {
-    const addresses = document.getElementById('admin-target').value.split(',').map(a => a.trim());
-    log(`BATCHING ${addresses.length} ADDRESSES...`);
-    for(let addr of addresses) {
-        if(ethers.isAddress(addr)) {
-            try {
-                const tx = await artContract.setVerification(addr, true);
-                await tx.wait();
-                log(`APPROVED: ${addr.slice(0,6)}`, "success");
-            } catch (e) { log(`FAILED: ${addr.slice(0,6)}`, "error"); }
-        }
-    }
-}
-
-async function verifySelf() {
-    try {
-        log("AUTHORIZING SELF...");
-        const tx = await artContract.setVerification(user, true);
-        await tx.wait();
-        log("ART PERMISSION GRANTED", "success");
-        updateIdentity();
-    } catch (e) { log("AUTHORIZATION FAILED", "error"); }
+    } catch (e) { log("RESET FAILED", "error"); }
 }
 
 async function generateArt() {
     const prompt = document.getElementById('art-prompt').value;
-    if(!prompt) return log("PLEASE ENTER A PROMPT", "error");
+    if(!prompt) return;
     try {
-        log("MINING INFERENCE...");
-        const tx = await artContract.generateArt(prompt, ethers.ZeroHash, { 
-            value: ethers.parseEther("0.25"),
-            gasLimit: 500000 
-        });
-        
-        log("AWAITING TX CONFIRMATION...", "sys");
+        log("INITIATING INFERENCE...");
+        const tx = await artContract.generateArt(prompt, ethers.ZeroHash, { value: ethers.parseEther("0.25") });
         await tx.wait();
         log("RENDER SUCCESS", "success");
-        
-        // Use Pollinations AI for instant rendering based on prompt and tx hash
-        const imgUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${tx.hash}&nologo=true`;
-        document.getElementById('output-img').src = imgUrl;
-        document.getElementById('output-img').style.display = 'inline-block';
-        initGallery(); // Refresh gallery
-    } catch (e) { log("INFERENCE REJECTED", "error"); console.error(e); }
+        document.getElementById('output-img').src = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${tx.hash}&nologo=true`;
+        document.getElementById('output-img').style.display = 'block';
+        initGallery();
+    } catch (e) { log("INFERENCE REJECTED", "error"); }
 }
 
 async function initGallery() {
     const grid = document.getElementById('gallery-grid');
     if(!artContract) return;
     try {
-        // Querying from block 0 to capture all events. Fixed range issue.
         const events = await artContract.queryFilter("InferenceRequested", 0, "latest");
         grid.innerHTML = "";
-        
-        if (events.length === 0) {
-            grid.innerHTML = "<p style='color:var(--text-dim); font-size:0.8rem;'>No art generated on this contract yet.</p>";
-            return;
-        }
-
         events.reverse().slice(0, 12).forEach(ev => {
-            const prompt = ev.args.prompt;
-            const seed = ev.transactionHash;
-            const imgUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=400&height=300&seed=${seed}&nologo=true`;
-            
-            grid.innerHTML += `
-            <div class="thumb">
-                <img src="${imgUrl}" alt="${prompt}" onclick="window.open('${imgUrl.replace('width=400&height=300', 'width=1024&height=1024')}', '_blank')">
-                <p style="font-size:0.6rem; color:var(--text-dim); margin-top:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${prompt}">${prompt}</p>
-            </div>`;
+            const url = `https://pollinations.ai/p/${encodeURIComponent(ev.args.prompt)}?width=400&height=300&seed=${ev.transactionHash}&nologo=true`;
+            grid.innerHTML += `<div class="thumb"><img src="${url}"><p style="font-size:0.6rem; color:var(--text-dim); margin-top:5px;">${ev.args.prompt}</p></div>`;
         });
-    } catch (e) { grid.innerHTML = "<p style='color:var(--text-dim); font-size:0.7rem;'>Syncing Gallery Error...</p>"; console.error(e); }
+    } catch (e) { grid.innerHTML = "Syncing Gallery..."; }
 }
 
-async function withdrawRevenue() {
-    try { await (await artContract.withdraw()).wait(); log("REVENUE WITHDRAWN", "success"); } catch (e) { log("WITHDRAWAL FAILED", "error"); }
+async function verifySelf() {
+    try {
+        log("AUTHORIZING...");
+        const tx = await artContract.setVerification(user, true);
+        await tx.wait();
+        log("GRANTED", "success");
+        updateIdentity();
+    } catch (e) { log("FAILED", "error"); }
 }
 
 function showView(id, btn) {
@@ -338,7 +265,7 @@ function showView(id, btn) {
     btn.classList.add('active');
 }
 
-window.onload = () => { fetchPrices(); connectWallet(); setInterval(fetchPrices, 60000); };
+window.onload = () => { fetchPrices(); connectWallet(); setInterval(fetchPrices, 30000); };
 </script>
 </body>
 </html>
