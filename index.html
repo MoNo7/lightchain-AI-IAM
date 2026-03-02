@@ -142,7 +142,7 @@ async function fetchPrices() {
         const lcaiRes = await fetch(`https://api.dexscreener.com/latest/dex/pairs/ethereum/${CONFIG.lcaiPair}`);
         const lcaiData = await lcaiRes.json();
         if (lcaiData.pair) {
-            document.getElementById('lcai-price').innerText = `$${parseFloat(lcaiData.pair.priceUsd).toFixed(5)}`;
+            document.getElementById('lcai-price').innerText = `$${parseFloat(lcaiData.pair.priceUsd).toFixed(6)}`;
         } else {
             document.getElementById('lcai-price').innerText = "$0.00198"; // Fallback
         }
@@ -269,3 +269,4 @@ window.onload = () => { fetchPrices(); connectWallet(); setInterval(fetchPrices,
 </script>
 </body>
 </html>
+
