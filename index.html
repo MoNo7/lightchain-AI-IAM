@@ -13,6 +13,7 @@
         .system-console { background: var(--console-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.65rem; height: 180px; overflow-y: auto; margin-bottom: 20px; color: #4e5d75; line-height: 1.5; }
         .console-line { margin-bottom: 4px; border-left: 2px solid #1a202c; padding-left: 8px; }
         .console-line.success { border-left-color: var(--accent); color: #fff; }
+        .console-line.error { border-left-color: #ff4444; color: #ff4444; }
         .nav-menu { display: flex; flex-direction: column; gap: 8px; }
         .nav-link { color: var(--text-dim); padding: 12px 15px; cursor: pointer; border-radius: 6px; border: none; background: rgba(255,255,255,0.03); text-align: left; font-size: 0.75rem; font-family: monospace; width: 100%; font-weight: 600; }
         .nav-link.active { color: white; background: var(--accent); }
@@ -24,7 +25,8 @@
         .view-pane.active { display: block !important; }
         .card { background: var(--panel); border: 1px solid var(--border); padding: 30px; border-radius: 12px; max-width: 900px; border-top: 4px solid var(--accent); margin-bottom: 20px; }
         .panel-input { width: 100%; background: #000; border: 1px solid #333; color: white; padding: 12px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 12px; box-sizing: border-box; font-family: monospace; }
-        .action-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
+        .action-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; transition: opacity 0.2s; }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
         .thumb { background: #000; padding: 10px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
         .thumb img { width: 100%; border-radius: 4px; cursor: pointer; }
@@ -64,10 +66,9 @@
         <div class="card" id="id-card">
             <h2>ZK-SBT IDENTITY</h2>
             <div style="display:flex; gap:20px; margin-bottom:20px;">
-                <pre id="id-json" style="flex:1; background:#05070a; padding:15px; font-size:0.7rem; color:var(--text-dim); border:1px solid var(--border);">// Fetching Identity...</pre>
+                <pre id="id-json" style="flex:1; background:#05070a; padding:15px; font-size:0.7rem; color:var(--text-dim); border:1px solid var(--border); overflow: hidden;">// Loading Identity...</pre>
                 <div id="qr-target" style="background:white; padding:10px; border-radius:8px; cursor:pointer;" onclick="downloadQR()"></div>
             </div>
-            
             <div id="id-action-zone">
                 </div>
         </div>
@@ -76,17 +77,19 @@
     <div id="admin-view" class="view-pane">
         <div class="card">
             <h2>ADMINISTRATION</h2>
-            <button class="action-btn" style="background:#00c853;" onclick="verifySelf()">VERIFY SELF</button>
-            <input type="text" id="admin-target" class="panel-input" placeholder="Target Address">
-            <button class="action-btn" onclick="adminAction('verify')">VERIFY TARGET</button>
+            <button class="action-btn" style="background:#00c853;" onclick="verifySelf()">VERIFY SELF (ART PERMISSION)</button>
+            <div style="margin-top: 20px;">
+                <input type="text" id="admin-target" class="panel-input" placeholder="0x... Target Wallet Address">
+                <button class="action-btn" onclick="adminAction('verify')">AUTHORIZE ADDRESS</button>
+            </div>
         </div>
     </div>
 
     <div id="aivm-view" class="view-pane">
         <div class="card">
             <h2>AIVM NEURAL ENGINE</h2>
-            <textarea id="art-prompt" class="panel-input" style="height:80px;" placeholder="Prompt..."></textarea>
-            <button class="action-btn" onclick="generateArt()">REQUEST INFERENCE (0.25 tLCAI)</button>
+            <textarea id="art-prompt" class="panel-input" style="height:80px;" placeholder="Prompt the AIVM..."></textarea>
+            <button class="action-btn" id="gen-btn" onclick="generateArt()">REQUEST INFERENCE (0.25 tLCAI)</button>
             <div id="render-box" style="margin-top:20px; text-align:center;">
                 <img id="output-img" style="max-width:100%; border-radius:4px; display:none;">
             </div>
@@ -107,7 +110,8 @@ const CONFIG = {
     idAbi: [
         "function profiles(address) view returns (string username, string did, bool isVerified, bool exists)",
         "function createProfile(string username, string did) external",
-        "function verifyIdentity(address) external"
+        "function verifyIdentity(address) external",
+        "function isAdmin(address) view returns (bool)"
     ]
 };
 
@@ -124,18 +128,21 @@ const log = (msg, type = "") => {
 
 async function connectWallet() {
     if (!window.ethereum) return;
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    user = accounts[0];
-    provider = new ethers.BrowserProvider(window.ethereum);
-    signer = await provider.getSigner();
-    artContract = new ethers.Contract(CONFIG.artAddr, CONFIG.artAbi, signer);
-    idContract = new ethers.Contract(CONFIG.idAddr, CONFIG.idAbi, signer);
-    
-    const bal = await provider.getBalance(user);
-    document.getElementById('wallet-btn').innerText = `${user.slice(0,6).toUpperCase()} | ${Math.floor(Number(ethers.formatEther(bal)))} LCAI`;
-    
-    updateIdentity();
-    initGallery();
+    try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        user = accounts[0];
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        artContract = new ethers.Contract(CONFIG.artAddr, CONFIG.artAbi, signer);
+        idContract = new ethers.Contract(CONFIG.idAddr, CONFIG.idAbi, signer);
+        
+        const bal = await provider.getBalance(user);
+        document.getElementById('wallet-btn').innerText = `${user.slice(0,6).toUpperCase()} | ${Math.floor(Number(ethers.formatEther(bal)))} LCAI`;
+        
+        log(`CONNECTED: ${user.slice(0,10)}...`, "success");
+        updateIdentity();
+        initGallery();
+    } catch (e) { log("CONNECTION_FAILED", "error"); }
 }
 
 async function updateIdentity() {
@@ -147,7 +154,7 @@ async function updateIdentity() {
         const meta = {
             "address": user,
             "username": profile.exists ? profile.username : "UNREGISTERED",
-            "did": profile.exists ? profile.did : "did:lcai:pending",
+            "did": (profile.exists && profile.did) ? profile.did : `did:lcai:${user.slice(2,8)}`,
             "verified_id": profile.isVerified,
             "verified_art": isVerifiedArt
         };
@@ -159,77 +166,116 @@ async function updateIdentity() {
         const zone = document.getElementById('id-action-zone');
         if(!profile.exists) {
             zone.innerHTML = `
-                <input id="reg-user" class="panel-input" placeholder="Desired Username">
-                <input id="reg-did" class="panel-input" placeholder="Custom DID String">
-                <button class="action-btn" onclick="registerProfile()">REGISTER IDENTITY</button>`;
+                <input id="reg-user" class="panel-input" placeholder="Username (e.g. MiMo)">
+                <input id="reg-did" class="panel-input" placeholder="Custom DID (blank for default: did:lcai:...)">
+                <button class="action-btn" onclick="registerProfile()">REGISTER IDENTITY PROFILE</button>`;
         } else if(!profile.isVerified) {
-            zone.innerHTML = `<button class="action-btn" style="background:#ffaa00;" onclick="mintZkVerify()">MINT ZK-VERIFY ATTESTATION</button>`;
+            zone.innerHTML = `
+                <p style="color:var(--text-dim); font-size: 0.7rem; margin-bottom: 10px;">IDENTITY CREATED: Awaiting ZK-Verification...</p>
+                <button class="action-btn" style="background:#ffaa00;" onclick="mintZkVerify()">MINT ZK-VERIFY ATTESTATION</button>`;
         } else {
-            zone.innerHTML = `<p style="color:#00c853; font-size:0.8rem;">✓ IDENTITY FULLY ANCHORED ON-CHAIN</p>`;
+            zone.innerHTML = `<p style="color:#00c853; font-size:0.8rem; font-weight: bold;">✓ ZK-IDENTITY ANCHORED & VERIFIED</p>`;
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("ID_FETCH_ERR", e); }
 }
 
 async function registerProfile() {
-    const u = document.getElementById('reg-user').value;
-    const d = document.getElementById('reg-did').value;
+    const u = document.getElementById('reg-user').value || "ANONYMOUS";
+    let d = document.getElementById('reg-did').value;
+    // Provide default DID if blank
+    if(!d) d = `did:lcai:${user.slice(2,8)}`;
+    
     try {
-        log("REGISTERING IDENTITY...");
-        const tx = await idContract.createProfile(u, d);
+        log(`REGISTERING: ${u}...`);
+        const tx = await idContract.createProfile(u, d, { gasLimit: 300000 });
         await tx.wait();
-        log("IDENTITY CREATED", "success");
+        log("IDENTITY REGISTERED", "success");
         updateIdentity();
-    } catch (e) { log("REG_FAILED", "error"); }
+    } catch (e) { 
+        log("REG_FAILED: Possible Duplicate or Gas Limit", "error"); 
+        console.error(e);
+    }
 }
 
 async function mintZkVerify() {
     try {
-        log("MINTING ZK-VERIFY...");
-        // This calls the verifyIdentity function on the Identity contract
-        const tx = await idContract.verifyIdentity(user);
+        log("MINTING ZK-VERIFY ATTESTATION...");
+        const tx = await idContract.verifyIdentity(user, { gasLimit: 200000 });
         await tx.wait();
-        log("ZK-VERIFY MINTED", "success");
+        log("ZK-SBT ANCHORED", "success");
         updateIdentity();
-    } catch (e) { log("MINT_FAILED", "error"); }
+    } catch (e) { log("MINT_FAILED: Admin permission required", "error"); }
 }
 
 async function generateArt() {
     const prompt = document.getElementById('art-prompt').value;
-    if(!prompt) return;
+    const btn = document.getElementById('gen-btn');
+    if(!prompt) return log("ENTER PROMPT", "error");
+    
     try {
-        log("INITIATING INFERENCE...");
+        btn.disabled = true;
+        log("ANCHORING INFERENCE...");
         const tx = await artContract.generateArt(prompt, ethers.ZeroHash, { 
             value: ethers.parseEther("0.25"),
             gasLimit: 500000 
         });
         await tx.wait();
-        log("RENDER SUCCESS", "success");
+        log("INFERENCE SUCCESS", "success");
         document.getElementById('output-img').src = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${tx.hash}`;
         document.getElementById('output-img').style.display = 'block';
         initGallery();
-    } catch (e) { log("REJECTED: Check Verification", "error"); }
+    } catch (e) { 
+        log("INFERENCE_FAILED: Check Art Verification", "error"); 
+    } finally {
+        btn.disabled = false;
+    }
 }
 
 async function initGallery() {
     const grid = document.getElementById('gallery-grid');
+    if(!artContract) return;
     try {
-        const currentBlock = await provider.getBlockNumber();
-        const events = await artContract.queryFilter("InferenceRequested", currentBlock - 10000);
+        const events = await artContract.queryFilter("InferenceRequested", -5000);
         grid.innerHTML = "";
         events.reverse().slice(0, 10).forEach(ev => {
-            grid.innerHTML += `<div class="thumb"><img src="https://pollinations.ai/p/${encodeURIComponent(ev.args.prompt)}?width=400&height=300&seed=${ev.transactionHash}"><p style="font-size:0.6rem; color:#6a768a;">${ev.args.prompt}</p></div>`;
+            grid.innerHTML += `
+                <div class="thumb">
+                    <img src="https://pollinations.ai/p/${encodeURIComponent(ev.args.prompt)}?width=400&height=300&seed=${ev.transactionHash}" onclick="window.open(this.src)">
+                    <p style="font-size:0.6rem; color:var(--text-dim); margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ev.args.prompt}</p>
+                </div>`;
         });
-    } catch (e) { grid.innerHTML = "Syncing Gallery..."; }
+    } catch (e) { grid.innerHTML = "<p style='color:var(--text-dim); font-size:0.7rem;'>Syncing Gallery...</p>"; }
+}
+
+async function verifySelf() {
+    try {
+        log("AUTHORIZING SELF FOR ART...");
+        const tx = await artContract.setVerification(user, true);
+        await tx.wait();
+        log("ART PERMISSION GRANTED", "success");
+        updateIdentity();
+    } catch (e) { log("VERIFY_SELF_FAILED", "error"); }
+}
+
+async function adminAction(type) {
+    const target = document.getElementById('admin-target').value;
+    if(!target || !ethers.isAddress(target)) return log("INVALID_ADDRESS", "error");
+    try {
+        log(`AUTHORIZING: ${target.slice(0,10)}...`);
+        const tx = await artContract.setVerification(target, true);
+        await tx.wait();
+        log("TARGET AUTHORIZED", "success");
+    } catch (e) { log("ADMIN_ACTION_FAILED", "error"); }
 }
 
 function downloadQR() {
     const canvas = document.querySelector('#qr-target canvas');
-    const a = document.createElement('a'); a.href = canvas.toDataURL("image/png"); a.download = 'LCAI_Identity_QR.png'; a.click();
+    const a = document.createElement('a'); a.href = canvas.toDataURL("image/png"); a.download = 'LCAI_Identity.png'; a.click();
 }
 
 function showView(id, btn) {
     document.querySelectorAll('.view-pane').forEach(v => v.classList.remove('active'));
-    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    document.querySelectorAll('.nav-menu button').forEach(b => b.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     btn.classList.add('active');
 }
