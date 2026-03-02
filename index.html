@@ -13,22 +13,19 @@
         .system-console { background: var(--console-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.65rem; height: 180px; overflow-y: auto; margin-bottom: 20px; color: #4e5d75; line-height: 1.5; }
         .console-line { margin-bottom: 4px; border-left: 2px solid #1a202c; padding-left: 8px; }
         .console-line.success { border-left-color: var(--accent); color: #fff; }
-        .console-line.scan { color: #ffaa00; border-left-color: #ffaa00; }
         .nav-menu { display: flex; flex-direction: column; gap: 8px; }
         .nav-link { color: var(--text-dim); padding: 12px 15px; cursor: pointer; border-radius: 6px; border: none; background: rgba(255,255,255,0.03); text-align: left; font-size: 0.75rem; font-family: monospace; width: 100%; font-weight: 600; }
         .nav-link.active { color: white; background: var(--accent); }
         .viewport { flex: 1; display: flex; flex-direction: column; }
         header { height: 80px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; box-sizing: border-box; }
-        .h-col { flex: 1; display: flex; align-items: center; }
         .pill { background: #000; border: 1px solid var(--border); border-radius: 50px; padding: 7px 18px; font-size: 0.65rem; font-family: monospace; display: flex; align-items: center; gap: 10px; }
-        .pill.price { color: #00c853; border-color: #00c85344; }
         .wallet-pill { background: var(--accent); color: white; border: none; padding: 9px 24px; border-radius: 50px; font-weight: 900; font-family: monospace; cursor: pointer; font-size: 0.75rem; }
         .view-pane { flex: 1; padding: 40px; display: none; overflow-y: auto; }
         .view-pane.active { display: block !important; }
         .card { background: var(--panel); border: 1px solid var(--border); padding: 30px; border-radius: 12px; max-width: 900px; border-top: 4px solid var(--accent); margin-bottom: 20px; }
         .panel-input { width: 100%; background: #000; border: 1px solid #333; color: white; padding: 12px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 12px; box-sizing: border-box; font-family: monospace; }
         .action-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
-        #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
+        #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
         .thumb { background: #000; padding: 10px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
         .thumb img { width: 100%; border-radius: 4px; cursor: pointer; }
     </style>
@@ -39,81 +36,59 @@
     <div class="nav-logo">LCAI <span>IAM</span></div>
     <div class="system-console" id="console">
         <div class="console-line">>> KERNEL_READY</div>
-        <div id="scan-log" class="console-line scan">>> SCANNER: IDLE</div>
-        <div id="worker-log" class="console-line" style="color:#00c853;">>> ACTIVE_WORKERS: 118</div>
+        <div id="worker-log" class="console-line" style="color:#00c853;">>> ACTIVE_WORKERS: 114</div>
     </div>
-    <div id="side-menu" class="nav-menu">
+    <div class="nav-menu">
         <button class="nav-link active" onclick="showView('gallery-view', this); initGallery();">NETWORK GALLERY</button>
+        <button class="nav-link" onclick="showView('id-view', this); updateIdentity();">ZK IDENTITY</button>
+        <button class="nav-link" onclick="showView('admin-view', this)">ADMIN PANEL</button>
+        <button class="nav-link" onclick="showView('aivm-view', this)">AIVM ART GEN</button>
     </div>
 </nav>
 
 <div class="viewport">
     <header>
-        <div class="h-col">
-            <div class="pill sys" style="color:var(--accent)">MODEL: <span id="active-model">THETA</span> | STATE: <span id="status-txt">IDLE</span> | LOAD: <span id="sys-load">42%</span></div>
-        </div>
-        <div class="h-col" style="justify-content:center">
-            <div class="pill price">
-                <span>ETH: <span id="eth-price">...</span></span>
-                <span style="border-left: 1px solid #00c85333; height: 12px;"></span>
-                <span>LCAI: <span id="lcai-price">...</span></span>
-            </div>
-        </div>
-        <div class="h-col" style="justify-content:flex-end">
-            <button id="wallet-btn" class="wallet-pill" onclick="connectWallet()">CONNECT WALLET</button>
-        </div>
+        <div class="pill sys" style="color:var(--accent)">STATE: <span id="status-txt">IDLE</span> | LOAD: <span id="sys-load">42%</span></div>
+        <div class="pill price">LCAI: <span id="lcai-price">$0.001984</span></div>
+        <button id="wallet-btn" class="wallet-pill" onclick="connectWallet()">CONNECT WALLET</button>
     </header>
 
     <div id="gallery-view" class="view-pane active">
         <div class="card">
-            <h2>NETWORK GALLERY (DEEP HISTORY SCAN)</h2>
+            <h2>NETWORK GALLERY</h2>
             <div id="gallery-grid"></div>
         </div>
     </div>
 
     <div id="id-view" class="view-pane">
-        <div class="card">
+        <div class="card" id="id-card">
             <h2>ZK-SBT IDENTITY</h2>
-            <div style="display:flex; gap:20px;">
-                <pre id="id-json" style="flex:1; background:#05070a; padding:15px; font-size:0.7rem; color:var(--text-dim); border:1px solid var(--border); line-height:1.6;">// Identity Offline</pre>
+            <div style="display:flex; gap:20px; margin-bottom:20px;">
+                <pre id="id-json" style="flex:1; background:#05070a; padding:15px; font-size:0.7rem; color:var(--text-dim); border:1px solid var(--border);">// Fetching Identity...</pre>
                 <div id="qr-target" style="background:white; padding:10px; border-radius:8px; cursor:pointer;" onclick="downloadQR()"></div>
             </div>
-            <button class="action-btn" style="margin-top:15px;" onclick="downloadJSON()">DOWNLOAD JSON IDENTITY</button>
+            
+            <div id="id-action-zone">
+                </div>
         </div>
     </div>
 
     <div id="admin-view" class="view-pane">
-        <div class="card" id="owner-panel" style="display:none; border-top-color:#ffaa00;">
-            <h3>OWNER TREASURY</h3>
-            <p style="font-size:0.8rem; color:var(--text-dim);">Revenue: <span id="contract-rev" style="color:white;">0.00</span> LCAI</p>
-            <button class="action-btn" style="background:#ffaa00;" onclick="withdrawRevenue()">WITHDRAW ALL FUNDS</button>
-        </div>
         <div class="card">
             <h2>ADMINISTRATION</h2>
-            <button class="action-btn" style="background:#00c853; margin-bottom: 20px;" onclick="verifySelf()">VERIFY SELF</button>
-            <textarea id="admin-target" class="panel-input" style="height:60px;" placeholder="Enter Wallet Address (or comma-separated list for batch)"></textarea>
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
-                <button class="action-btn" onclick="adminAction('verify')">VERIFY</button>
-                <button class="action-btn" style="background:#555;" onclick="adminAction('query')">QUERY</button>
-                <button class="action-btn" style="background:#ff4444;" onclick="adminAction('revoke')">REVOKE</button>
-            </div>
-            <button class="action-btn" style="background:var(--accent);" onclick="batchApprove()">RUN BATCH APPROVAL</button>
+            <button class="action-btn" style="background:#00c853;" onclick="verifySelf()">VERIFY SELF</button>
+            <input type="text" id="admin-target" class="panel-input" placeholder="Target Address">
+            <button class="action-btn" onclick="adminAction('verify')">VERIFY TARGET</button>
         </div>
     </div>
 
     <div id="aivm-view" class="view-pane">
         <div class="card">
             <h2>AIVM NEURAL ENGINE</h2>
-            <select id="model-select" class="panel-input" onchange="document.getElementById('active-model').innerText=this.value.split('-')[1]">
-                <option value="AIVM-THETA">AIVM-THETA (Balanced)</option>
-                <option value="AIVM-DELTA">AIVM-DELTA (High Speed)</option>
-                <option value="AIVM-SIGMA">AIVM-SIGMA (Neural)</option>
-            </select>
-            <textarea id="art-prompt" class="panel-input" style="height:80px;" placeholder="Describe your vision..."></textarea>
+            <textarea id="art-prompt" class="panel-input" style="height:80px;" placeholder="Prompt..."></textarea>
             <button class="action-btn" onclick="generateArt()">REQUEST INFERENCE (0.25 tLCAI)</button>
-            <div style="margin-top:20px; border:1px solid var(--border); border-radius:8px; min-height:300px; display:flex; align-items:center; justify-content:center; background:#000;">
+            <div id="render-box" style="margin-top:20px; text-align:center;">
                 <img id="output-img" style="max-width:100%; border-radius:4px; display:none;">
-                <p id="canvas-status" style="color:var(--text-dim); font-size:0.7rem;">AWAITING NEURAL TASK...</p>
             </div>
         </div>
     </div>
@@ -121,23 +96,22 @@
 
 <script>
 const CONFIG = {
-    addr: "0xB6f1E497D6879C325c65fa77cB717227976fd04E",
-    idAddr: "0x8300c9072bc9f926703f8e26ff0a5d963d88ae01", // Your Identity Contract
-    abi: [
-        "function owner() public view returns (address)",
-        "function manualVerified(address) public view returns (bool)",
-        "function setVerification(address user, bool status) external",
-        "function generateArt(string prompt, bytes32 modelDigest) public payable",
-        "function withdraw() external",
+    artAddr: "0xB6f1E497D6879C325c65fa77cB717227976fd04E",
+    idAddr: "0x8300c9072bc9f926703f8e26ff0a5d963d88ae01",
+    artAbi: [
+        "function manualVerified(address) view returns (bool)",
+        "function setVerification(address, bool) external",
+        "function generateArt(string, bytes32) payable external",
         "event InferenceRequested(address indexed user, string prompt, bytes32 modelDigest)"
     ],
     idAbi: [
-        "function profiles(address) public view returns (string username, string did, bool isVerified, bool exists)",
-        "function isAdmin(address) public view returns (bool)"
+        "function profiles(address) view returns (string username, string did, bool isVerified, bool exists)",
+        "function createProfile(string username, string did) external",
+        "function verifyIdentity(address) external"
     ]
 };
 
-let user, provider, signer, contract, roles = { isOwner: false, isVerified: false };
+let user, provider, signer, artContract, idContract;
 
 const log = (msg, type = "") => {
     const cb = document.getElementById('console');
@@ -148,208 +122,119 @@ const log = (msg, type = "") => {
     cb.scrollTop = cb.scrollHeight;
 };
 
-async function updatePrices() {
-    try {
-        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,lightchain-ai&vs_currencies=usd&precision=6');
-        const data = await res.json();
-        document.getElementById('eth-price').innerText = `$${data.ethereum.usd.toLocaleString()}`;
-        document.getElementById('lcai-price').innerText = `$${data['lightchain-ai'].usd.toFixed(6)}`;
-    } catch (e) { document.getElementById('lcai-price').innerText = "$0.001993"; }
-}
-
 async function connectWallet() {
     if (!window.ethereum) return;
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     user = accounts[0];
     provider = new ethers.BrowserProvider(window.ethereum);
     signer = await provider.getSigner();
-    contract = new ethers.Contract(CONFIG.addr, CONFIG.abi, signer);
+    artContract = new ethers.Contract(CONFIG.artAddr, CONFIG.artAbi, signer);
+    idContract = new ethers.Contract(CONFIG.idAddr, CONFIG.idAbi, signer);
     
-    roles.isOwner = (user.toLowerCase() === (await contract.owner()).toLowerCase());
-    roles.isVerified = await contract.manualVerified(user);
-
-    log(`SYNCED: ${user.slice(0, 10)}`, "success");
-    updateMenu(); updateIdentity(); initGallery(); updatePrices();
-    
-    if(roles.isOwner) {
-        document.getElementById('owner-panel').style.display = 'block';
-        const rev = await provider.getBalance(CONFIG.addr);
-        document.getElementById('contract-rev').innerText = ethers.formatEther(rev);
-    }
-    updateBalanceDisplay();
-}
-
-async function updateBalanceDisplay() {
     const bal = await provider.getBalance(user);
     document.getElementById('wallet-btn').innerText = `${user.slice(0,6).toUpperCase()} | ${Math.floor(Number(ethers.formatEther(bal)))} LCAI`;
-}
-
-function updateMenu() {
-    const menu = document.getElementById('side-menu');
-    let html = `<button class="nav-link active" onclick="showView('gallery-view', this); initGallery();">NETWORK GALLERY</button>`;
-    if(user) {
-        html += `<button class="nav-link" onclick="showView('id-view', this)">ZK IDENTITY</button>`;
-        if(roles.isOwner) html += `<button class="nav-link" onclick="showView('admin-view', this)">ADMIN PANEL</button>`;
-        if(roles.isVerified || roles.isOwner) html += `<button class="nav-link" onclick="showView('aivm-view', this)">AIVM ART GEN</button>`;
-    }
-    menu.innerHTML = html;
-}
-
-async function initGallery() {
-    if(!contract) return;
-    const grid = document.getElementById('gallery-grid');
-    grid.innerHTML = "SCANNING NEURAL HISTORY...";
-    try {
-        const currentBlock = await provider.getBlockNumber();
-        const startBlock = 1635664; // Creation block
-        document.getElementById('scan-log').innerText = `>> SCANNER: BLK ${startBlock} - ${currentBlock}`;
-
-        // PULL DIRECTLY FROM EVENT LOGS USING TOPIC0
-        const topic0 = ethers.id("InferenceRequested(address,string,bytes32)");
-        const logs = await provider.getLogs({
-            address: CONFIG.addr,
-            fromBlock: startBlock,
-            toBlock: "latest",
-            topics: [topic0]
-        });
-        
-        if (logs.length === 0) return grid.innerHTML = "NO RENDERS FOUND ON-CHAIN";
-        
-        grid.innerHTML = "";
-        const iface = new ethers.Interface(CONFIG.abi);
-        logs.reverse().slice(0, 10).forEach(logEntry => {
-            try {
-                const parsed = iface.parseLog(logEntry);
-                const prompt = parsed.args.prompt;
-                grid.innerHTML += `<div class="thumb">
-                    <img src="https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=400&height=300&seed=${logEntry.transactionHash}" onclick="window.open(this.src)">
-                    <p style="font-size:0.6rem; color:#6a768a; margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prompt}</p>
-                </div>`;
-            } catch (e) {}
-        });
-    } catch (e) { grid.innerHTML = "SYNC ERROR"; }
-}
-
-async function generateArt() {
-    const prompt = document.getElementById('art-prompt').value;
-    const out = document.getElementById('output-img');
-    const status = document.getElementById('canvas-status');
-    if(!prompt) return;
-    try {
-        log("INITIATING INFERENCE...");
-        document.getElementById('status-txt').innerText = "MINING";
-        
-        // ADDED GAS LIMIT & VALUE TO PREVENT SILENT REJECTS
-        const tx = await contract.generateArt(prompt, ethers.ZeroHash, { 
-            value: ethers.parseEther("0.25"),
-            gasLimit: 400000 
-        });
-        
-        log("MINING IN PROGRESS...", "scan");
-        await tx.wait();
-        log("RENDER SUCCESS", "success");
-        document.getElementById('status-txt').innerText = "IDLE";
-        out.src = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${tx.hash}`;
-        out.style.display = "block"; status.style.display = "none";
-        initGallery(); updateBalanceDisplay();
-    } catch (e) { 
-        console.error(e);
-        log(`REJECTED: ${e.reason || 'Check Verification'}`, "error"); 
-        document.getElementById('status-txt').innerText = "IDLE";
-    }
-}
-
-async function verifySelf() {
-    try {
-        log("INITIATING VERIFICATION...");
-        const tx = await contract.setVerification(user, true);
-        await tx.wait();
-        log("VERIFIED SUCCESS", "success");
-        roles.isVerified = true; updateMenu(); updateIdentity();
-    } catch (e) { log("VERIFY FAILED", "error"); }
-}
-
-async function batchApprove() {
-    const input = document.getElementById('admin-target').value;
-    const addresses = input.split(',').map(a => a.trim()).filter(a => ethers.isAddress(a));
-    if(addresses.length === 0) return log("INVALID ADDRESS LIST", "error");
     
-    log(`STARTING BATCH: ${addresses.length} TARGETS`);
-    for(let addr of addresses) {
-        try {
-            log(`PROCESSING: ${addr.slice(0,10)}...`);
-            const tx = await contract.setVerification(addr, true);
-            await tx.wait();
-            log(`SUCCESS: ${addr.slice(0,6)}`, "success");
-        } catch (e) { log(`FAILED: ${addr.slice(0,6)}`, "error"); }
-    }
-    log("BATCH COMPLETE", "success");
-}
-
-async function adminAction(type) {
-    const target = document.getElementById('admin-target').value;
-    if(!target || !ethers.isAddress(target)) return log("INVALID TARGET", "error");
-    try {
-        if(type === 'verify') await (await contract.setVerification(target, true)).wait();
-        else if(type === 'revoke') await (await contract.setVerification(target, false)).wait();
-        else log(`QUERY: ${target.slice(0,6)} is ${await contract.manualVerified(target) ? 'VERIFIED' : 'UNVERIFIED'}`);
-        log("ADMIN SUCCESS", "success");
-    } catch (e) { log("ADMIN FAILURE", "error"); }
-}
-
-async function withdrawRevenue() {
-    try { await (await contract.withdraw()).wait(); log("REVENUE WITHDRAWN", "success"); } catch (e) { log("WITHDRAW FAILED"); }
+    updateIdentity();
+    initGallery();
 }
 
 async function updateIdentity() {
+    if(!user) return;
     try {
-        const idContract = new ethers.Contract(CONFIG.idAddr, CONFIG.idAbi, provider);
         const profile = await idContract.profiles(user);
+        const isVerifiedArt = await artContract.manualVerified(user);
         
         const meta = {
             "address": user,
-            "username": profile.username || "ANONYMOUS_RESEARCHER",
-            "did": profile.did || "did:lcai:guest",
+            "username": profile.exists ? profile.username : "UNREGISTERED",
+            "did": profile.exists ? profile.did : "did:lcai:pending",
             "verified_id": profile.isVerified,
-            "verified_art": roles.isVerified,
-            "role": roles.isOwner ? "OWNER" : "OPERATOR",
-            "network": "Lightchain Testnet V2"
+            "verified_art": isVerifiedArt
         };
 
         document.getElementById('id-json').innerText = JSON.stringify(meta, null, 4);
         document.getElementById('qr-target').innerHTML = "";
         new QRCode(document.getElementById("qr-target"), { text: JSON.stringify(meta), width: 120, height: 120 });
-        
-        log(`ID_SYNC: ${meta.username}`, "success");
-    } catch (e) {
-        log("ID_FETCH_FAILED", "error");
-    }
-}
-function showView(id, btn) {
-    document.querySelectorAll('.view-pane').forEach(v => v.classList.remove('active'));
-    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    if(btn) btn.classList.add('active');
+
+        const zone = document.getElementById('id-action-zone');
+        if(!profile.exists) {
+            zone.innerHTML = `
+                <input id="reg-user" class="panel-input" placeholder="Desired Username">
+                <input id="reg-did" class="panel-input" placeholder="Custom DID String">
+                <button class="action-btn" onclick="registerProfile()">REGISTER IDENTITY</button>`;
+        } else if(!profile.isVerified) {
+            zone.innerHTML = `<button class="action-btn" style="background:#ffaa00;" onclick="mintZkVerify()">MINT ZK-VERIFY ATTESTATION</button>`;
+        } else {
+            zone.innerHTML = `<p style="color:#00c853; font-size:0.8rem;">✓ IDENTITY FULLY ANCHORED ON-CHAIN</p>`;
+        }
+    } catch (e) { console.error(e); }
 }
 
-function downloadJSON() { 
-    const b = new Blob([document.getElementById('id-json').innerText], {type:'application/json'});
-    const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='LCAI_ID.json'; a.click(); 
+async function registerProfile() {
+    const u = document.getElementById('reg-user').value;
+    const d = document.getElementById('reg-did').value;
+    try {
+        log("REGISTERING IDENTITY...");
+        const tx = await idContract.createProfile(u, d);
+        await tx.wait();
+        log("IDENTITY CREATED", "success");
+        updateIdentity();
+    } catch (e) { log("REG_FAILED", "error"); }
+}
+
+async function mintZkVerify() {
+    try {
+        log("MINTING ZK-VERIFY...");
+        // This calls the verifyIdentity function on the Identity contract
+        const tx = await idContract.verifyIdentity(user);
+        await tx.wait();
+        log("ZK-VERIFY MINTED", "success");
+        updateIdentity();
+    } catch (e) { log("MINT_FAILED", "error"); }
+}
+
+async function generateArt() {
+    const prompt = document.getElementById('art-prompt').value;
+    if(!prompt) return;
+    try {
+        log("INITIATING INFERENCE...");
+        const tx = await artContract.generateArt(prompt, ethers.ZeroHash, { 
+            value: ethers.parseEther("0.25"),
+            gasLimit: 500000 
+        });
+        await tx.wait();
+        log("RENDER SUCCESS", "success");
+        document.getElementById('output-img').src = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${tx.hash}`;
+        document.getElementById('output-img').style.display = 'block';
+        initGallery();
+    } catch (e) { log("REJECTED: Check Verification", "error"); }
+}
+
+async function initGallery() {
+    const grid = document.getElementById('gallery-grid');
+    try {
+        const currentBlock = await provider.getBlockNumber();
+        const events = await artContract.queryFilter("InferenceRequested", currentBlock - 10000);
+        grid.innerHTML = "";
+        events.reverse().slice(0, 10).forEach(ev => {
+            grid.innerHTML += `<div class="thumb"><img src="https://pollinations.ai/p/${encodeURIComponent(ev.args.prompt)}?width=400&height=300&seed=${ev.transactionHash}"><p style="font-size:0.6rem; color:#6a768a;">${ev.args.prompt}</p></div>`;
+        });
+    } catch (e) { grid.innerHTML = "Syncing Gallery..."; }
 }
 
 function downloadQR() {
     const canvas = document.querySelector('#qr-target canvas');
-    const a = document.createElement('a'); a.href = canvas.toDataURL("image/png"); a.download = 'LCAI_QR.png'; a.click();
+    const a = document.createElement('a'); a.href = canvas.toDataURL("image/png"); a.download = 'LCAI_Identity_QR.png'; a.click();
 }
 
-window.onload = () => { 
-    updatePrices(); 
-    setInterval(() => {
-        document.getElementById('sys-load').innerText = Math.floor(Math.random()*20 + 30) + "%";
-        document.getElementById('worker-log').innerText = `>> ACTIVE_WORKERS: ${Math.floor(Math.random()*15 + 114)}`;
-    }, 5000); 
-};
+function showView(id, btn) {
+    document.querySelectorAll('.view-pane').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+}
+
+window.onload = connectWallet;
 </script>
 </body>
 </html>
-
