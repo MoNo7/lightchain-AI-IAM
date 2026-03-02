@@ -142,21 +142,22 @@
         // --- TICKER LOGIC ---
         async function fetchPrices() {
             try {
-                // Fetch LCAI via Token Address (more reliable than Pair ID for search)
+                // 1. Fetch LCAI via Token Address
                 const lcRes = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${TOKEN_ADDRESS}`);
                 const lcData = await lcRes.json();
-               
+                
                 if (lcData.pairs && lcData.pairs.length > 0) {
-                    // Finds the pair with the most liquidity automatically
+                    // Access the first pair in the array
                     const lcaiPrice = parseFloat(lcData.pairs[0].priceUsd);
                     document.getElementById('lcaiTicker').innerText = "$" + lcaiPrice.toFixed(6);
                 }
         
-                // Fetch ETH via the WETH/USDC pair on Base
+                // 2. Fetch ETH via specific Base Pair ID
                 const ethRes = await fetch(`https://api.dexscreener.com/latest/dex/pairs/base/${ETH_PAIR}`);
                 const ethData = await ethRes.json();
-
+                
                 if (ethData.pairs && ethData.pairs.length > 0) {
+                    // Access the first pair in the array
                     const ethPrice = parseFloat(ethData.pairs[0].priceUsd);
                     document.getElementById('ethTicker').innerText = "$" + ethPrice.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
@@ -164,7 +165,8 @@
                     });
                 }
             } catch (e) {
-                console.warn("Price Syncing..."); // Keeps console clean
+                // Silently retry on next interval
+                console.warn("Price Syncing...");
             }
         }
         setInterval(fetchPrices, 5000);
@@ -208,6 +210,7 @@
     </script>
 </body>
 </html>
+
 
 
 
