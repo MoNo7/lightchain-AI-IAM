@@ -199,50 +199,73 @@ function updateMenu() {
 }
 
 async function initGallery() {
-    if(!contract) return;
     const grid = document.getElementById('gallery-grid');
-    grid.innerHTML = "SCANNING NETWORK ARCHIVE...";
+    grid.innerHTML = "DEEP_SCANNING_BLOCKS...";
     try {
         const currentBlock = await provider.getBlockNumber();
-        const startBlock = 1635664; // Creation block of your contract
-        document.getElementById('scan-log').innerText = `>> SCANNER: BLK ${startBlock} - ${currentBlock}`;
+        const startBlock = 1635664; // Your contract birth block
+        
+        // PULL DIRECTLY FROM HISTORY: Ignores event indexing issues
+        const history = await provider.getHistory(CONFIG.addr, startBlock, currentBlock);
+        
+        if (!history || history.length === 0) return grid.innerHTML = "NO RENDERS DISCOVERED";
 
-        // Deep Filter: Capture all InferenceRequested events regardless of method ID
-        const events = await contract.queryFilter("InferenceRequested", startBlock);
-        
-        if (events.length === 0) return grid.innerHTML = "NO RENDERS FOUND. START A NEW INFERENCE.";
-        
         grid.innerHTML = "";
-        events.reverse().slice(0, 10).forEach(ev => {
-            const p = ev.args.prompt;
-            grid.innerHTML += `<div class="thumb">
-                <img src="https://pollinations.ai/p/${encodeURIComponent(p)}?width=400&height=300&seed=${ev.transactionHash}" onclick="window.open(this.src)">
-                <p style="font-size:0.6rem; color:#6a768a; margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p}</p>
-            </div>`;
+        const iface = new ethers.Interface(CONFIG.abi);
+
+        // Filter for last 10 'generateArt' calls
+        history.reverse().slice(0, 10).forEach(tx => {
+            try {
+                const decoded = iface.parseTransaction({ data: tx.data });
+                if (decoded && decoded.name === "generateArt") {
+                    const prompt = decoded.args[0];
+                    grid.innerHTML += `
+                    <div class="thumb">
+                        <img src="https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=400&height=300&seed=${tx.hash}" 
+                             onclick="window.open(this.src)">
+                        <p style="font-size:0.6rem; color:#6a768a; margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${prompt}</p>
+                        <a href="https://testnet.lightscan.app/tx/${tx.hash}" target="_blank" style="color:var(--accent); font-size:0.5rem; text-decoration:none;">VIEW POI</a>
+                    </div>`;
+                }
+            } catch (e) { /* Skip non-inference txs */ }
         });
-    } catch (e) { grid.innerHTML = "SYNC ERROR"; console.error(e); }
+    } catch (e) { grid.innerHTML = "SCAN_FAILED: ARCHIVE_OFFLINE"; }
 }
 
 async function generateArt() {
     const prompt = document.getElementById('art-prompt').value;
     const out = document.getElementById('output-img');
     const status = document.getElementById('canvas-status');
-    if(!prompt) return;
+    if(!prompt) return log("ENTER A PROMPT", "error");
+
     try {
-        log("MINING INFERENCE...");
+        log("INITIATING NEURAL ANCHOR...");
         document.getElementById('status-txt').innerText = "MINING";
-        const tx = await contract.generateArt(prompt, ethers.ZeroHash, { value: ethers.parseEther("0.25") });
+        
+        // FORCED GAS LIMIT: Prevents "Immediately Rejecting" by bypassing estimation
+        const tx = await contract.generateArt(prompt, ethers.ZeroHash, { 
+            value: ethers.parseEther("0.25"),
+            gasLimit: 500000 
+        });
+
+        log("TRANSACTION PENDING...", "scan");
         await tx.wait();
-        log("RENDER SUCCESS", "success");
+        
+        log("INFERENCE ANCHORED", "success");
         document.getElementById('status-txt').innerText = "IDLE";
-        out.src = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${Math.random()}`;
-        out.style.display = "block"; status.style.display = "none";
-        initGallery(); updateBalanceDisplay();
-    } catch (e) { 
-        console.error("Inference Error:", error);
-        // This will print the specific Solidity 'require' message
-        if (error.reason) log(`REJECTED: ${error.reason}`, "error");
-        else log("TX REJECTED", "error"); 
+        
+        // Render result
+        out.src = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${tx.hash}`;
+        out.style.display = "block"; 
+        status.style.display = "none";
+        
+        initGallery(); 
+        updateBalanceDisplay();
+    } catch (e) {
+        console.error(e);
+        const reason = e.reason || "VERIFICATION_REQUIRED";
+        log(`REJECTED: ${reason}`, "error");
+        document.getElementById('status-txt').innerText = "IDLE";
     }
 }
 
@@ -304,4 +327,5 @@ window.onload = () => {
 </script>
 </body>
 </html>
+
 
