@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Lightchain AI | Sirius V2 zkIdentity</title>
+    <title>Lightchain AI | Testnet</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -38,7 +40,7 @@
 
     <nav>
         <div style="margin-bottom: 30px;">
-            <h1 style="color:white; font-size:1.1rem; margin:0;">LCAI SIRIUS</h1>
+            <h1 style="color:white; font-size:1.1rem; margin:0;">Lightchain AI |Testnet</h1>
             <div id="zkSidebarStatus" style="display:none; font-size: 0.65rem; color: var(--zk-gold); margin-top: 5px;"><i class="fas fa-fingerprint"></i> ID: PROTECTED</div>
         </div>
 
@@ -71,7 +73,16 @@
         <main class="admin-grid">
             <div class="admin-card view-card" id="zkMain">
                 <div class="card-title">AIVM zkIdentity Dashboard</div>
-                
+                <div id="kycStep1">
+                    <h3>1. Google Verification</h3>
+                    <div id="g_id_onload" data-client_id="YOUR_GOOGLE_CLIENT_ID" data-callback="handleCredential"></div>
+                    <div class="g_id_signin" data-type="standard"></div>
+                </div>
+                <div id="kycStep2" style="display:none; margin-top:20px;">
+                    <h3>2. Mint zkIdentity SBT</h3>
+                    <input type="text" id="nickName" placeholder="Nickname">
+                    <button class="btn-zk" onclick="mintSBT()">MINT ON TESTNET-504</button>
+                </div>
                 <div id="regFlow">
                     <p style="font-size:0.85rem; color:#8b949e; margin-bottom:20px;">Register your wallet on the Sirius V2 core to enable PoI (Proof of Intelligence) and model access.</p>
                     <input type="text" id="regName" placeholder="Enter Identity Name (e.g. Validator-01)">
@@ -119,7 +130,7 @@
                 </div>
             </div>
         </main>
-
+        <div id="console">> [SYS] Awaiting Identity Link...</div>
         <div id="console">> [SYSTEM] INITIALIZING SIRIUS V2 INTERFACE...</div>
     </div>
 
@@ -128,20 +139,36 @@
             address: "0xd71462F0002Ee9373fCe05B568583Ed13e75f600",
             owner: "0x6378A6993C7C77E4A28f8f263e778401309fD9E4",
             abi: [
+                "function mintWithKYC(string name, string did, bytes32 hash) public payable",
                 "function mintSBT(string name, string did) public payable",
                 "function verifyUser(address user) public",
                 "function revokeSBT(address user) public",
                 "function withdrawRevenue() public"
             ]
         };
-
+        let googleHash = null;
+        let userWallet = null;
         let wallet = null;
 
+        function parseJwt(token) {
+            var base64Url = token.split('.')[1];
+            return JSON.parse(window.atob(base64Url.replace(/-/g, '+').replace(/_/g, '/')));
+        }
+
+        function handleCredential(response) {
+            const payload = parseJwt(response.credential);
+            googleHash = ethers.id(payload.sub); // Securely hash the Google UID
+            log("Google Identity Linked. UID Hash: " + googleHash.slice(0,16) + "...");
+            document.getElementById('kycStep1').style.display = 'none';
+            document.getElementById('kycStep2').style.display = 'block';
+        }
+        
         async function connect() {
             if(!window.ethereum) return log("Error: MetaMask not detected.");
             const provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await provider.send("eth_requestAccounts", []);
             wallet = accounts[0];
+            userWallet = accounts[0];
             
             document.getElementById('walletBtn').innerText = wallet.slice(0,6) + "..." + wallet.slice(-4);
             const bal = await provider.getBalance(wallet);
@@ -155,6 +182,7 @@
                 document.getElementById('contractBal').innerHTML = "42.85 <small>LCAI</small>";
             }
             log("Connected to LCAI-504.");
+            log("Wallet Connected: " + userWallet);
         }
 
         function registerIdentity() {
@@ -174,18 +202,21 @@
         }
 
         async function mintSBT() {
+            if (!googleHash || !userWallet) return log("Error: Connect Google & Wallet first.");
             try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
                 const contract = new ethers.Contract(CONTRACT_CONFIG.address, CONTRACT_CONFIG.abi, signer);
+                const did = `did:lcai:${userWallet.toLowerCase()}`;
                 
-                log("Requesting SBT Mint...");
-                const tx = await contract.mintSBT(
-                    document.getElementById('valName').innerText,
-                    document.getElementById('valDid').innerText,
-                    { gasLimit: 200000 }
-                );
+                log("Requesting Lightchain AI SBT Mint...");
+                const tx = await contract.mintWithKYC(document.getElementById('nickName').value, did, googleHash, {
+                    value: ethers.parseEther("0.01"),
+                    gasLimit: 250000
+                });
                 log(`Transaction Sent: ${tx.hash}`);
+                await tx.wait();
+                log("SBT Minted Successfully!");
             } catch(e) { log("Mint Failed: Verify Testnet 504 status."); }
         }
 
@@ -247,4 +278,5 @@ async function verifyAddress() {
     </script>
 </body>
 </html>
+
 
