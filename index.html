@@ -28,6 +28,12 @@
         .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
         .panel-input { width: 100%; background: #000; border: 1px solid #333; color: white; padding: 12px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 12px; box-sizing: border-box; font-family: monospace; }
         .action-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
+        
+        .model-row { display: flex; flex-direction: column; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border); position: relative; }
+        .model-meta { font-family: monospace; font-size: 0.6rem; line-height: 1.6; word-break: break-all; }
+        .status-badge { position: absolute; top: 12px; right: 12px; padding: 3px 10px; border-radius: 4px; font-size: 0.55rem; font-weight: 900; text-transform: uppercase; }
+        .st-on { background: #00c853; color: #000; }
+        .st-off { background: #ff4444; color: #fff; }
         #id-qrcode-wrap { background: white; padding: 15px; border-radius: 8px; display: inline-block; cursor: pointer; margin-top: 15px; }
     </style>
 </head>
@@ -99,6 +105,30 @@
                 <button class="action-btn" style="background:#ffaa00; margin-top: 15px;" onclick="withdrawRevenue()">WITHDRAW REVENUE</button>
             </div>
         </div>
+
+        <div class="card" style="border-top-color: var(--text-dim);">
+            <h3>NODE TESTNET TELEMETRY (LIVE TEE HEARTBEAT)</h3>
+            <div id="model-container">
+                <div class="model-row">
+                    <div id="row-status-1" class="status-badge st-off">Offline</div>
+                    <div class="model-meta">
+                        <strong style="color:white; font-size:0.7rem;">AIVM-V1-STABLE</strong><br>
+                        DIGEST: <span style="color:var(--text-dim);">0x74a9f32b8811bc1199e2af9077b288f2cc44</span><br>
+                        DA HASH: <span style="color:var(--text-dim);">0xbc1199e2af9077b288f2cc4474a9f32b8811</span><br>
+                        UPTIME: <span id="row-uptime-1" style="color:var(--accent);">0%</span>
+                    </div>
+                </div>
+                <div class="model-row">
+                    <div id="row-status-2" class="status-badge st-off">Offline</div>
+                    <div class="model-meta">
+                        <strong style="color:white; font-size:0.7rem;">LCAI-IDENTITY-ORACLE</strong><br>
+                        DIGEST: <span style="color:var(--text-dim);">0x21b8a91cde4533f1af9077b288f2cc44bc11</span><br>
+                        DA HASH: <span style="color:var(--text-dim);">0xde4533f1af9077b288f2cc4421b8a91c74a9</span><br>
+                        UPTIME: <span id="row-uptime-2" style="color:var(--accent);">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="aivm-view" class="view-pane">
@@ -138,7 +168,6 @@ const log = (msg, type = "") => {
     cb.scrollTop = cb.scrollHeight;
 };
 
-// LIVE TEE HEARTBEAT & UPTIME MONITOR
 async function pollActualNodeState() {
     if(!provider) return;
     pollCount++;
@@ -152,18 +181,28 @@ async function pollActualNodeState() {
         
         if (isActive && isFresh) successCount++;
 
-        const statusTxt = document.getElementById('status-txt');
-        const uptimeTxt = document.getElementById('sys-uptime');
         const uptimePct = ((successCount / pollCount) * 100).toFixed(1);
-
-        uptimeTxt.innerText = `${uptimePct}%`;
         
+        // Update Global Header
+        document.getElementById('sys-uptime').innerText = `${uptimePct}%`;
+        const statusTxt = document.getElementById('status-txt');
+
+        // Update Model Rows in Admin
+        const row1Status = document.getElementById('row-status-1');
+        const row1Uptime = document.getElementById('row-uptime-1');
+        
+        row1Uptime.innerText = `${uptimePct}%`;
+
         if (isActive && isFresh) {
             statusTxt.innerText = `ACTIVE (Seen ${diff}s ago)`;
             statusTxt.style.color = "#00c853";
+            row1Status.innerText = "Active";
+            row1Status.className = "status-badge st-on";
         } else {
             statusTxt.innerText = "OFFLINE (TEE EXPIRED)";
             statusTxt.style.color = "#ff4444";
+            row1Status.innerText = "Offline";
+            row1Status.className = "status-badge st-off";
         }
     } catch (e) {
         document.getElementById('status-txt').innerText = "STAGING / CONNECTING";
