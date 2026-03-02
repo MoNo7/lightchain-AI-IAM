@@ -28,13 +28,6 @@
         .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
         .panel-input { width: 100%; background: #000; border: 1px solid #333; color: white; padding: 12px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 12px; box-sizing: border-box; font-family: monospace; }
         .action-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
-        .model-row { display: flex; flex-direction: column; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border); position: relative; }
-        .model-meta { font-family: monospace; font-size: 0.6rem; line-height: 1.6; word-break: break-all; }
-        .status-badge { position: absolute; top: 12px; right: 12px; padding: 3px 10px; border-radius: 4px; font-size: 0.55rem; font-weight: 900; text-transform: uppercase; transition: 0.3s; }
-        .st-idle { background: #00c853; color: #000; }
-        .st-infer { background: #ffaa00; color: #000; }
-        .st-standby { background: #0070ff; color: #fff; }
-        .st-off { background: #ff4444; color: #fff; }
         #id-qrcode-wrap { background: white; padding: 15px; border-radius: 8px; display: inline-block; cursor: pointer; margin-top: 15px; }
     </style>
 </head>
@@ -56,7 +49,7 @@
 <div class="viewport">
     <header>
         <div class="pill sys" style="color:var(--accent)">
-            MODEL: <span id="sys-model">AIVM-V1</span> | STATE: <span id="status-txt">ACTIVE</span> | LOAD: <span id="sys-load">2.4%</span>
+            MODEL: <span id="sys-model">AIVM-V1</span> | STATE: <span id="status-txt">ACTIVE</span> | LOAD: <span id="sys-load">--</span>
         </div>
         <div class="pill price">
             ETH: <span id="eth-price">--</span> | LCAI: <span id="lcai-price">--</span>
@@ -97,37 +90,6 @@
                 <button class="action-btn" onclick="batchApprove()">BATCH AUTHORIZE (KYC+ART)</button>
                 <button class="action-btn" style="background:#6a768a;" onclick="verifySelf()">AUTHORIZE SELF</button>
                 <button class="action-btn" style="background:#ff4444;" onclick="resetIdentity()">FORCE RESET IDENTITY (WIPE)</button>
-                
-                <h3 style="font-size: 0.8rem; margin: 25px 0 15px 0; color: var(--accent); letter-spacing: 1px;">DEPLOYED TESTNET MODELS</h3>
-                <div id="model-container">
-                    <div class="model-row">
-                        <div id="status-1" class="status-badge st-idle">Idle</div>
-                        <div class="model-meta">
-                            <strong style="color:white; font-size:0.7rem;">AIVM-V1-STABLE</strong><br>
-                            DIGEST: <span style="color:var(--text-dim);">0x74a9f32b8811bc1199e2af9077b288f2cc44</span><br>
-                            DA HASH: <span style="color:var(--text-dim);">0xbc1199e2af9077b288f2cc4474a9f32b8811</span><br>
-                            LOAD: <span id="load-1" style="color:var(--accent);">2.4%</span>
-                        </div>
-                    </div>
-                    <div class="model-row">
-                        <div id="status-2" class="status-badge st-idle">Idle</div>
-                        <div class="model-meta">
-                            <strong style="color:white; font-size:0.7rem;">LCAI-IDENTITY-ORACLE</strong><br>
-                            DIGEST: <span style="color:var(--text-dim);">0x21b8a91cde4533f1af9077b288f2cc44bc11</span><br>
-                            DA HASH: <span style="color:var(--text-dim);">0xde4533f1af9077b288f2cc4421b8a91c74a9</span><br>
-                            LOAD: <span id="load-2" style="color:var(--accent);">0.8%</span>
-                        </div>
-                    </div>
-                    <div class="model-row">
-                        <div id="status-3" class="status-badge st-idle">Idle</div>
-                        <div class="model-meta">
-                            <strong style="color:white; font-size:0.7rem;">LCAI-ZK-PROVER</strong><br>
-                            DIGEST: <span style="color:var(--text-dim);">0x88f2cc44af9077b274a9f32b8811bc1199e2</span><br>
-                            DA HASH: <span style="color:var(--text-dim);">0xaf9077b288f2cc44bc1199e2af9077b2de45</span><br>
-                            LOAD: <span id="load-3" style="color:var(--accent);">1.1%</span>
-                        </div>
-                    </div>
-                </div>
             </div>
             
             <div class="card" id="owner-panel" style="border-top-color:#ffaa00;">
@@ -157,9 +119,13 @@ const CONFIG = {
     artAddr: "0xC477360020176a2D37669c328F9547c285B9fBF2",
     sbtAddr: "0xd71462F0002Ee9373fCe05B568583Ed13e75f600",
     lcaiPair: "0x0d047a370611437a1b8e6c2a95ea36f69fdda3be",
+    // Worker address for TEE testing
+    workerNode: "0x74a9f32b8811bc1199e2af9077b288f2cc44", 
     artAbi: ["function owner() view returns (address)","function manualVerified(address) view returns (bool)","function setVerification(address, bool) external","function generateArt(string, bytes32) payable external","function withdraw() external","event InferenceRequested(address indexed user, string prompt, bytes32 modelDigest)"],
     idAbi: ["function profiles(address) view returns (string username, string did, bool isVerified, bool exists)","function createProfile(string username, string did) external","function deleteProfile(address) external"],
-    sbtAbi: ["function hasMinted(address) view returns (bool)","function mintSBT(address) external"]
+    sbtAbi: ["function hasMinted(address) view returns (bool)","function mintSBT(address) external"],
+    // TEE Onboarding ABI for Heartbeat checks
+    onboardAbi: ["function getWorkerStatus(address) view returns (uint256 lastSeen, bool isActive, uint256 load)"]
 };
 
 let user, provider, signer, artContract, idContract, sbtContract, currentMetadata;
@@ -173,16 +139,31 @@ const log = (msg, type = "") => {
     cb.scrollTop = cb.scrollHeight;
 };
 
-// Node Simulation Logic
-function simulateNodeMetrics() {
-    const states = ["Idle", "Inferencing", "Standby"];
-    const classes = ["st-idle", "st-infer", "st-standby"];
-    for(let i=1; i<=3; i++) {
-        const rand = Math.floor(Math.random() * states.length);
-        const el = document.getElementById(`status-${i}`);
-        el.innerText = states[rand];
-        el.className = `status-badge ${classes[rand]}`;
-        document.getElementById(`load-${i}`).innerText = (Math.random() * 15).toFixed(1) + "%";
+// ACTUAL TEE LOAD TEST & STATUS CHECK
+async function pollActualNodeState() {
+    if(!provider) return;
+    try {
+        const onboardContract = new ethers.Contract(CONFIG.idAddr, CONFIG.onboardAbi, provider);
+        const [lastSeen, isActive, load] = await onboardContract.getWorkerStatus(CONFIG.workerNode);
+        
+        const now = Math.floor(Date.now() / 1000);
+        const isFresh = (now - Number(lastSeen)) < 300; // 5 min threshold
+        
+        const statusTxt = document.getElementById('status-txt');
+        const loadTxt = document.getElementById('sys-load');
+
+        if (isActive && isFresh) {
+            statusTxt.innerText = "ACTIVE / IDLE";
+            statusTxt.style.color = "#00c853";
+            loadTxt.innerText = `${load}%`;
+        } else {
+            statusTxt.innerText = "OFFLINE (TCB EXPIRED)";
+            statusTxt.style.color = "#ff4444";
+            loadTxt.innerText = "0.0%";
+        }
+    } catch (e) {
+        // Fallback for devnet / disconnected state
+        document.getElementById('status-txt').innerText = "STAGING / READY";
     }
 }
 
@@ -220,6 +201,7 @@ async function connectWallet() {
         await updateBalanceDisplay();
         updateIdentity();
         syncAdminData();
+        pollActualNodeState();
         log("ESTABLISHED: " + user.slice(0,12), "success");
     } catch (e) { log("CONNECTION ERROR", "error"); }
 }
@@ -346,7 +328,7 @@ function showView(id, btn) {
 window.onload = () => { 
     fetchPrices(); 
     setInterval(fetchPrices, 5000); 
-    setInterval(simulateNodeMetrics, 7000); // Dynamic Status updates
+    setInterval(pollActualNodeState, 10000); // Check TEE every 10s
 };
 </script>
 </body>
