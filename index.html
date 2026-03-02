@@ -28,13 +28,10 @@
         .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
         .panel-input { width: 100%; background: #000; border: 1px solid #333; color: white; padding: 12px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 12px; box-sizing: border-box; font-family: monospace; }
         .action-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
-        
-        /* Model List Styling */
-        .model-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 4px; margin-bottom: 8px; border: 1px solid var(--border); }
-        .model-info { font-family: monospace; font-size: 0.7rem; }
-        .status-tag { padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; text-transform: uppercase; }
-        .status-online { background: #00c853; color: #000; }
-        
+        .model-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border); }
+        .model-meta { font-family: monospace; font-size: 0.65rem; line-height: 1.4; }
+        .status-badge { padding: 3px 10px; border-radius: 4px; font-size: 0.6rem; font-weight: 900; text-transform: uppercase; }
+        .online { background: #00c853; color: #000; }
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
         .thumb { background: #000; padding: 10px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
         .thumb img { width: 100%; border-radius: 4px; }
@@ -90,21 +87,31 @@
                 <button class="action-btn" style="background:#6a768a;" onclick="verifySelf()">AUTHORIZE SELF</button>
                 <button class="action-btn" style="background:#ff4444;" onclick="resetIdentity()">FORCE RESET IDENTITY (WIPE)</button>
                 
-                <h3 style="font-size: 0.8rem; margin-top: 25px; color: var(--accent);">ACTIVE MODELS</h3>
-                <div id="model-list">
+                <h3 style="font-size: 0.8rem; margin: 25px 0 15px 0; color: var(--accent); letter-spacing: 1px;">DEPLOYED TESTNET MODELS</h3>
+                <div id="model-container">
                     <div class="model-row">
-                        <div class="model-info">
-                            <strong>AIVM-V1-STABLE</strong><br>
-                            <span style="color: var(--text-dim); font-size: 0.6rem;">HASH: 0x74a...f32</span>
+                        <div class="model-meta">
+                            <span style="color:white; font-weight:bold;">AIVM-V1-STABLE</span><br>
+                            DIGEST: <span style="color:var(--text-dim);">0x74a9...f32b</span><br>
+                            DA HASH: <span style="color:var(--text-dim);">0xbc11...99e2</span>
                         </div>
-                        <div class="status-tag status-online">Online</div>
+                        <div class="status-badge online">Active</div>
                     </div>
                     <div class="model-row">
-                        <div class="model-info">
-                            <strong>LCAI-IDENTITY-ORACLE</strong><br>
-                            <span style="color: var(--text-dim); font-size: 0.6rem;">HASH: 0x21b...a91</span>
+                        <div class="model-meta">
+                            <span style="color:white; font-weight:bold;">LCAI-IDENTITY-ORACLE</span><br>
+                            DIGEST: <span style="color:var(--text-dim);">0x21b8...a91c</span><br>
+                            DA HASH: <span style="color:var(--text-dim);">0xde45...33f1</span>
                         </div>
-                        <div class="status-tag status-online">Online</div>
+                        <div class="status-badge online">Active</div>
+                    </div>
+                    <div class="model-row">
+                        <div class="model-meta">
+                            <span style="color:white; font-weight:bold;">LCAI-ZK-PROVER</span><br>
+                            DIGEST: <span style="color:var(--text-dim);">0x88f2...cc44</span><br>
+                            DA HASH: <span style="color:var(--text-dim);">0xaf90...77b2</span>
+                        </div>
+                        <div class="status-badge online">Active</div>
                     </div>
                 </div>
             </div>
@@ -159,7 +166,7 @@ async function fetchPrices() {
         document.getElementById('eth-price').innerText = `$${ethData.ethereum.usd.toLocaleString()}`;
         const lcaiRes = await fetch(`https://api.dexscreener.com/latest/dex/pairs/ethereum/${CONFIG.lcaiPair}`);
         const lcaiData = await lcaiRes.json();
-        if (lcaiData.pair) document.getElementById('lcai-price').innerText = `$${parseFloat(lcaiData.pair.priceUsd).toFixed(6)}`;
+        if (lcaiData.pair) document.getElementById('lcai-price').innerText = `$${parseFloat(lcaiData.pair.priceUsd).toFixed(5)}`;
     } catch (e) { }
 }
 
@@ -300,9 +307,7 @@ function showView(id, btn) {
     btn.classList.add('active');
 }
 
-window.onload = () => { fetchPrices(); setInterval(fetchPrices, 5000); };
+window.onload = () => { fetchPrices(); setInterval(fetchPrices, 30000); };
 </script>
 </body>
 </html>
-
-
