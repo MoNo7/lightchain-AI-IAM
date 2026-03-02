@@ -49,7 +49,7 @@
 <div class="viewport">
     <header>
         <div class="pill sys" style="color:var(--accent)">
-            MODEL: <span id="sys-model">AIVM-V1</span> | STATE: <span id="status-txt">ACTIVE</span> | LOAD: <span id="sys-load">--</span>
+            MODEL: <span id="sys-model">AIVM-V1</span> | STATE: <span id="status-txt">OFFLINE</span> | UPTIME: <span id="sys-uptime">0%</span>
         </div>
         <div class="pill price">
             ETH: <span id="eth-price">--</span> | LCAI: <span id="lcai-price">--</span>
@@ -115,20 +115,19 @@
 
 <script>
 const CONFIG = {
-    idAddr: "0xc6BE8f911a923003d53Ab64EDf557FAc4AA888ca",
+       idAddr: "0xc6BE8f911a923003d53Ab64EDf557FAc4AA888ca",
     artAddr: "0xC477360020176a2D37669c328F9547c285B9fBF2",
     sbtAddr: "0xd71462F0002Ee9373fCe05B568583Ed13e75f600",
     lcaiPair: "0x0d047a370611437a1b8e6c2a95ea36f69fdda3be",
-    // Worker address for TEE testing
     workerNode: "0x74a9f32b8811bc1199e2af9077b288f2cc44", 
     artAbi: ["function owner() view returns (address)","function manualVerified(address) view returns (bool)","function setVerification(address, bool) external","function generateArt(string, bytes32) payable external","function withdraw() external","event InferenceRequested(address indexed user, string prompt, bytes32 modelDigest)"],
     idAbi: ["function profiles(address) view returns (string username, string did, bool isVerified, bool exists)","function createProfile(string username, string did) external","function deleteProfile(address) external"],
     sbtAbi: ["function hasMinted(address) view returns (bool)","function mintSBT(address) external"],
-    // TEE Onboarding ABI for Heartbeat checks
     onboardAbi: ["function getWorkerStatus(address) view returns (uint256 lastSeen, bool isActive, uint256 load)"]
 };
 
 let user, provider, signer, artContract, idContract, sbtContract, currentMetadata;
+let pollCount = 0, successCount = 0;
 
 const log = (msg, type = "") => {
     const cb = document.getElementById('console');
@@ -139,31 +138,35 @@ const log = (msg, type = "") => {
     cb.scrollTop = cb.scrollHeight;
 };
 
-// ACTUAL TEE LOAD TEST & STATUS CHECK
+// LIVE TEE HEARTBEAT & UPTIME MONITOR
 async function pollActualNodeState() {
     if(!provider) return;
+    pollCount++;
     try {
         const onboardContract = new ethers.Contract(CONFIG.idAddr, CONFIG.onboardAbi, provider);
         const [lastSeen, isActive, load] = await onboardContract.getWorkerStatus(CONFIG.workerNode);
         
         const now = Math.floor(Date.now() / 1000);
-        const isFresh = (now - Number(lastSeen)) < 300; // 5 min threshold
+        const diff = now - Number(lastSeen);
+        const isFresh = diff < 300; 
         
-        const statusTxt = document.getElementById('status-txt');
-        const loadTxt = document.getElementById('sys-load');
+        if (isActive && isFresh) successCount++;
 
+        const statusTxt = document.getElementById('status-txt');
+        const uptimeTxt = document.getElementById('sys-uptime');
+        const uptimePct = ((successCount / pollCount) * 100).toFixed(1);
+
+        uptimeTxt.innerText = `${uptimePct}%`;
+        
         if (isActive && isFresh) {
-            statusTxt.innerText = "ACTIVE / IDLE";
+            statusTxt.innerText = `ACTIVE (Seen ${diff}s ago)`;
             statusTxt.style.color = "#00c853";
-            loadTxt.innerText = `${load}%`;
         } else {
-            statusTxt.innerText = "OFFLINE (TCB EXPIRED)";
+            statusTxt.innerText = "OFFLINE (TEE EXPIRED)";
             statusTxt.style.color = "#ff4444";
-            loadTxt.innerText = "0.0%";
         }
     } catch (e) {
-        // Fallback for devnet / disconnected state
-        document.getElementById('status-txt').innerText = "STAGING / READY";
+        document.getElementById('status-txt').innerText = "STAGING / CONNECTING";
     }
 }
 
@@ -328,7 +331,7 @@ function showView(id, btn) {
 window.onload = () => { 
     fetchPrices(); 
     setInterval(fetchPrices, 5000); 
-    setInterval(pollActualNodeState, 10000); // Check TEE every 10s
+    setInterval(pollActualNodeState, 10000); 
 };
 </script>
 </body>
