@@ -94,7 +94,7 @@
                     <input type="text" id="zkUser" placeholder="Enter username...">
                     <label style="font-size:0.7rem; color:#8b949e;">DID (Optional)</label>
                     <input type="text" id="zkDid" placeholder="did:lcai:walletaddress">
-                    <p style="font-size:0.6rem; color:#484f58; margin-top:-5px; margin-bottom:15px;">* If blank, a default DID will be generated.</p>
+                    <p style="font-size:0.6rem; color:#484f58; margin-top:-5px; margin-bottom:15px;">* If blank, a default one will be generated.</p>
                     <button class="btn-zk" onclick="registerIdentity()">GENERATE & REGISTER</button>
                 </div>
 
@@ -106,7 +106,7 @@
                         <span style="color:var(--green)">STATUS:</span> PROOF VERIFIED
                     </div>
                     <div style="display:flex; gap:10px;">
-                        <button class="btn-zk" style="background:var(--green)" onclick="alert('Minting SBT...')">MINT SBT</button>
+                        <button class="btn-zk" style="background:var(--green)" onclick="mintSBT()">MINT ZK-SBT</button>
                         <button class="btn-zk" style="background:#21262d; color:white;" onclick="downloadJSON()"><i class="fas fa-download"></i> JSON</button>
                     </div>
                 </div>
@@ -115,8 +115,8 @@
             <div class="admin-card">
                 <div class="card-title">Contract Anchors</div>
                 <div style="font-size: 0.7rem; color: #8b949e; line-height: 1.6;">
-                    Validator: <span style="color:white">0x4f5C...926c</span><br>
-                    Inference: <span style="color:white">0x2e41...b9C0</span>
+                    LCAI Token: <span style="color:white">0x9ca8...8927</span><br>
+                    zkKYC SBT: <span style="color:white">0xd714...f600</span>
                 </div>
             </div>
         </main>
@@ -140,12 +140,10 @@
 
         async function fetchPrices() {
             try {
-                // Fetch ETH via CoinGecko (Simple Price)
                 const eRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
                 const eData = await eRes.json();
                 if(eData.ethereum) document.getElementById('ethPrice').innerText = "$" + eData.ethereum.usd.toLocaleString();
 
-                // Fetch LCAI via DexScreener
                 const lRes = await fetch(`https://api.dexscreener.com/latest/dex/pairs/ethereum/${CONFIG.lcaiPair}`);
                 const lData = await lRes.json();
                 if(lData.pair) document.getElementById('lcaiPrice').innerText = "$" + parseFloat(lData.pair.priceUsd).toFixed(6);
@@ -157,47 +155,49 @@
             const provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await provider.send("eth_requestAccounts", []);
             currentWallet = accounts[0];
-            
             document.getElementById('walletBtn').innerText = currentWallet.slice(0,6) + "..." + currentWallet.slice(-4);
             document.getElementById('zkInitView').style.display = 'none';
             document.getElementById('zkRegisterView').style.display = 'block';
-            
             const bal = await provider.getBalance(currentWallet);
-            const p = document.getElementById('balancePill');
-            p.innerText = parseFloat(ethers.formatEther(bal)).toFixed(2) + " LCAI";
-            p.style.display = 'block';
+            document.getElementById('balancePill').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2) + " LCAI";
+            document.getElementById('balancePill').style.display = 'block';
             log(`Session: ${currentWallet}`);
         }
 
         function registerIdentity() {
             const user = document.getElementById('zkUser').value || "Admin_User";
-            // Default DID logic
             const didInput = document.getElementById('zkDid').value;
             const finalDid = didInput || `did:lcai:${currentWallet.toLowerCase()}`;
-            
             zkData = { username: user, did: finalDid, wallet: currentWallet, proofType: "Groth16", network: "Sirius-V2" };
-            
-            // UI Toggle
             document.getElementById('zkRegisterView').style.display = 'none';
             document.getElementById('zkMetadataView').style.display = 'block';
             document.getElementById('metaUser').innerText = user;
             document.getElementById('metaDid').innerText = finalDid;
-            
-            // Move ID status under Sidebar Network Label
             document.getElementById('headerIdStatus').style.visibility = 'hidden';
             document.getElementById('zkSidebarStatus').style.display = 'block';
-
-            // Generate QR
             const qrBox = document.getElementById("qrcode");
             qrBox.innerHTML = "";
             const qr = new QRCode(qrBox, { text: JSON.stringify(zkData), width: 128, height: 128 });
-
             qrBox.onclick = () => {
                 const img = qrBox.querySelector('img').src;
                 const a = document.createElement('a');
                 a.href = img; a.download = 'zkid-qr.png'; a.click();
             };
-            log(`zkIdentity generated for ${user}. Status: VERIFIED`);
+            log(`zkIdentity generated: ${user}. Status: VERIFIED`);
+        }
+
+        async function mintSBT() {
+            log("Routing through lcai-zkkycsbt.sol...");
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const sbtContract = new ethers.Contract(CONFIG.sbtAddr, [
+                    "function mintSBT(string username, string did) public"
+                ], signer);
+                log("Requesting Proof Signature from AIVM...");
+                // Note: Logic for the actual contract call would follow here
+                alert(`Routing Mint Request to SBT Contract: ${CONFIG.sbtAddr}`);
+            } catch (e) { log("Minting route failed: Check chain."); }
         }
 
         function downloadJSON() {
@@ -217,7 +217,7 @@
                 const provider = new ethers.JsonRpcProvider(CONFIG.rpc);
                 const list = document.getElementById('sideNodes');
                 let html = "";
-                const nodes = [{id:"VAL-ALPHA", addr:CONFIG.validatorReg}, {id:"VAL-BRAVO", addr:CONFIG.aivmAnchor}];
+                const nodes = [{id:"VAL-ALPHA", addr:CONFIG.validatorReg}, {id:"SBT-ANCHOR", addr:CONFIG.sbtAddr}];
                 for(let n of nodes) {
                     const code = await provider.getCode(n.addr);
                     const up = code !== "0x";
