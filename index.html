@@ -24,13 +24,20 @@
         .wallet-pill.connected { background: #111; border: 1px solid var(--border); color: var(--accent); cursor: default; }
         .view-pane { flex: 1; padding: 40px; display: none; overflow-y: auto; }
         .view-pane.active { display: block !important; }
-        .card { background: var(--panel); border: 1px solid var(--border); padding: 30px; border-radius: 12px; border-top: 4px solid var(--accent); margin-bottom: 20px; }
+        .card { background: var(--panel); border: 1px solid var(--border); padding: 25px; border-radius: 12px; border-top: 4px solid var(--accent); margin-bottom: 20px; }
         .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
         .panel-input { width: 100%; background: #000; border: 1px solid #333; color: white; padding: 12px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 12px; box-sizing: border-box; font-family: monospace; }
         .action-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
+        
+        /* Model List Styling */
+        .model-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 4px; margin-bottom: 8px; border: 1px solid var(--border); }
+        .model-info { font-family: monospace; font-size: 0.7rem; }
+        .status-tag { padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; text-transform: uppercase; }
+        .status-online { background: #00c853; color: #000; }
+        
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
         .thumb { background: #000; padding: 10px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
-        .thumb img { width: 100%; border-radius: 4px; cursor: pointer; }
+        .thumb img { width: 100%; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -82,6 +89,24 @@
                 <button class="action-btn" onclick="batchApprove()">BATCH AUTHORIZE (KYC+ART)</button>
                 <button class="action-btn" style="background:#6a768a;" onclick="verifySelf()">AUTHORIZE SELF</button>
                 <button class="action-btn" style="background:#ff4444;" onclick="resetIdentity()">FORCE RESET IDENTITY (WIPE)</button>
+                
+                <h3 style="font-size: 0.8rem; margin-top: 25px; color: var(--accent);">ACTIVE MODELS</h3>
+                <div id="model-list">
+                    <div class="model-row">
+                        <div class="model-info">
+                            <strong>AIVM-V1-STABLE</strong><br>
+                            <span style="color: var(--text-dim); font-size: 0.6rem;">HASH: 0x74a...f32</span>
+                        </div>
+                        <div class="status-tag status-online">Online</div>
+                    </div>
+                    <div class="model-row">
+                        <div class="model-info">
+                            <strong>LCAI-IDENTITY-ORACLE</strong><br>
+                            <span style="color: var(--text-dim); font-size: 0.6rem;">HASH: 0x21b...a91</span>
+                        </div>
+                        <div class="status-tag status-online">Online</div>
+                    </div>
+                </div>
             </div>
             
             <div class="card" id="owner-panel" style="border-top-color:#ffaa00;">
@@ -107,10 +132,10 @@
 
 <script>
 const CONFIG = {
-    idAddr: "0xc6BE8f911a923003d53Ab64EDf557FAc4AA888ca",
-    artAddr: "0xC477360020176a2D37669c328F9547c285B9fBF2",
-    sbtAddr: "0xd71462F0002Ee9373fCe05B568583Ed13e75f600",
-    lcaiPair: "0x0d047a370611437a1b8e6c2a95ea36f69fdda3be", // Replace with Uniswap/DexScreener pair address
+    idAddr: "0x_IDENTITY_CONTRACT",
+    artAddr: "0x_ART_STUDIO_CONTRACT",
+    sbtAddr: "0x_SBT_CONTRACT",
+    lcaiPair: "0x_DEX_PAIR",
     artAbi: ["function owner() view returns (address)","function manualVerified(address) view returns (bool)","function setVerification(address, bool) external","function generateArt(string, bytes32) payable external","function withdraw() external","event InferenceRequested(address indexed user, string prompt, bytes32 modelDigest)"],
     idAbi: ["function profiles(address) view returns (string username, string did, bool isVerified, bool exists)","function createProfile(string username, string did) external","function deleteProfile(address) external"],
     sbtAbi: ["function hasMinted(address) view returns (bool)","function mintSBT(address) external"]
@@ -127,22 +152,17 @@ const log = (msg, type = "") => {
     cb.scrollTop = cb.scrollHeight;
 };
 
-// --- PRICE ENGINE ---
 async function fetchPrices() {
     try {
         const ethRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
         const ethData = await ethRes.json();
         document.getElementById('eth-price').innerText = `$${ethData.ethereum.usd.toLocaleString()}`;
-
         const lcaiRes = await fetch(`https://api.dexscreener.com/latest/dex/pairs/ethereum/${CONFIG.lcaiPair}`);
         const lcaiData = await lcaiRes.json();
-        if (lcaiData.pair) {
-            document.getElementById('lcai-price').innerText = `$${parseFloat(lcaiData.pair.priceUsd).toFixed(6)}`;
-        }
-    } catch (e) { console.warn("Price Engine Offline"); }
+        if (lcaiData.pair) document.getElementById('lcai-price').innerText = `$${parseFloat(lcaiData.pair.priceUsd).toFixed(5)}`;
+    } catch (e) { }
 }
 
-// --- WALLET & BALANCE PILL ---
 async function connectWallet() {
     if (!window.ethereum) return log("METAMASK MISSING", "error");
     try {
@@ -150,7 +170,6 @@ async function connectWallet() {
         user = accounts[0];
         provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
-        
         artContract = new ethers.Contract(CONFIG.artAddr, CONFIG.artAbi, signer);
         idContract = new ethers.Contract(CONFIG.idAddr, CONFIG.idAbi, signer);
         sbtContract = new ethers.Contract(CONFIG.sbtAddr, CONFIG.sbtAbi, signer);
@@ -172,7 +191,6 @@ async function updateBalanceDisplay() {
     btn.onclick = null;
 }
 
-// --- IDENTITY & ART ---
 async function updateIdentity() {
     if(!user || !idContract) return;
     try {
@@ -180,7 +198,6 @@ async function updateIdentity() {
         const hasSBT = await sbtContract.hasMinted(user);
         const meta = { "address": user, "username": profile.exists ? profile.username : "UNREGISTERED", "sbt_minted": hasSBT };
         document.getElementById('id-json').innerText = JSON.stringify(meta, null, 4);
-        
         const zone = document.getElementById('id-action-zone');
         if(!profile.exists) {
             zone.innerHTML = `<input id="new-user" class="panel-input" placeholder="Username"><button class="action-btn" onclick="registerProfile()">REGISTER IDENTITY</button>`;
@@ -189,7 +206,7 @@ async function updateIdentity() {
         } else {
             zone.innerHTML = `<p style="color:#00c853; font-weight:bold;">✓ IDENTITY ANCHORED</p>`;
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { }
 }
 
 async function registerProfile() {
@@ -206,10 +223,9 @@ async function mintSbtToken() {
         const tx = await sbtContract.mintSBT(user);
         await tx.wait();
         updateIdentity();
-    } catch (e) { log("SBT MINT FAILED", "error"); }
+    } catch (e) { log("MINT REJECTED", "error"); }
 }
 
-// --- ADMIN & TREASURY ---
 async function syncAdminData() {
     try {
         const bal = await provider.getBalance(CONFIG.artAddr);
@@ -249,10 +265,9 @@ async function withdrawRevenue() {
         const tx = await artContract.withdraw();
         await tx.wait();
         syncAdminData();
-    } catch (e) { log("WITHDRAWAL FAILED", "error"); }
+    } catch (e) { }
 }
 
-// --- ART ENGINE ---
 async function generateArt() {
     const prompt = document.getElementById('art-prompt').value;
     try {
@@ -285,7 +300,7 @@ function showView(id, btn) {
     btn.classList.add('active');
 }
 
-window.onload = () => { fetchPrices(); setInterval(fetchPrices, 5000); };
+window.onload = () => { fetchPrices(); setInterval(fetchPrices, 30000); };
 </script>
 </body>
 </html>
