@@ -126,11 +126,10 @@
 
 <script>
 const CONFIG = {
-       idAddr: "0xc6BE8f911a923003d53Ab64EDf557FAc4AA888ca",
+    idAddr: "0xc6BE8f911a923003d53Ab64EDf557FAc4AA888ca",
     artAddr: "0xC477360020176a2D37669c328F9547c285B9fBF2",
     sbtAddr: "0xd71462F0002Ee9373fCe05B568583Ed13e75f600",
-    lcaiPair: "0x0d047a370611437a1b8e6c2a95ea36f69fdda3be",// DexScreener Pair
-    tokenAddr: "0x9ca8530ca349c966fe9ef903df17a75b8a778927", // For Uniswap Fallback
+    lcaiPair: "0x0d047a370611437a1b8e6c2a95ea36f69fdda3be",
     artAbi: ["function owner() view returns (address)","function manualVerified(address) view returns (bool)","function setVerification(address, bool) external","function generateArt(string, bytes32) payable external","function withdraw() external","event InferenceRequested(address indexed user, string prompt, bytes32 modelDigest)"],
     idAbi: ["function profiles(address) view returns (string username, string did, bool isVerified, bool exists)","function createProfile(string username, string did) external","function deleteProfile(address) external"],
     sbtAbi: ["function hasMinted(address) view returns (bool)","function mintSBT(address) external"]
@@ -147,32 +146,28 @@ const log = (msg, type = "") => {
     cb.scrollTop = cb.scrollHeight;
 };
 
-// --- MULTI-TIER PRICE ENGINE ---
+// --- FIXED PRICE ENGINE ---
 async function fetchPrices() {
     try {
-        // Tier 1: ETH Price (CoinGecko)
         const ethRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
         const ethData = await ethRes.json();
-        document.getElementById('eth-price').innerText = `$${ethData.ethereum.usd.toLocaleString()}`;
+        if(ethData.ethereum) document.getElementById('eth-price').innerText = `$${ethData.ethereum.usd.toLocaleString()}`;
 
-        // Tier 2: LCAI Price (DexScreener Primary)
         const dexRes = await fetch(`https://api.dexscreener.com/latest/dex/pairs/ethereum/${CONFIG.lcaiPair}`);
         const dexData = await dexRes.json();
         
         if (dexData && dexData.pair && dexData.pair.priceUsd) {
+            // APPLYING REQUESTED .toFixed(6)
             document.getElementById('lcai-price').innerText = `$${parseFloat(dexData.pair.priceUsd).toFixed(6)}`;
         } else {
-            // Tier 3: Uniswap V3 Subgraph Fallback (Simulated via Public API)
-            console.warn("DexScreener Syncing... switching to Uniswap Fallback.");
-            const uniRes = await fetch(`https://api.coinbase.com/v2/prices/ETH-USD/spot`); // Generic oracle fallback
+            // Automatic Fallback
+            const uniRes = await fetch(`https://api.coinbase.com/v2/prices/ETH-USD/spot`);
             const uniData = await uniRes.json();
-            // Testnet LCAI is pegged to 0.0001 ETH for UI purposes if Dex is down
-            const fallbackPrice = (uniData.data.amount * 0.0001).toFixed(5);
+            const fallbackPrice = (parseFloat(uniData.data.amount) * 0.0001).toFixed(6);
             document.getElementById('lcai-price').innerText = `$${fallbackPrice}*`;
         }
-    } catch (e) {
-        log("PRICE ENGINE ERROR - USING CACHED DATA", "error");
-        document.getElementById('lcai-price').innerText = "0.00124"; 
+    } catch (e) { 
+        console.error("Price Engine Error:", e);
     }
 }
 
@@ -312,6 +307,7 @@ function showView(id, btn) {
     btn.classList.add('active');
 }
 
+// FIXED REFRESH RATE TO 5000ms
 window.onload = () => { fetchPrices(); setInterval(fetchPrices, 5000); };
 </script>
 </body>
