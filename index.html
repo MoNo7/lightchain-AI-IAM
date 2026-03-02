@@ -142,22 +142,21 @@
         // --- TICKER LOGIC ---
         async function fetchPrices() {
             try {
-                // 1. Fetch LCAI via Token Address
+                // 1. LCAI Ticker Fix - Uses Token Endpoint for better stability
                 const lcRes = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${TOKEN_ADDRESS}`);
                 const lcData = await lcRes.json();
                 
+                // DexScreener now returns an array called 'pairs'
                 if (lcData.pairs && lcData.pairs.length > 0) {
-                    // Access the first pair in the array
                     const lcaiPrice = parseFloat(lcData.pairs[0].priceUsd);
                     document.getElementById('lcaiTicker').innerText = "$" + lcaiPrice.toFixed(6);
                 }
         
-                // 2. Fetch ETH via specific Base Pair ID
+                // 2. ETH Ticker Fix - Uses specific Pair ID on Base
                 const ethRes = await fetch(`https://api.dexscreener.com/latest/dex/pairs/base/${ETH_PAIR}`);
                 const ethData = await ethRes.json();
                 
                 if (ethData.pairs && ethData.pairs.length > 0) {
-                    // Access the first pair in the array
                     const ethPrice = parseFloat(ethData.pairs[0].priceUsd);
                     document.getElementById('ethTicker').innerText = "$" + ethPrice.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
@@ -165,8 +164,8 @@
                     });
                 }
             } catch (e) {
-                // Silently retry on next interval
-                console.warn("Price Syncing...");
+                // Silently fails and retries on next interval to keep UI clean
+                console.warn("Price sync in progress...");
             }
         }
         setInterval(fetchPrices, 5000);
@@ -210,6 +209,7 @@
     </script>
 </body>
 </html>
+
 
 
 
