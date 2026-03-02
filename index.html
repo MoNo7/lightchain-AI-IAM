@@ -8,238 +8,200 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg: #050608;
-            --sidebar: #0d1117;
-            --top-nav: #161b22;
-            --card: #0d1117;
+            --bg: #0a0b10;
+            --card: #141620;
             --accent: #00f2ff;
-            --text: #c9d1d9;
-            --green: #238636;
-            --red: #da3633;
+            --text: #e0e0e0;
+            --dim-text: #888;
+            --green: #00ffaa;
+            --red: #ff4d4d;
         }
 
         body {
             background: var(--bg);
             color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             display: flex;
             height: 100vh;
             overflow: hidden;
         }
 
-        /* --- Sidebar & Telemetry --- */
+        /* --- Sidebar & Telemetry Area --- */
         nav {
-            width: 280px;
-            background: var(--sidebar);
-            border-right: 1px solid #30363d;
+            width: 260px;
+            background: var(--card);
+            border-right: 1px solid #2a2d3e;
             display: flex;
             flex-direction: column;
             padding: 20px;
         }
 
-        .telemetry-card {
-            background: #161b22;
-            border-radius: 6px;
+        .nav-header { margin-bottom: 30px; }
+        .nav-header h1 { color: var(--accent); font-size: 1.1rem; margin: 0; letter-spacing: 1px; }
+
+        .telemetry-section {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
             padding: 15px;
-            margin-top: 20px;
-            border: 1px solid #30363d;
+            border: 1px solid #222;
         }
 
-        .telemetry-header {
-            font-size: 0.75rem;
-            color: #8b949e;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 15px;
+        .telemetry-title { 
+            font-size: 0.7rem; 
+            color: var(--dim-text); 
+            text-transform: uppercase; 
+            margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
         }
 
-        .node-row {
+        .node-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #21262d;
+            margin-bottom: 10px;
             font-size: 0.85rem;
         }
 
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .status-dot { height: 7px; width: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .status-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .status-dot.offline { background: #444; }
 
-        .dot { height: 8px; width: 8px; border-radius: 50%; background: #30363d; }
-        .dot.active { background: #39d353; box-shadow: 0 0 8px #39d353; }
+        /* --- Top Bar & Tickers --- */
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; }
 
-        /* --- Top Navigation --- */
         header {
-            height: 60px;
-            background: var(--top-nav);
-            border-bottom: 1px solid #30363d;
+            height: 70px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: flex-end;
             padding: 0 30px;
-            gap: 20px;
+            border-bottom: 1px solid #2a2d3e;
         }
 
-        .wallet-pill {
-            background: #0d1117;
-            border: 1px solid #30363d;
-            padding: 6px 15px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .stats-strip { display: flex; gap: 15px; }
+        .stat-pill { background: var(--card); padding: 8px 14px; border-radius: 20px; border: 1px solid #2a2d3e; font-size: 0.85rem; }
+        .stat-pill span { color: var(--accent); font-weight: bold; }
 
-        .balance-tag { color: var(--accent); font-weight: bold; }
+        .wallet-display { background: var(--card); border: 1px solid var(--accent); color: var(--accent); padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-        /* --- Main Content Area --- */
-        .content-wrapper { flex: 1; display: flex; flex-direction: column; }
-        
+        /* --- Main Tickers (Centered) --- */
         main {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 40px;
         }
 
-        .ticker-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 300px);
-            gap: 25px;
-            text-align: center;
-        }
-
+        .grid-tickers { display: flex; gap: 30px; }
         .ticker-card {
             background: var(--card);
-            border: 1px solid #30363d;
-            padding: 30px;
+            border: 1px solid #2a2d3e;
+            padding: 40px;
             border-radius: 12px;
+            text-align: center;
+            min-width: 280px;
         }
 
-        .ticker-label { font-size: 0.8rem; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
-        .ticker-value { display: block; font-size: 2.5rem; font-weight: bold; color: #f0f6fc; margin-top: 10px; }
-
-        .btn-connect {
-            background: var(--accent);
-            color: #0d1117;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .btn-connect:hover { opacity: 0.9; }
+        .ticker-label { font-size: 0.8rem; color: var(--dim-text); text-transform: uppercase; letter-spacing: 2px; }
+        .ticker-val { display: block; font-size: 3rem; font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <nav>
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-            <i class="fas fa-brain" style="color:var(--accent); font-size:1.5rem;"></i>
-            <h2 style="margin:0; font-size:1.2rem; color:#f0f6fc;">Lightchain AI</h2>
+        <div class="nav-header">
+            <h1>LIGHTCHAIN AI</h1>
+            <small style="color: #555;">SIRIUS V2 NODE MANAGER</small>
         </div>
-        <small style="color:#8b949e;">IAM Control Center v2.8</small>
 
-        <div class="telemetry-card">
-            <div class="telemetry-header">
-                <span>Node Telemetry</span>
-                <span id="syncStatus" style="color:var(--accent)">SYNCING</span>
+        <div class="telemetry-section">
+            <div class="telemetry-title">
+                <span>Model Telemetry</span>
+                <span id="syncIndicator" style="color:var(--accent)">LIVE</span>
             </div>
-            <div id="telemetryList">
+            <div id="nodeList">
                 </div>
         </div>
         
-        <div style="margin-top:auto; font-size:0.75rem; color:#484f58;">
-            Sirius V2 Testnet: Connected
+        <div style="margin-top: auto; font-size: 0.7rem; color: #444;">
+            Chain ID: 504 (Sirius V2)
         </div>
     </nav>
 
-    <div class="content-wrapper">
+    <div class="main-wrapper">
         <header>
-            <div id="walletInfo" style="display:none;" class="wallet-pill">
-                <span id="userBalance" class="balance-tag">0.00 LCAI</span>
-                <span id="userAddress" style="color:#8b949e">0x0...000</span>
+            <div class="stats-strip">
+                <div class="stat-pill">LCAI: <span id="priceLcai">$0.0024</span></div>
+                <div class="stat-pill">ETH: <span id="priceEth">$3,842.10</span></div>
             </div>
-            <button id="connectBtn" class="btn-connect" onclick="connectWallet()">Connect Wallet</button>
+            <div id="walletBtn" class="wallet-display" onclick="connectWallet()">CONNECT WALLET</div>
         </header>
 
         <main>
-            <div class="ticker-grid">
+            <div class="grid-tickers">
                 <div class="ticker-card">
-                    <span class="ticker-label">Network Inference</span>
-                    <span class="ticker-value">1.24 <small style="font-size:1rem;">PH/s</small></span>
+                    <span class="ticker-label">Inference Power</span>
+                    <span class="ticker-val">1.24 <small style="font-size:1.2rem; color:var(--dim-text);">PH/s</small></span>
                 </div>
                 <div class="ticker-card">
-                    <span class="ticker-label">PoI Security</span>
-                    <span class="ticker-value" style="color:#39d353;">99.9%</span>
+                    <span class="ticker-label">Network Security</span>
+                    <span class="ticker-val" style="color:var(--green)">99.9%</span>
                 </div>
             </div>
         </main>
     </div>
 
     <script>
-        const RPC_URL = "https://rpc2.siriusnet.io";
-        const TESTNET_NODES = [
+        const SIRIUS_RPC = "https://rpc2.siriusnet.io";
+        const NODES = [
             { name: "Sirius-Alpha", addr: "0x9ca8530ca349c966fe9ef903df17a75b8a778927" },
             { name: "Sirius-Bravo", addr: "0x2e41d0d7e8a5ec7aa7ac7a72ce69b2b79028b9c0" },
             { name: "Sirius-Charlie", addr: "0x7a47e1b744d90660148b56afc7ce85d206289d6d" }
         ];
 
         async function updateTelemetry() {
-            const provider = new ethers.JsonRpcProvider(RPC_URL);
-            const container = document.getElementById('telemetryList');
+            const provider = new ethers.JsonRpcProvider(SIRIUS_RPC);
+            const container = document.getElementById('nodeList');
             let html = "";
 
-            for(const node of TESTNET_NODES) {
+            for(const node of NODES) {
                 try {
-                    // Check node activity via provider
                     const balance = await provider.getBalance(node.addr);
                     const isActive = balance > 0n;
                     
                     html += `
-                        <div class="node-row">
-                            <div class="status-indicator">
-                                <div class="dot ${isActive ? 'active' : ''}"></div>
-                                <span>${node.name}</span>
-                            </div>
-                            <span style="color:${isActive ? '#39d353' : '#484f58'}">${isActive ? 'IDLE' : 'OFFLINE'}</span>
+                        <div class="node-item">
+                            <span><div class="status-dot ${isActive ? 'active' : 'offline'}"></div>${node.name}</span>
+                            <span style="color:${isActive ? 'var(--green)' : 'var(--dim-text)'}">${isActive ? 'ACTIVE' : 'OFFLINE'}</span>
                         </div>
                     `;
                 } catch(e) {
-                    console.error("Telemetry Sync Error", e);
+                    console.error("RPC Error:", e);
                 }
             }
             container.innerHTML = html;
-            document.getElementById('syncStatus').innerText = "LIVE";
         }
 
         async function connectWallet() {
-            if (!window.ethereum) return alert("Install MetaMask");
+            if (!window.ethereum) return alert("MetaMask not found");
             const provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await provider.send("eth_requestAccounts", []);
-            const address = accounts[0];
-            
-            document.getElementById('connectBtn').style.display = 'none';
-            document.getElementById('walletInfo').style.display = 'flex';
-            document.getElementById('userAddress').innerText = `${address.slice(0,6)}...${address.slice(-4)}`;
-            
-            // Mock balance for testnet UI
-            document.getElementById('userBalance').innerText = "1,250.00 LCAI";
+            document.getElementById('walletBtn').innerText = accounts[0].slice(0,6) + "..." + accounts[0].slice(-4);
         }
 
-        // Initialize
+        // Real-time loop
         updateTelemetry();
         setInterval(updateTelemetry, 15000);
+
+        // Simulated Price Update
+        setInterval(() => {
+            const change = (Math.random() * 0.0001 - 0.00005).toFixed(6);
+            const current = parseFloat(document.getElementById('priceLcai').innerText.replace('$',''));
+            document.getElementById('priceLcai').innerText = '$' + (current + parseFloat(change)).toFixed(4);
+        }, 5000);
     </script>
 </body>
 </html>
