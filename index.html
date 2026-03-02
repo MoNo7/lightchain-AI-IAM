@@ -27,7 +27,7 @@
         .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; padding: 25px; flex: 1; overflow-y: auto; }
         .admin-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 25px; position: relative; }
         .card-title { font-size: 0.75rem; color: #484f58; text-transform: uppercase; margin-bottom: 20px; border-bottom: 1px solid #1b1f24; padding-bottom: 10px; font-weight: bold; }
-        input { background: #050608; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 4px; width: 100%; margin-bottom: 15px; box-sizing: border-box; }
+        input, textarea { background: #050608; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 4px; width: 100%; margin-bottom: 15px; box-sizing: border-box; }
         .btn-zk { background: var(--accent); color: black; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
         .btn-zk:hover { filter: brightness(1.2); box-shadow: 0 0 15px rgba(0,242,255,0.3); }
         #console { height: 160px; background: #000; border-top: 1px solid var(--border); color: var(--green); font-family: 'Courier New', monospace; padding: 15px; overflow-y: auto; font-size: 0.8rem; }
@@ -41,6 +41,10 @@
     <nav>
         <div style="margin-bottom: 30px;">
             <h1 style="color:white; font-size:1.1rem; margin:0;">Lightchain AI |Testnet</h1>
+            <p style="color:var(--accent); font-size:0.7rem; margin-top:5px;">TESTNET-504 zkID</p>
+        <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
+        <div style="cursor:pointer;" onclick="showTab('mint')"><i class="fas fa-id-card"></i> Identity Mint</div>
+        <div id="adminLink" style="cursor:pointer; margin-top:15px; display:none;" onclick="showTab('admin')"><i class="fas fa-user-shield"></i> Batch Admin</div>
             <div id="zkSidebarStatus" style="display:none; font-size: 0.65rem; color: var(--zk-gold); margin-top: 5px;"><i class="fas fa-fingerprint"></i> ID: PROTECTED</div>
         </div>
 
@@ -84,26 +88,28 @@
                 <button class="btn-zk" style="background:#1DA1F2; color:white;" onclick="startAuth('twitter')"><i class="fab fa-twitter"></i> Twitter</button>
             </div>
         </div>
-
-        <div id="mintSection" style="display:none; margin-top:20px;">
-            <div id="identityPreview" style="background:rgba(0,242,255,0.05); padding:15px; border-radius:4px; border:1px solid var(--accent); margin-bottom:15px;">
-                <div style="font-size:0.7rem; color:var(--accent);">LINKED PROVIDER: <span id="activeProvider" style="color:white; font-weight:bold;">NONE</span></div>
-                <div style="font-size:0.7rem; color:var(--accent); margin-top:5px;">ID HASH: <span id="hashDisplay" style="color:white; font-family:monospace;">0x0...</span></div>
-            </div>
-            <input type="text" id="nickName" placeholder="Identity Nickname (e.g. Satoshi)">
-            <button class="btn-zk" onclick="mintWithSocial()">MINT ON LIGHTCHAIN-504</button>
-        </div>
-                <div id="kycStep2" style="display:none; margin-top:20px;">
-                    <h3>2. Mint zkIdentity SBT</h3>
-                    <input type="text" id="nickName" placeholder="Nickname">
-                    <button class="btn-zk" onclick="mintSBT()">MINT ON TESTNET-504</button>
+                <div id="tab-mint" class="admin-card">
+                    <h3>1. Verify Social Identity</h3>
+                    <div id="g_id_onload" data-client_id="YOUR_GOOGLE_CLIENT_ID" data-callback="handleCredential"></div>
+                    <div class="g_id_signin" data-type="standard"></div>
+                    
+                    <div id="mintFlow" style="display:none; margin-top:20px;">
+                        <h3>2. Generate & Mint SBT</h3>
+                        <div id="qrcode" style="margin-bottom:15px; display:flex; justify-content:center;"></div>
+                        <input type="text" id="nickName" placeholder="Desired Nickname">
+                        <button class="btn-zk" onclick="mintWithImage()">MINT IDENTITY</button>
+                    </div>
                 </div>
-                <div id="regFlow">
-                    <p style="font-size:0.85rem; color:#8b949e; margin-bottom:20px;">Register your wallet on the Sirius V2 core to enable PoI (Proof of Intelligence) and model access.</p>
-                    <input type="text" id="regName" placeholder="Enter Identity Name (e.g. Validator-01)">
-                    <button class="btn-zk" onclick="registerIdentity()">GENERATE ZK-PROOFS</button>
+                <div id="tab-admin" class="admin-card" style="display:none;">
+                    <h3>Batch Verifier Console</h3>
+                    <textarea id="batchAddrs" placeholder="Paste addresses here (comma or newline separated)..."></textarea>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <button class="btn-zk" style="background:var(--green); color:white;" onclick="batchAction('verify')">BATCH VERIFY</button>
+                        <button class="btn-zk" style="background:var(--red); color:white;" onclick="batchAction('revoke')">BATCH REVOKE</button>
+                    </div>
                 </div>
-
+               
+   
                 <div id="metaFlow" style="display:none;">
                     <div style="display:flex; gap:20px; align-items:start;">
                         <div id="qrcode" style="background:white; padding:5px; border-radius:4px; min-width:128px;"></div>
@@ -146,7 +152,6 @@
             </div>
         </main>
         <div id="console">> [SYS] Awaiting Identity Link...</div>
-        <div id="console">> [SYSTEM] INITIALIZING SIRIUS V2 INTERFACE...</div>
     </div>
 
     <script>
@@ -154,6 +159,7 @@
             address: "0xd71462F0002Ee9373fCe05B568583Ed13e75f600",
             owner: "0x6378A6993C7C77E4A28f8f263e778401309fD9E4",
             abi: [
+                "function mintWithSocial(string name, string did, bytes32 hash, string img) public payable",
                 "function mintWithKYC(string name, string did, bytes32 hash) public payable",
                 "function mintSBT(string name, string did) public payable",
                 "function verifyUser(address user) public",
@@ -166,19 +172,31 @@
         let wallet = null;
         let activeIdentityHash = null;
         let selectedProvider = "";
-        
+        let userWallet, idHash;        
         function parseJwt(token) {
             var base64Url = token.split('.')[1];
             return JSON.parse(window.atob(base64Url.replace(/-/g, '+').replace(/_/g, '/')));
         }
 
         function handleCredential(response) {
-            const payload = parseJwt(response.credential);
-            googleHash = ethers.id(payload.sub); // Securely hash the Google UID
-            log("Google Identity Linked. UID Hash: " + googleHash.slice(0,16) + "...");
-            document.getElementById('kycStep1').style.display = 'none';
-            document.getElementById('kycStep2').style.display = 'block';
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            idHash = ethers.id(payload.sub);
+            log("Google Linked. Generating ID Metadata...");
+            document.getElementById('mintFlow').style.display = 'block';
+            new QRCode(document.getElementById("qrcode"), { text: `did:lcai:${userWallet}`, width: 128, height: 128 });
         }
+
+        async function compressImage() {
+            return new Promise((resolve) => {
+                const qrCanvas = document.querySelector('#qrcode canvas');
+                const offscreen = document.createElement('canvas');
+                offscreen.width = 128; offscreen.height = 128;
+                const ctx = offscreen.getContext('2d');
+                ctx.drawImage(qrCanvas, 0, 0, 128, 128);
+                resolve(offscreen.toDataURL("image/jpeg", 0.7)); // High compression
+            });
+        }
+        
         function startAuth(provider) {
         log(`Initializing ${provider} auth...`);
         
@@ -194,25 +212,12 @@
         log(`${selectedProvider} verified successfully.`);
     }
         async function connect() {
-            if(!window.ethereum) return log("Error: MetaMask not detected.");
             const provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await provider.send("eth_requestAccounts", []);
-            wallet = accounts[0];
             userWallet = accounts[0];
-            
-            document.getElementById('walletBtn').innerText = wallet.slice(0,6) + "..." + wallet.slice(-4);
-            const bal = await provider.getBalance(wallet);
-            document.getElementById('balancePill').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2) + " LCAI";
-            document.getElementById('balancePill').style.display = 'block';
-
-            // Show hidden menus for Admins/Owners
-            document.getElementById('adminMenu').style.display = 'block';
-            if(wallet.toLowerCase() === CONTRACT_CONFIG.owner.toLowerCase()) {
-                document.getElementById('ownerMenu').style.display = 'block';
-                document.getElementById('contractBal').innerHTML = "42.85 <small>LCAI</small>";
-            }
-            log("Connected to LCAI-504.");
-            log("Wallet Connected: " + userWallet);
+            document.getElementById('walletBtn').innerText = userWallet.slice(0,6) + "...";
+            if(userWallet.toLowerCase() === CONFIG.owner.toLowerCase()) document.getElementById('adminLink').style.display = 'block';
+            log("Wallet Linked.");
         }
 
         function registerIdentity() {
@@ -273,6 +278,43 @@ async function mintWithSocial() {
             console.error(e);
         }
     }
+
+        async function mintWithImage() {
+            try {
+                const imgData = await compressImage();
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const contract = new ethers.Contract(CONFIG.address, CONFIG.abi, signer);
+                
+                log("Processing Optimized Identity Data...");
+                const tx = await contract.mintWithSocial(
+                    document.getElementById('nickName').value || "Explorer",
+                    `did:lcai:${userWallet}`,
+                    idHash,
+                    imgData,
+                    { value: ethers.parseEther("0.01"), gasLimit: 500000 }
+                );
+                await tx.wait();
+                log("SBT Minted Successfully.");
+            } catch(e) { log("Error: " + e.message); }
+        }
+        async function batchAction(type) {
+            const addrs = document.getElementById('batchAddrs').value.split(/[,\n]/).map(a => a.trim()).filter(a => ethers.isAddress(a));
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const contract = new ethers.Contract(CONFIG.address, CONFIG.abi, signer);
+
+            log(`Starting Batch ${type}...`);
+            for(let addr of addrs) {
+                try {
+                    const tx = (type === 'verify') ? await contract.verifyUser(addr) : await contract.revokeSBT(addr);
+                    log(`Sent: ${addr.slice(0,8)}...`);
+                    await tx.wait();
+                } catch(e) { log(`Failed: ${addr.slice(0,8)}`); }
+            }
+            log("Batch Finished.");
+        }
+        
 async function verifyAddress() {
     const target = document.getElementById('targetAddr').value;
     if(!ethers.isAddress(target)) return log("Error: Invalid Address.");
@@ -317,7 +359,11 @@ async function verifyAddress() {
             document.getElementById('zkSidebarStatus').style.display = 'none';
             log("Local identity cleared.");
         }
-
+        function showTab(tab) {
+            document.getElementById('tab-mint').style.display = (tab === 'mint' ? 'block' : 'none');
+            document.getElementById('tab-admin').style.display = (tab === 'admin' ? 'block' : 'none');
+        }
+        
         function showView(id) {
             document.querySelectorAll('.view-card').forEach(c => c.style.display = 'none');
             document.getElementById(id).style.display = 'block';
@@ -331,6 +377,7 @@ async function verifyAddress() {
     </script>
 </body>
 </html>
+
 
 
 
