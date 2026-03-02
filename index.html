@@ -12,19 +12,37 @@
             --zk-gold: #ffcc00; --green: #39d353;
         }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar Navigation */
         nav { width: 250px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; }
         .nav-section { margin-bottom: 25px; }
         .nav-label { font-size: 0.65rem; color: #484f58; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: block; }
         .nav-item { padding: 10px; cursor: pointer; color: #8b949e; display: flex; align-items: center; gap: 10px; border-radius: 6px; font-size: 0.85rem; }
         .nav-item.active { background: var(--panel); color: var(--accent); border: 1px solid var(--border); }
+        
+        /* Main Workspace */
         .workspace { flex: 1; display: flex; flex-direction: column; background: #050608; }
-        header { height: 60px; background: var(--sidebar); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 25px; }
+        header { 
+            height: 60px; background: var(--sidebar); border-bottom: 1px solid var(--border); 
+            display: flex; align-items: center; justify-content: space-between; padding: 0 25px; 
+        }
+
+        /* Top-Right Wallet Styles */
+        .wallet-container { display: flex; align-items: center; gap: 12px; }
+        .balance-pill { 
+            background: rgba(0, 242, 255, 0.1); border: 1px solid var(--accent); 
+            padding: 5px 12px; border-radius: 15px; font-size: 0.8rem; color: var(--accent);
+            display: none; font-weight: 600;
+        }
+
         .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; padding: 25px; flex: 1; overflow-y: auto; }
         .admin-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
         .card-title { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid #1b1f24; padding-bottom: 10px; }
+        
         .node-line { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dotted #21262d; font-size: 0.75rem; }
         .status-dot { height: 6px; width: 6px; border-radius: 50%; background: #484f58; margin-right: 8px; display: inline-block; }
         .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        
         #console { height: 150px; background: #000; border-top: 1px solid var(--border); color: var(--green); font-family: monospace; padding: 15px; overflow-y: auto; font-size: 0.8rem; }
     </style>
 </head>
@@ -51,7 +69,11 @@
     <div class="workspace">
         <header>
             <div style="font-size: 0.8rem; color: var(--accent);">Network: <span style="color:var(--green)">SIRIUS_V2_TESTNET</span></div>
-            <button onclick="connect()" id="walletBtn" style="background:var(--accent); color:black; border:none; padding:7px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">CONNECT ID</button>
+            
+            <div class="wallet-container">
+                <div id="balancePill" class="balance-pill">0.00 LCAI</div>
+                <button onclick="connect()" id="walletBtn" style="background:var(--accent); color:black; border:none; padding:7px 15px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.8rem;">CONNECT ID</button>
+            </div>
         </header>
 
         <main class="admin-grid">
@@ -76,8 +98,8 @@
 
     <script>
         const CONFIG = {
-            // Updated to official Sirius V2 Testnet Parameters
             rpc: "https://rpc2.siriusnet.io",
+            chainId: 217,
             lcaiToken: "0x9ca8530ca349c966fe9ef903df17a75b8a778927",
             validatorReg: "0x4f5CEB0B03ed78494d6f73C1e49b381ac396926c",
             aivmAnchor: "0x2e41d0D7e8a5Ec7aa7Ac7A72CE69b2B79028b9C0",
@@ -111,10 +133,25 @@
             if(!window.ethereum) return;
             const provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await provider.send("eth_requestAccounts", []);
-            document.getElementById('walletBtn').innerText = accounts[0].slice(0,10);
+            const userAddr = accounts[0];
+            
+            // UI Updates
+            document.getElementById('walletBtn').innerText = userAddr.slice(0,6) + "..." + userAddr.slice(-4);
             document.getElementById('zkStatus').innerText = "VERIFIED";
             document.getElementById('zkStatus').style.color = "var(--green)";
-            document.getElementById('console').innerHTML += `<br>> [ID] Admin session linked to ${accounts[0]}`;
+            
+            // Fetch and display balance
+            try {
+                const balanceWei = await provider.getBalance(userAddr);
+                const balanceEth = ethers.formatEther(balanceWei);
+                const pill = document.getElementById('balancePill');
+                pill.innerText = parseFloat(balanceEth).toFixed(2) + " LCAI";
+                pill.style.display = "block";
+            } catch (err) {
+                console.error("Balance fetch failed", err);
+            }
+
+            document.getElementById('console').innerHTML += `<br>> [ID] Admin session linked: ${userAddr}`;
         }
 
         updateTelemetry();
