@@ -30,7 +30,11 @@
         .action-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
         .model-row { display: flex; flex-direction: column; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border); position: relative; }
         .model-meta { font-family: monospace; font-size: 0.6rem; line-height: 1.6; word-break: break-all; }
-        .status-badge { position: absolute; top: 12px; right: 12px; padding: 3px 10px; border-radius: 4px; font-size: 0.55rem; font-weight: 900; text-transform: uppercase; background: #00c853; color: #000; }
+        .status-badge { position: absolute; top: 12px; right: 12px; padding: 3px 10px; border-radius: 4px; font-size: 0.55rem; font-weight: 900; text-transform: uppercase; transition: 0.3s; }
+        .st-idle { background: #00c853; color: #000; }
+        .st-infer { background: #ffaa00; color: #000; }
+        .st-standby { background: #0070ff; color: #fff; }
+        .st-off { background: #ff4444; color: #fff; }
         #id-qrcode-wrap { background: white; padding: 15px; border-radius: 8px; display: inline-block; cursor: pointer; margin-top: 15px; }
     </style>
 </head>
@@ -97,27 +101,30 @@
                 <h3 style="font-size: 0.8rem; margin: 25px 0 15px 0; color: var(--accent); letter-spacing: 1px;">DEPLOYED TESTNET MODELS</h3>
                 <div id="model-container">
                     <div class="model-row">
-                        <div class="status-badge">Active</div>
+                        <div id="status-1" class="status-badge st-idle">Idle</div>
                         <div class="model-meta">
                             <strong style="color:white; font-size:0.7rem;">AIVM-V1-STABLE</strong><br>
                             DIGEST: <span style="color:var(--text-dim);">0x74a9f32b8811bc1199e2af9077b288f2cc44</span><br>
-                            DA HASH: <span style="color:var(--text-dim);">0xbc1199e2af9077b288f2cc4474a9f32b8811</span>
+                            DA HASH: <span style="color:var(--text-dim);">0xbc1199e2af9077b288f2cc4474a9f32b8811</span><br>
+                            LOAD: <span id="load-1" style="color:var(--accent);">2.4%</span>
                         </div>
                     </div>
                     <div class="model-row">
-                        <div class="status-badge">Active</div>
+                        <div id="status-2" class="status-badge st-idle">Idle</div>
                         <div class="model-meta">
                             <strong style="color:white; font-size:0.7rem;">LCAI-IDENTITY-ORACLE</strong><br>
                             DIGEST: <span style="color:var(--text-dim);">0x21b8a91cde4533f1af9077b288f2cc44bc11</span><br>
-                            DA HASH: <span style="color:var(--text-dim);">0xde4533f1af9077b288f2cc4421b8a91c74a9</span>
+                            DA HASH: <span style="color:var(--text-dim);">0xde4533f1af9077b288f2cc4421b8a91c74a9</span><br>
+                            LOAD: <span id="load-2" style="color:var(--accent);">0.8%</span>
                         </div>
                     </div>
                     <div class="model-row">
-                        <div class="status-badge">Active</div>
+                        <div id="status-3" class="status-badge st-idle">Idle</div>
                         <div class="model-meta">
                             <strong style="color:white; font-size:0.7rem;">LCAI-ZK-PROVER</strong><br>
                             DIGEST: <span style="color:var(--text-dim);">0x88f2cc44af9077b274a9f32b8811bc1199e2</span><br>
-                            DA HASH: <span style="color:var(--text-dim);">0xaf9077b288f2cc44bc1199e2af9077b2de45</span>
+                            DA HASH: <span style="color:var(--text-dim);">0xaf9077b288f2cc44bc1199e2af9077b2de45</span><br>
+                            LOAD: <span id="load-3" style="color:var(--accent);">1.1%</span>
                         </div>
                     </div>
                 </div>
@@ -165,6 +172,19 @@ const log = (msg, type = "") => {
     cb.appendChild(l);
     cb.scrollTop = cb.scrollHeight;
 };
+
+// Node Simulation Logic
+function simulateNodeMetrics() {
+    const states = ["Idle", "Inferencing", "Standby"];
+    const classes = ["st-idle", "st-infer", "st-standby"];
+    for(let i=1; i<=3; i++) {
+        const rand = Math.floor(Math.random() * states.length);
+        const el = document.getElementById(`status-${i}`);
+        el.innerText = states[rand];
+        el.className = `status-badge ${classes[rand]}`;
+        document.getElementById(`load-${i}`).innerText = (Math.random() * 15).toFixed(1) + "%";
+    }
+}
 
 async function fetchPrices() {
     try {
@@ -323,7 +343,11 @@ function showView(id, btn) {
     btn.classList.add('active');
 }
 
-window.onload = () => { fetchPrices(); setInterval(fetchPrices, 5000); };
+window.onload = () => { 
+    fetchPrices(); 
+    setInterval(fetchPrices, 5000); 
+    setInterval(simulateNodeMetrics, 7000); // Dynamic Status updates
+};
 </script>
 </body>
 </html>
