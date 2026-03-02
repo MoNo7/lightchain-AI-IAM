@@ -114,7 +114,6 @@
                     <div class="model-meta">
                         <strong style="color:white; font-size:0.7rem;">AIVM-V1-STABLE</strong><br>
                         DIGEST: <span style="color:var(--text-dim);">0x74a9f32b8811bc1199e2af9077b288f2cc44</span><br>
-                        DA HASH: <span style="color:var(--text-dim);">0xbc1199e2af9077b288f2cc4474a9f32b8811</span><br>
                         UPTIME: <span id="row-uptime-1" style="color:var(--accent);">0%</span>
                     </div>
                 </div>
@@ -123,8 +122,15 @@
                     <div class="model-meta">
                         <strong style="color:white; font-size:0.7rem;">LCAI-IDENTITY-ORACLE</strong><br>
                         DIGEST: <span style="color:var(--text-dim);">0x21b8a91cde4533f1af9077b288f2cc44bc11</span><br>
-                        DA HASH: <span style="color:var(--text-dim);">0xde4533f1af9077b288f2cc4421b8a91c74a9</span><br>
                         UPTIME: <span id="row-uptime-2" style="color:var(--accent);">0%</span>
+                    </div>
+                </div>
+                <div class="model-row">
+                    <div id="row-status-3" class="status-badge st-off">Offline</div>
+                    <div class="model-meta">
+                        <strong style="color:white; font-size:0.7rem;">ZK-PROVER-NODE</strong><br>
+                        DIGEST: <span style="color:var(--text-dim);">0xbc1199e2af9077b288f2cc4474a9f32b8811</span><br>
+                        UPTIME: <span id="row-uptime-3" style="color:var(--accent);">0%</span>
                     </div>
                 </div>
             </div>
@@ -149,7 +155,12 @@ const CONFIG = {
     artAddr: "0xC477360020176a2D37669c328F9547c285B9fBF2",
     sbtAddr: "0xd71462F0002Ee9373fCe05B568583Ed13e75f600",
     lcaiPair: "0x0d047a370611437a1b8e6c2a95ea36f69fdda3be",
-    workerNode: "0x74a9f32b8811bc1199e2af9077b288f2cc44", 
+    // Worker node addresses to monitor
+    nodes: [
+        "0x74a9f32b8811bc1199e2af9077b288f2cc44",
+        "0x21b8a91cde4533f1af9077b288f2cc44bc11",
+        "0xbc1199e2af9077b288f2cc4474a9f32b8811"
+    ],
     artAbi: ["function owner() view returns (address)","function manualVerified(address) view returns (bool)","function setVerification(address, bool) external","function generateArt(string, bytes32) payable external","function withdraw() external","event InferenceRequested(address indexed user, string prompt, bytes32 modelDigest)"],
     idAbi: ["function profiles(address) view returns (string username, string did, bool isVerified, bool exists)","function createProfile(string username, string did) external","function deleteProfile(address) external"],
     sbtAbi: ["function hasMinted(address) view returns (bool)","function mintSBT(address) external"],
@@ -157,7 +168,7 @@ const CONFIG = {
 };
 
 let user, provider, signer, artContract, idContract, sbtContract, currentMetadata;
-let pollCount = 0, successCount = 0;
+let pollData = { total: 0, successes: [0, 0, 0] };
 
 const log = (msg, type = "") => {
     const cb = document.getElementById('console');
@@ -170,42 +181,36 @@ const log = (msg, type = "") => {
 
 async function pollActualNodeState() {
     if(!provider) return;
-    pollCount++;
-    try {
-        const onboardContract = new ethers.Contract(CONFIG.idAddr, CONFIG.onboardAbi, provider);
-        const [lastSeen, isActive, load] = await onboardContract.getWorkerStatus(CONFIG.workerNode);
-        
-        const now = Math.floor(Date.now() / 1000);
-        const diff = now - Number(lastSeen);
-        const isFresh = diff < 300; 
-        
-        if (isActive && isFresh) successCount++;
+    pollData.total++;
+    const onboardContract = new ethers.Contract(CONFIG.idAddr, CONFIG.onboardAbi, provider);
+    
+    for(let i=0; i<CONFIG.nodes.length; i++) {
+        try {
+            const [lastSeen, isActive, load] = await onboardContract.getWorkerStatus(CONFIG.nodes[i]);
+            const now = Math.floor(Date.now() / 1000);
+            const diff = now - Number(lastSeen);
+            const isFresh = diff < 300 && lastSeen > 0;
 
-        const uptimePct = ((successCount / pollCount) * 100).toFixed(1);
-        
-        // Update Global Header
-        document.getElementById('sys-uptime').innerText = `${uptimePct}%`;
-        const statusTxt = document.getElementById('status-txt');
+            if (isActive && isFresh) pollData.successes[i]++;
+            
+            const uptime = ((pollData.successes[i] / pollData.total) * 100).toFixed(1);
+            const rowStatus = document.getElementById(`row-status-${i+1}`);
+            const rowUptime = document.getElementById(`row-uptime-${i+1}`);
 
-        // Update Model Rows in Admin
-        const row1Status = document.getElementById('row-status-1');
-        const row1Uptime = document.getElementById('row-uptime-1');
-        
-        row1Uptime.innerText = `${uptimePct}%`;
-
-        if (isActive && isFresh) {
-            statusTxt.innerText = `ACTIVE (Seen ${diff}s ago)`;
-            statusTxt.style.color = "#00c853";
-            row1Status.innerText = "Active";
-            row1Status.className = "status-badge st-on";
-        } else {
-            statusTxt.innerText = "OFFLINE (TEE EXPIRED)";
-            statusTxt.style.color = "#ff4444";
-            row1Status.innerText = "Offline";
-            row1Status.className = "status-badge st-off";
-        }
-    } catch (e) {
-        document.getElementById('status-txt').innerText = "STAGING / CONNECTING";
+            rowUptime.innerText = `${uptime}%`;
+            if (isActive && isFresh) {
+                rowStatus.innerText = "Active";
+                rowStatus.className = "status-badge st-on";
+                if(i === 0) { // Primary Header Status
+                    document.getElementById('status-txt').innerText = `ACTIVE (${diff}s)`;
+                    document.getElementById('status-txt').style.color = "#00c853";
+                    document.getElementById('sys-uptime').innerText = `${uptime}%`;
+                }
+            } else {
+                rowStatus.innerText = "Offline";
+                rowStatus.className = "status-badge st-off";
+            }
+        } catch (e) { }
     }
 }
 
