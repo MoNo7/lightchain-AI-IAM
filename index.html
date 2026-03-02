@@ -187,9 +187,9 @@ document.getElementById('lcaiTicker').innerText = "$" + price.toFixed(6);
 }
 
 // Find ETH - Target the highest liquidity pair automatically
-            const ethPair = data.pairs.find(p => p.baseToken.address.toLowerCase() === WETH_TOKEN.toLowerCase());
+    
             const wethPair = data.pairs.find(p => p.baseToken.address.toLowerCase() === WETH_TOKEN.toLowerCase());
-if (ethPair && document.getElementById('wethTicker')) {
+if (wethPair && document.getElementById('wethTicker')) {
 const price = parseFloat(wethPair.priceUsd);
 document.getElementById('wethTicker').innerText = "$" + price.toLocaleString(undefined, {
 minimumFractionDigits: 2,
@@ -245,6 +245,7 @@ c.scrollTop = c.scrollHeight;
 </script>
 </body>
 </html>
+
 
 
 
