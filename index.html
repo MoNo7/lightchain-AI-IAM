@@ -12,37 +12,27 @@
             --zk-gold: #ffcc00; --green: #39d353;
         }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* Sidebar Navigation */
         nav { width: 250px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; }
         .nav-section { margin-bottom: 25px; }
         .nav-label { font-size: 0.65rem; color: #484f58; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: block; }
         .nav-item { padding: 10px; cursor: pointer; color: #8b949e; display: flex; align-items: center; gap: 10px; border-radius: 6px; font-size: 0.85rem; }
         .nav-item.active { background: var(--panel); color: var(--accent); border: 1px solid var(--border); }
-        
-        /* Main Workspace */
         .workspace { flex: 1; display: flex; flex-direction: column; background: #050608; }
-        header { 
-            height: 60px; background: var(--sidebar); border-bottom: 1px solid var(--border); 
-            display: flex; align-items: center; justify-content: space-between; padding: 0 25px; 
-        }
+        header { height: 60px; background: var(--sidebar); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 25px; }
+        
+        .price-display { display: flex; gap: 15px; font-size: 0.8rem; }
+        .price-tag { background: #161b22; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border); }
+        .price-tag span { color: var(--accent); font-weight: bold; }
 
-        /* Top-Right Wallet Styles */
         .wallet-container { display: flex; align-items: center; gap: 12px; }
-        .balance-pill { 
-            background: rgba(0, 242, 255, 0.1); border: 1px solid var(--accent); 
-            padding: 5px 12px; border-radius: 15px; font-size: 0.8rem; color: var(--accent);
-            display: none; font-weight: 600;
-        }
+        .balance-pill { background: rgba(0, 242, 255, 0.1); border: 1px solid var(--accent); padding: 5px 12px; border-radius: 15px; font-size: 0.8rem; color: var(--accent); display: none; font-weight: 600; }
 
         .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; padding: 25px; flex: 1; overflow-y: auto; }
         .admin-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
         .card-title { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid #1b1f24; padding-bottom: 10px; }
-        
         .node-line { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dotted #21262d; font-size: 0.75rem; }
         .status-dot { height: 6px; width: 6px; border-radius: 50%; background: #484f58; margin-right: 8px; display: inline-block; }
         .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); }
-        
         #console { height: 150px; background: #000; border-top: 1px solid var(--border); color: var(--green); font-family: monospace; padding: 15px; overflow-y: auto; font-size: 0.8rem; }
     </style>
 </head>
@@ -53,13 +43,11 @@
             <h1 style="color:white; font-size:1.1rem; margin:0; letter-spacing:1px;">LCAI ADMIN</h1>
             <div style="font-size: 0.7rem; color: var(--zk-gold); margin-top: 5px;"><i class="fas fa-fingerprint"></i> ID Vault: <span id="zkStatus">PROTECTED</span></div>
         </div>
-        
         <div class="nav-section">
             <span class="nav-label">Identity Modules</span>
             <div class="nav-item active"><i class="fas fa-user-shield"></i> zkIdentity Manager</div>
             <div class="nav-item"><i class="fas fa-id-card"></i> SBT Attestations</div>
         </div>
-
         <div class="telemetry-group" style="margin-top:auto;">
             <span class="nav-label">Sirius V2 Validators</span>
             <div id="sideNodes"></div>
@@ -68,8 +56,10 @@
 
     <div class="workspace">
         <header>
-            <div style="font-size: 0.8rem; color: var(--accent);">Network: <span style="color:var(--green)">SIRIUS_V2_TESTNET</span></div>
-            
+            <div class="price-display">
+                <div class="price-tag">ETH: <span id="ethPrice">Loading...</span></div>
+                <div class="price-tag">LCAI: <span id="lcaiPrice">Loading...</span></div>
+            </div>
             <div class="wallet-container">
                 <div id="balancePill" class="balance-pill">0.00 LCAI</div>
                 <button onclick="connect()" id="walletBtn" style="background:var(--accent); color:black; border:none; padding:7px 15px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.8rem;">CONNECT ID</button>
@@ -86,14 +76,13 @@
                     Pair (LCAI/WETH): <span style="color:white">0x0d04...a3be</span>
                 </div>
             </div>
-
             <div class="admin-card">
                 <div class="card-title">Live Inference Power</div>
                 <div style="font-size: 2.2rem; font-weight: bold; color:white;">1.24 <small style="font-size: 0.9rem; color: #484f58;">PH/s</small></div>
             </div>
         </main>
 
-        <div id="console">> [INIT] Syncing with Sirius V2 RPC (ChainID: 217)...<br>> [SYS] Loading Validator Telemetry...</div>
+        <div id="console">> [INIT] Syncing with Sirius V2 RPC (ChainID: 217)...<br>> [SYS] Prices Handled via DexScreener/CoinGecko APIs.</div>
     </div>
 
     <script>
@@ -106,25 +95,34 @@
             lcaiPair: "0x0d047a370611437a1b8e6c2a95ea36f69fdda3be"
         };
 
-        const TEST_NODES = [
-            { id: "VAL-ALPHA", addr: CONFIG.validatorReg },
-            { id: "VAL-BRAVO", addr: CONFIG.aivmAnchor }
-        ];
+        const TEST_NODES = [{ id: "VAL-ALPHA", addr: CONFIG.validatorReg }, { id: "VAL-BRAVO", addr: CONFIG.aivmAnchor }];
+
+        async function fetchPrices() {
+            try {
+                // Fetch ETH via CoinGecko
+                const ethRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+                const ethData = await ethRes.json();
+                document.getElementById('ethPrice').innerText = "$" + ethData.ethereum.usd.toLocaleString();
+
+                // Fetch LCAI via DexScreener
+                const lcaiRes = await fetch(`https://api.dexscreener.com/latest/dex/pairs/ethereum/${CONFIG.lcaiPair}`);
+                const lcaiData = await lcaiRes.json();
+                if(lcaiData.pair) {
+                    document.getElementById('lcaiPrice').innerText = "$" + parseFloat(lcaiData.pair.priceUsd).toFixed(6);
+                }
+            } catch (e) { console.error("Price Update Failed", e); }
+        }
 
         async function updateTelemetry() {
             const provider = new ethers.JsonRpcProvider(CONFIG.rpc);
             const list = document.getElementById('sideNodes');
             let html = "";
-
             for(let node of TEST_NODES) {
                 try {
                     const code = await provider.getCode(node.addr);
                     const isDeployed = code !== "0x"; 
-                    html += `<div class="node-line">
-                        <span><div class="status-dot ${isDeployed ? 'online' : ''}"></div>${node.id}</span>
-                        <span style="color:${isDeployed ? 'var(--green)' : '#8b949e'}">${isDeployed ? 'ACTIVE' : 'IDLE'}</span>
-                    </div>`;
-                } catch(e) { console.error(e); }
+                    html += `<div class="node-line"><span><div class="status-dot ${isDeployed ? 'online' : ''}"></div>${node.id}</span><span style="color:${isDeployed ? 'var(--green)' : '#8b949e'}">${isDeployed ? 'ACTIVE' : 'IDLE'}</span></div>`;
+                } catch(e) {}
             }
             list.innerHTML = html;
         }
@@ -134,27 +132,19 @@
             const provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await provider.send("eth_requestAccounts", []);
             const userAddr = accounts[0];
-            
-            // UI Updates
             document.getElementById('walletBtn').innerText = userAddr.slice(0,6) + "..." + userAddr.slice(-4);
             document.getElementById('zkStatus').innerText = "VERIFIED";
             document.getElementById('zkStatus').style.color = "var(--green)";
             
-            // Fetch and display balance
-            try {
-                const balanceWei = await provider.getBalance(userAddr);
-                const balanceEth = ethers.formatEther(balanceWei);
-                const pill = document.getElementById('balancePill');
-                pill.innerText = parseFloat(balanceEth).toFixed(2) + " LCAI";
-                pill.style.display = "block";
-            } catch (err) {
-                console.error("Balance fetch failed", err);
-            }
-
+            const balanceWei = await provider.getBalance(userAddr);
+            document.getElementById('balancePill').innerText = parseFloat(ethers.formatEther(balanceWei)).toFixed(2) + " LCAI";
+            document.getElementById('balancePill').style.display = "block";
             document.getElementById('console').innerHTML += `<br>> [ID] Admin session linked: ${userAddr}`;
         }
 
+        fetchPrices();
         updateTelemetry();
+        setInterval(fetchPrices, 5000);
         setInterval(updateTelemetry, 20000);
     </script>
 </body>
