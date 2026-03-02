@@ -122,6 +122,7 @@
 <script>
 const CONFIG = {
     addr: "0xB6f1E497D6879C325c65fa77cB717227976fd04E",
+    idAddr: "0x8300c9072bc9f926703f8e26ff0a5d963d88ae01", // Your Identity Contract
     abi: [
         "function owner() public view returns (address)",
         "function manualVerified(address) public view returns (bool)",
@@ -129,6 +130,10 @@ const CONFIG = {
         "function generateArt(string prompt, bytes32 modelDigest) public payable",
         "function withdraw() external",
         "event InferenceRequested(address indexed user, string prompt, bytes32 modelDigest)"
+    ],
+    idAbi: [
+        "function profiles(address) public view returns (string username, string did, bool isVerified, bool exists)",
+        "function isAdmin(address) public view returns (bool)"
     ]
 };
 
@@ -296,13 +301,30 @@ async function withdrawRevenue() {
     try { await (await contract.withdraw()).wait(); log("REVENUE WITHDRAWN", "success"); } catch (e) { log("WITHDRAW FAILED"); }
 }
 
-function updateIdentity() {
-    const meta = { "id": user, "verified": roles.isVerified, "role": roles.isOwner ? "OWNER" : "OPERATOR", "timestamp": new Date().toISOString() };
-    document.getElementById('id-json').innerText = JSON.stringify(meta, null, 4);
-    document.getElementById('qr-target').innerHTML = "";
-    new QRCode(document.getElementById("qr-target"), { text: JSON.stringify(meta), width: 120, height: 120 });
-}
+async function updateIdentity() {
+    try {
+        const idContract = new ethers.Contract(CONFIG.idAddr, CONFIG.idAbi, provider);
+        const profile = await idContract.profiles(user);
+        
+        const meta = {
+            "address": user,
+            "username": profile.username || "ANONYMOUS_RESEARCHER",
+            "did": profile.did || "did:lcai:guest",
+            "verified_id": profile.isVerified,
+            "verified_art": roles.isVerified,
+            "role": roles.isOwner ? "OWNER" : "OPERATOR",
+            "network": "Lightchain Testnet V2"
+        };
 
+        document.getElementById('id-json').innerText = JSON.stringify(meta, null, 4);
+        document.getElementById('qr-target').innerHTML = "";
+        new QRCode(document.getElementById("qr-target"), { text: JSON.stringify(meta), width: 120, height: 120 });
+        
+        log(`ID_SYNC: ${meta.username}`, "success");
+    } catch (e) {
+        log("ID_FETCH_FAILED", "error");
+    }
+}
 function showView(id, btn) {
     document.querySelectorAll('.view-pane').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -330,3 +352,4 @@ window.onload = () => {
 </script>
 </body>
 </html>
+
