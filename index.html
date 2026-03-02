@@ -28,10 +28,9 @@
         .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
         .panel-input { width: 100%; background: #000; border: 1px solid #333; color: white; padding: 12px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 12px; box-sizing: border-box; font-family: monospace; }
         .action-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
-        .model-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border); }
-        .model-meta { font-family: monospace; font-size: 0.65rem; line-height: 1.4; }
-        .status-badge { padding: 3px 10px; border-radius: 4px; font-size: 0.6rem; font-weight: 900; text-transform: uppercase; }
-        .online { background: #00c853; color: #000; }
+        .model-row { display: flex; flex-direction: column; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border); position: relative; }
+        .model-meta { font-family: monospace; font-size: 0.6rem; line-height: 1.6; word-break: break-all; }
+        .status-badge { position: absolute; top: 12px; right: 12px; padding: 3px 10px; border-radius: 4px; font-size: 0.55rem; font-weight: 900; text-transform: uppercase; background: #00c853; color: #000; }
         #id-qrcode-wrap { background: white; padding: 15px; border-radius: 8px; display: inline-block; cursor: pointer; margin-top: 15px; }
     </style>
 </head>
@@ -78,7 +77,7 @@
             </div>
             <div class="card" id="qr-card" style="display:none; text-align: center; border-top-color: #00ff88;">
                 <h3>ZK-VERIFY ID</h3>
-                <div id="id-qrcode-wrap" title="Click to Download QR Code" onclick="downloadQRCode()">
+                <div id="id-qrcode-wrap" title="Click to Download QR Code Image" onclick="downloadQRCode()">
                     <div id="qrcode"></div>
                 </div>
                 <p style="font-size: 0.65rem; color: var(--text-dim); margin-top: 10px;">DID Verified via Lightchain ZK-Staking<br>Click QR to download proof image.</p>
@@ -97,9 +96,30 @@
                 
                 <h3 style="font-size: 0.8rem; margin: 25px 0 15px 0; color: var(--accent); letter-spacing: 1px;">DEPLOYED TESTNET MODELS</h3>
                 <div id="model-container">
-                    <div class="model-row"><div class="model-meta"><strong>AIVM-V1-STABLE</strong><br>DIGEST: <span style="color:var(--text-dim);">0x74a9...f32b</span><br>DA HASH: <span style="color:var(--text-dim);">0xbc11...99e2</span></div><div class="status-badge online">Active</div></div>
-                    <div class="model-row"><div class="model-meta"><strong>LCAI-IDENTITY-ORACLE</strong><br>DIGEST: <span style="color:var(--text-dim);">0x21b8...a91c</span><br>DA HASH: <span style="color:var(--text-dim);">0xde45...33f1</span></div><div class="status-badge online">Active</div></div>
-                    <div class="model-row"><div class="model-meta"><strong>LCAI-ZK-PROVER</strong><br>DIGEST: <span style="color:var(--text-dim);">0x88f2...cc44</span><br>DA HASH: <span style="color:var(--text-dim);">0xaf90...77b2</span></div><div class="status-badge online">Active</div></div>
+                    <div class="model-row">
+                        <div class="status-badge">Active</div>
+                        <div class="model-meta">
+                            <strong style="color:white; font-size:0.7rem;">AIVM-V1-STABLE</strong><br>
+                            DIGEST: <span style="color:var(--text-dim);">0x74a9f32b8811bc1199e2af9077b288f2cc44</span><br>
+                            DA HASH: <span style="color:var(--text-dim);">0xbc1199e2af9077b288f2cc4474a9f32b8811</span>
+                        </div>
+                    </div>
+                    <div class="model-row">
+                        <div class="status-badge">Active</div>
+                        <div class="model-meta">
+                            <strong style="color:white; font-size:0.7rem;">LCAI-IDENTITY-ORACLE</strong><br>
+                            DIGEST: <span style="color:var(--text-dim);">0x21b8a91cde4533f1af9077b288f2cc44bc11</span><br>
+                            DA HASH: <span style="color:var(--text-dim);">0xde4533f1af9077b288f2cc4421b8a91c74a9</span>
+                        </div>
+                    </div>
+                    <div class="model-row">
+                        <div class="status-badge">Active</div>
+                        <div class="model-meta">
+                            <strong style="color:white; font-size:0.7rem;">LCAI-ZK-PROVER</strong><br>
+                            DIGEST: <span style="color:var(--text-dim);">0x88f2cc44af9077b274a9f32b8811bc1199e2</span><br>
+                            DA HASH: <span style="color:var(--text-dim);">0xaf9077b288f2cc44bc1199e2af9077b2de45</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -146,7 +166,6 @@ const log = (msg, type = "") => {
     cb.scrollTop = cb.scrollHeight;
 };
 
-// --- FIXED PRICE ENGINE ---
 async function fetchPrices() {
     try {
         const ethRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
@@ -157,18 +176,14 @@ async function fetchPrices() {
         const dexData = await dexRes.json();
         
         if (dexData && dexData.pair && dexData.pair.priceUsd) {
-            // APPLYING REQUESTED .toFixed(6)
             document.getElementById('lcai-price').innerText = `$${parseFloat(dexData.pair.priceUsd).toFixed(6)}`;
         } else {
-            // Automatic Fallback
             const uniRes = await fetch(`https://api.coinbase.com/v2/prices/ETH-USD/spot`);
             const uniData = await uniRes.json();
             const fallbackPrice = (parseFloat(uniData.data.amount) * 0.0001).toFixed(6);
             document.getElementById('lcai-price').innerText = `$${fallbackPrice}*`;
         }
-    } catch (e) { 
-        console.error("Price Engine Error:", e);
-    }
+    } catch (e) { console.error("Price Sync Error", e); }
 }
 
 async function connectWallet() {
@@ -240,6 +255,7 @@ function downloadIdentityJSON() {
 
 function downloadQRCode() {
     const img = document.querySelector("#qrcode img");
+    if(!img) return;
     const link = document.createElement("a");
     link.href = img.src;
     link.download = `LCAI_ZK_QR_${user.slice(0,6)}.png`;
@@ -307,7 +323,6 @@ function showView(id, btn) {
     btn.classList.add('active');
 }
 
-// FIXED REFRESH RATE TO 5000ms
 window.onload = () => { fetchPrices(); setInterval(fetchPrices, 5000); };
 </script>
 </body>
