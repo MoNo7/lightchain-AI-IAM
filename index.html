@@ -159,7 +159,7 @@ async function fetchPrices() {
         document.getElementById('eth-price').innerText = `$${ethData.ethereum.usd.toLocaleString()}`;
         const lcaiRes = await fetch(`https://api.dexscreener.com/latest/dex/pairs/ethereum/${CONFIG.lcaiPair}`);
         const lcaiData = await lcaiRes.json();
-        if (lcaiData.pair) document.getElementById('lcai-price').innerText = `$${parseFloat(lcaiData.pair.priceUsd).toFixed(5)}`;
+        if (lcaiData.pair) document.getElementById('lcai-price').innerText = `$${parseFloat(lcaiData.pair.priceUsd).toFixed(6)}`;
     } catch (e) { }
 }
 
@@ -300,8 +300,9 @@ function showView(id, btn) {
     btn.classList.add('active');
 }
 
-window.onload = () => { fetchPrices(); setInterval(fetchPrices, 30000); };
+window.onload = () => { fetchPrices(); setInterval(fetchPrices, 5000); };
 </script>
 </body>
 </html>
+
 
