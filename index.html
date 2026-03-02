@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Lightchain AI | Admin zkIdentity Portal</title>
+    <title>Lightchain AI | IAM Admin Portal (Sirius V2)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -12,124 +12,109 @@
             --zk-gold: #ffcc00; --green: #39d353;
         }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* Left Menu - zkIdentity & Admin */
-        nav { width: 240px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; }
+        nav { width: 250px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; }
         .nav-section { margin-bottom: 25px; }
         .nav-label { font-size: 0.65rem; color: #484f58; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: block; }
-        .nav-item { padding: 10px; cursor: pointer; color: #8b949e; display: flex; align-items: center; gap: 10px; border-radius: 6px; font-size: 0.85rem; transition: 0.2s; }
-        .nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
+        .nav-item { padding: 10px; cursor: pointer; color: #8b949e; display: flex; align-items: center; gap: 10px; border-radius: 6px; font-size: 0.85rem; }
         .nav-item.active { background: var(--panel); color: var(--accent); border: 1px solid var(--border); }
-        .zk-status { font-size: 0.7rem; color: var(--zk-gold); margin-top: 5px; display: flex; align-items: center; gap: 5px; }
-
-        /* Main Workspace */
-        .workspace { flex: 1; display: flex; flex-direction: column; background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png'); }
-        
-        header { 
-            height: 60px; background: rgba(10,12,16,0.9); border-bottom: 1px solid var(--border); 
-            display: flex; align-items: center; justify-content: space-between; padding: 0 25px; backdrop-filter: blur(10px);
-        }
-        
-        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding: 25px; flex: 1; overflow-y: auto; }
-        .admin-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; }
+        .workspace { flex: 1; display: flex; flex-direction: column; background: #050608; }
+        header { height: 60px; background: var(--sidebar); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 25px; }
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; padding: 25px; flex: 1; overflow-y: auto; }
+        .admin-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
         .card-title { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid #1b1f24; padding-bottom: 10px; }
-
-        /* Telemetry List */
-        .node-line { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dotted #21262d; font-size: 0.8rem; }
+        .node-line { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dotted #21262d; font-size: 0.75rem; }
         .status-dot { height: 6px; width: 6px; border-radius: 50%; background: #484f58; margin-right: 8px; display: inline-block; }
         .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); }
-
-        /* Bottom Console */
-        #console { height: 140px; background: #000; border-top: 2px solid var(--border); color: var(--green); font-family: 'Courier New', monospace; padding: 12px; overflow-y: auto; font-size: 0.8rem; }
+        #console { height: 150px; background: #000; border-top: 1px solid var(--border); color: var(--green); font-family: monospace; padding: 15px; overflow-y: auto; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
     <nav>
         <div style="margin-bottom: 30px;">
-            <h1 style="color:white; font-size:1rem; margin:0;">IAM ADMIN</h1>
-            <div class="zk-status"><i class="fas fa-fingerprint"></i> zkIdentity: <span id="zkStatus">ENCRYPTED</span></div>
+            <h1 style="color:white; font-size:1.1rem; margin:0; letter-spacing:1px;">LCAI ADMIN</h1>
+            <div style="font-size: 0.7rem; color: var(--zk-gold); margin-top: 5px;"><i class="fas fa-fingerprint"></i> ID Vault: <span id="zkStatus">PROTECTED</span></div>
         </div>
         
         <div class="nav-section">
-            <span class="nav-label">Core Systems</span>
-            <div class="nav-item active"><i class="fas fa-columns"></i> Dashboard</div>
-            <div class="nav-item"><i class="fas fa-server"></i> Node Cluster</div>
-        </div>
-
-        <div class="nav-section">
-            <span class="nav-label">Identity Vault</span>
-            <div class="nav-item"><i class="fas fa-user-shield"></i> zkProfiles</div>
-            <div class="nav-item"><i class="fas fa-key"></i> Key Manager</div>
+            <span class="nav-label">Identity Modules</span>
+            <div class="nav-item active"><i class="fas fa-user-shield"></i> zkIdentity Manager</div>
+            <div class="nav-item"><i class="fas fa-id-card"></i> SBT Attestations</div>
         </div>
 
         <div class="telemetry-group" style="margin-top:auto;">
-            <span class="nav-label">Sirius V2 Status</span>
+            <span class="nav-label">Sirius V2 Validators</span>
             <div id="sideNodes"></div>
         </div>
     </nav>
 
     <div class="workspace">
         <header>
-            <div style="font-size: 0.85rem; color: var(--accent);">System Load: <span id="loadVal">14.2%</span></div>
-            <button onclick="connect()" id="walletBtn" style="background:var(--accent); color:black; border:none; padding:6px 15px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.8rem;">LINK ADMIN ID</button>
+            <div style="font-size: 0.8rem; color: var(--accent);">Network: <span style="color:var(--green)">SIRIUS_V2_TESTNET</span></div>
+            <button onclick="connect()" id="walletBtn" style="background:var(--accent); color:black; border:none; padding:7px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">CONNECT ID</button>
         </header>
 
         <main class="admin-grid">
             <div class="admin-card">
-                <div class="card-title">Network Inference (Global)</div>
-                <div style="font-size: 2.5rem; font-weight: bold;">1.24 <small style="font-size: 1rem; color: #484f58;">PH/s</small></div>
+                <div class="card-title">Contract Registry</div>
+                <div style="font-size: 0.7rem; color: #8b949e; line-height: 1.6;">
+                    LCAI Token: <span style="color:white">0x9ca8...8927</span><br>
+                    Validator Reg: <span style="color:white">0x4f5C...926c</span><br>
+                    AIVM Anchor: <span style="color:white">0x2e41...b9C0</span><br>
+                    Pair (LCAI/WETH): <span style="color:white">0x0d04...a3be</span>
+                </div>
             </div>
 
             <div class="admin-card">
-                <div class="card-title">zkIdentity Verification Log</div>
-                <div id="idLog" style="font-size: 0.75rem; color: #8b949e;">
-                    > Session Hash: b4f9...2e11<br>
-                    > Proof Type: Groth16<br>
-                    > Status: <span style="color:var(--green)">Verified</span>
-                </div>
+                <div class="card-title">Live Inference Power</div>
+                <div style="font-size: 2.2rem; font-weight: bold; color:white;">1.24 <small style="font-size: 0.9rem; color: #484f58;">PH/s</small></div>
             </div>
         </main>
 
-        <div id="console">> [ADMIN] Booting zkIdentity Module...<br>> [ADMIN] Context synced with Sirius V2 RPC.</div>
+        <div id="console">> [INIT] Syncing with Sirius V2 RPC (ChainID: 217)...<br>> [SYS] Loading Validator Telemetry...</div>
     </div>
 
     <script>
         const CONFIG = {
-            RPC: "https://rpc2.siriusnet.io",
-            NODES: [
-                { id: "NODE-A", addr: "0x9ca8530ca349c966fe9ef903df17a75b8a778927" },
-                { id: "NODE-B", addr: "0x2e41d0d7e8a5ec7aa7ac7a72ce69b2b79028b9c0" }
-            ]
+            // Updated to official Sirius V2 Testnet Parameters
+            rpc: "https://rpc2.siriusnet.io",
+            lcaiToken: "0x9ca8530ca349c966fe9ef903df17a75b8a778927",
+            validatorReg: "0x4f5CEB0B03ed78494d6f73C1e49b381ac396926c",
+            aivmAnchor: "0x2e41d0D7e8a5Ec7aa7Ac7A72CE69b2B79028b9C0",
+            lcaiPair: "0x0d047a370611437a1b8e6c2a95ea36f69fdda3be"
         };
 
+        const TEST_NODES = [
+            { id: "VAL-ALPHA", addr: CONFIG.validatorReg },
+            { id: "VAL-BRAVO", addr: CONFIG.aivmAnchor }
+        ];
+
         async function updateTelemetry() {
-            const provider = new ethers.JsonRpcProvider(CONFIG.RPC);
+            const provider = new ethers.JsonRpcProvider(CONFIG.rpc);
             const list = document.getElementById('sideNodes');
             let html = "";
 
-            for(let node of CONFIG.NODES) {
+            for(let node of TEST_NODES) {
                 try {
-                    const bal = await provider.getBalance(node.addr);
-                    const isUp = bal > 0n;
+                    const code = await provider.getCode(node.addr);
+                    const isDeployed = code !== "0x"; 
                     html += `<div class="node-line">
-                        <span><div class="status-dot ${isUp ? 'online' : ''}"></div>${node.id}</span>
-                        <span style="color:${isUp ? 'var(--green)' : '#8b949e'}">${isUp ? 'UP' : 'DOWN'}</span>
+                        <span><div class="status-dot ${isDeployed ? 'online' : ''}"></div>${node.id}</span>
+                        <span style="color:${isDeployed ? 'var(--green)' : '#8b949e'}">${isDeployed ? 'ACTIVE' : 'IDLE'}</span>
                     </div>`;
                 } catch(e) { console.error(e); }
             }
             list.innerHTML = html;
-            document.getElementById('loadVal').innerText = (Math.random() * 2 + 12).toFixed(1) + "%";
         }
 
         async function connect() {
             if(!window.ethereum) return;
             const provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await provider.send("eth_requestAccounts", []);
-            document.getElementById('walletBtn').innerText = "ID: " + accounts[0].slice(0,8);
+            document.getElementById('walletBtn').innerText = accounts[0].slice(0,10);
             document.getElementById('zkStatus').innerText = "VERIFIED";
             document.getElementById('zkStatus').style.color = "var(--green)";
-            document.getElementById('console').innerHTML += `<br>> [ID] Administrative access granted to ${accounts[0]}`;
+            document.getElementById('console').innerHTML += `<br>> [ID] Admin session linked to ${accounts[0]}`;
         }
 
         updateTelemetry();
