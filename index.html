@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Lightchain AI | IAM Admin Portal (Testnet 504)</title>
+    <title>Lightchain AI | IAM Portal (Testnet 504)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -12,13 +12,19 @@
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         nav { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
         .nav-item { padding: 12px; cursor: pointer; color: #8b949e; display: flex; align-items: center; gap: 10px; border-radius: 6px; font-size: 0.85rem; transition: 0.2s; }
+        .nav-brand { margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
         .nav-item:hover, .nav-item.active { background: var(--panel); color: var(--accent); }
         .workspace { flex: 1; display: flex; flex-direction: column; background: #050608; overflow: hidden; }
         header { height: 60px; background: var(--sidebar); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-end; padding: 0 25px; }
+        .pill-group { display: flex; gap: 10px; align-items: center; }
+        .pill { background: #000; border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; display: flex; align-items: center; gap: 8px; font-family: monospace; }
+        .pill-status { color: var(--green); text-transform: uppercase; }
         .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; padding: 25px; overflow-y: auto; flex: 1; }
         .admin-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
         .btn-zk { background: var(--accent); color: #000; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
         .btn-social { flex: 1; padding: 8px; border-radius: 4px; border: none; cursor: pointer; color: white; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        main { flex: 1; padding: 30px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 25px; position: relative; }
         input, textarea { background: #050608; border: 1px solid var(--border); color: white; padding: 10px; border-radius: 4px; width: 100%; margin: 10px 0; box-sizing: border-box; }
         #console { height: 130px; background: #000; border-top: 1px solid var(--border); color: var(--green); padding: 15px; font-family: monospace; overflow-y: auto; font-size: 0.75rem; }
         .step-locked { opacity: 0.3; pointer-events: none; }
@@ -26,24 +32,39 @@
 </head>
 <body>
     <nav>
+        <div class="nav-brand">
+            <h1 style="color:white; font-size:1.2rem; margin:0;">LIGHTCHAIN <span style="color:var(--accent)">AI</span></h1>
+            <div style="font-size:0.65rem; color:#484f58; margin-top:4px;">IDENTITY & ACCESS MGMT</div>
+        </div>
         <div style="margin-bottom: 30px;">
             <h1 style="color:white; font-size:1.1rem; margin:0;">Lightchain AI | Testnet</h1>
             <div id="zkStatus" style="font-size: 0.65rem; color: var(--accent); margin-top: 5px;"><i class="fas fa-shield-alt"></i> TESTNET-504</div>
         </div>
-        <div class="nav-item active" onclick="showView('zkWindow')"><i class="fas fa-id-card"></i> zkIdentity</div>
+        <div class="nav-item active" onclick="showView('zkIdentity')"><i class="fas fa-id-card"></i> zkIdentity</div>
         <div id="adminMenu" style="display:none;">
-            <div class="nav-item" onclick="showView('batchWindow')"><i class="fas fa-users-cog"></i> Batch Admin</div>
-            <div class="nav-item" onclick="showView('revenueWindow')"><i class="fas fa-wallet"></i> Revenue</div>
+            <div class="nav-item" onclick="showView('batchAdmin')"><i class="fas fa-users-cog"></i> Batch Admin</div>
+            <div class="nav-item" onclick="showView('revenue')"><i class="fas fa-wallet"></i> Revenue</div>
         </div>
     </nav>
 
     <div class="workspace">
         <header>
+            <div class="pill-group">
+                <div class="pill">LCAI-IAM <span class="pill-status">● Active</span></div>
+                <div class="pill"><i class="fas fa-microchip"></i> Load: <span id="loadPill">12%</span></div>
+            </div>
+            
+            <div class="pill">LCAI/USD: <span style="color:var(--green)">$0.8421</span></div>
+
+            <div class="pill-group">
+                <div class="pill"><i class="fas fa-wallet"></i> <span id="balancePill">0.00 LCAI</span></div>
+                <button onclick="connect()" id="walletBtn" class="pill" style="cursor:pointer; background:var(--accent); color:#000; font-weight:bold; border:none;">CONNECT WALLET</button>
+            </div>
             <button onclick="connect()" id="walletBtn" class="btn-zk" style="width:auto; padding:7px 15px; margin:0;">CONNECT ID</button>
         </header>
 
         <main class="admin-grid">
-            <div id="zkWindow" class="admin-card">
+            <div id="zkIdentity" class="admin-card">
                 <div style="font-size:0.75rem; color:#484f58; text-transform:uppercase; margin-bottom:15px; border-bottom:1px solid #1b1f24; padding-bottom:5px;">Identity Management</div>
                 
                 <div id="step-auth" class="step-locked">
@@ -64,7 +85,7 @@
                 </div>
             </div>
 
-            <div id="batchWindow" class="admin-card" style="display:none;">
+            <div id="batchhAdmin" class="admin-card" style="display:none;">
                 <div style="font-size:0.75rem; color:#484f58; text-transform:uppercase; margin-bottom:15px;">Batch Verifier</div>
                 <textarea id="batchAddrs" placeholder="Addresses (comma or newline separated)..."></textarea>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
@@ -96,16 +117,105 @@
         };
 
         let userWallet, idHash;
+        
+        // --- CONFIGURATION ---
+        const OAUTH_CONFIG = {
+            Discord: {
+                id: "YOUR_DISCORD_CLIENT_ID", 
+                url: "https://discord.com/api/oauth2/authorize",
+                api: "https://discord.com/api/users/@me",
+                scopes: "identify"
+            },
+            GitHub: {
+                id: "YOUR_GITHUB_CLIENT_ID",
+                url: "https://github.com/login/oauth/authorize",
+                api: "https://api.github.com/user",
+                scopes: "read:user"
+            }
+        };
 
-        async function connect() {
-            if(!window.ethereum) return log("Error: Metamask not found.");
+        // 1. TRIGGER THE REDIRECT
+        function startOAuth(provider) {
+            const config = OAUTH_CONFIG[provider];
+            const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+            
+            // Build the Auth URL
+            const authUrl = `${config.url}?client_id=${config.id}&redirect_uri=${redirectUri}&response_type=token&scope=${config.scopes}`;
+            
+            log(`Redirecting to ${provider}...`);
+            window.location.href = authUrl;
+        }
+        
+        // 2. HANDLE THE RETURN (Add this to your window.onload)
+        window.addEventListener('load', async () => {
+        const params = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = params.get('access_token');
+        const stateProvider = localStorage.getItem('pending_auth_provider');
+            
+        if (accessToken && stateProvider) {
+                log(`Verifying ${stateProvider} credentials...`);
+                
+                try {
+                    // Fetch real user data from the provider's API
+                    const response = await fetch(OAUTH_CONFIG[stateProvider].api, {
+                        headers: { Authorization: `Bearer ${accessToken}` }
+                    });
+                    const userData = await response.json();
+                    
+                    // Use the REAL unique ID (snowflake/uid) to create the on-chain hash
+                    // This prevents identity spoofing
+                    const uniqueId = userData.id || userData.sub; 
+                    idHash = ethers.id(`${stateProvider}:${uniqueId}`);
+        
+                    log(`True Identity Verified: ${userData.username || userData.login}`);
+                    
+                    // UI Updates
+                    document.getElementById('mintStep').classList.remove('step-locked');
+                    document.getElementById('qrcode').innerHTML = "";
+                    new QRCode(document.getElementById("qrcode"), { 
+                        text: `did:lcai:${userWallet}:${stateProvider}:${uniqueId}`, 
+                        width: 128, height: 128 
+                    });
+        
+                    // Cleanup
+                    localStorage.removeItem('pending_auth_provider');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } catch (e) {
+                    log("OAuth Verification Failed. Try again.");
+                }
+            }
+        });
+
+        // Trigger the Redirect
+        function linkSocial(provider) {
+            if(!userWallet) return log("Connect Wallet First!");
+            
+            localStorage.setItem('pending_auth_provider', provider);
+            const config = OAUTH_CONFIG[provider];
+            const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+            
+            // Construct the live URL
+            const authUrl = `${config.url}?client_id=${config.id}&redirect_uri=${redirectUri}&response_type=token&scope=${config.scopes}`;
+            
+            log(`Redirecting to ${provider} Secure Login...`);
+            window.location.href = authUrl;
+        }
+
+        let userWallet, idHash;
+
+async function connect() {
+            if(!window.ethereum) return log("Error: Install Metamask.");
             const provider = new ethers.BrowserProvider(window.ethereum);
             const accs = await provider.send("eth_requestAccounts", []);
             userWallet = accs[0];
+            
+            const bal = await provider.getBalance(userWallet);
+            document.getElementById('balancePill').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2) + " LCAI";
             document.getElementById('walletBtn').innerText = userWallet.slice(0,6) + "...";
-            document.getElementById('step-auth').classList.remove('step-locked');
+            document.getElementById('authStep').classList.remove('step-locked');
+            
             if(userWallet.toLowerCase() === CONFIG.owner.toLowerCase()) document.getElementById('adminMenu').style.display = 'block';
-            log("Wallet Linked to LCAI-504.");
+            log("Node Connected. Ready for OAuth.");
         }
 
         function handleGoogleAuth(res) {
@@ -121,6 +231,50 @@
             new QRCode(document.getElementById('qrcode'), { text: `did:lcai:${userWallet}:${provider}`, width: 128, height: 128 });
         }
 
+        // --- TRUE OAUTH LOGIC ---
+        function startOAuth(provider) {
+            log(`Redirecting to ${provider} OAuth...`);
+            // Add real Redirect Logic here as per Phase 3 walkthrough
+            idHash = ethers.id(provider + ":" + Math.random()); // Mock for local testing
+            linkSuccess(provider);
+        }
+
+        function handleGoogle(res) {
+            const p = JSON.parse(atob(res.credential.split('.')[1]));
+            idHash = ethers.id("Google:" + p.sub);
+            linkSuccess("Google");
+        }
+
+        function linkSuccess(provider) {
+            log(`${provider} Identity Linked.`);
+            document.getElementById('mintStep').classList.remove('step-locked');
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById('qrcode'), { text: `did:lcai:${userWallet}:${provider}`, width: 128, height: 128 });
+        }
+
+        async function mintSBT() {
+            try {
+                const canvas = document.querySelector('#qrcode canvas');
+                const compressed = canvas.toDataURL("image/jpeg", 0.5);
+                
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const contract = new ethers.Contract(CONFIG.address, CONFIG.abi, signer);
+                
+                log("Processing ZK-Compression Mint...");
+                const tx = await contract.mintWithSocial(
+                    document.getElementById('nickName').value || "User",
+                    `did:lcai:${userWallet}`,
+                    idHash,
+                    compressed,
+                    { value: ethers.parseEther("0.01"), gasLimit: 800000 }
+                );
+                await tx.wait();
+                log("Success: SBT Soulbound to LCAI-504.");
+            } catch(e) { log("Mint Failed: " + e.message); }
+        }
+
+        
         async function mintWithImage() {
             const nick = document.getElementById('nickName').value;
             if(!nick) return log("Error: Nickname required.");
@@ -164,6 +318,13 @@
             event.currentTarget.classList.add('active');
         }
 
+        function switchTab(id) {
+            document.querySelectorAll('main > div').forEach(d => d.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
         function log(m) {
             const c = document.getElementById('console');
             c.innerHTML += `<br>> [${new Date().toLocaleTimeString()}] ${m}`;
@@ -172,3 +333,4 @@
     </script>
 </body>
 </html>
+
