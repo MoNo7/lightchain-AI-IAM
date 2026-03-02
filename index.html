@@ -189,12 +189,15 @@ async function initGallery() {
         grid.innerHTML = "";
         events.reverse().slice(0, 12).forEach(ev => {
             const promptText = ev.args.prompt;
-            grid.innerHTML += `
-                <div style="background:#000; padding:10px; border-radius:6px; border:1px solid var(--border);">
-                    <img src="https://image.pollinations.ai/prompt/${encodeURIComponent(promptText)}?width=400&height=300&nologo=true&seed=${ev.transactionHash}" 
-                         style="width:100%; border-radius:4px; cursor:pointer;" onclick="window.open(this.src)">
-                    <p style="font-size:0.6rem; color:var(--text-dim); margin-top:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${promptText}</p>
-                </div>`;
+
+grid.innerHTML += `
+    <div style="background:#000; padding:10px; border-radius:6px; border:1px solid var(--border);">
+        <img src="https://pollinations.ai/p/${encodeURIComponent(promptText)}?width=400&height=300&seed=${ev.transactionHash}" 
+             style="width:100%; border-radius:4px; cursor:pointer;" 
+             onclick="window.open(this.src)"
+             onerror="this.src='https://via.placeholder.com/400x300?text=Render+Pending'">
+        <p style="font-size:0.6rem; color:var(--text-dim); margin-top:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${promptText}</p>
+    </div>`;
         });
         log("GALLERY SYNCED: " + events.length + " ITEMS", "success");
     } catch (e) { 
@@ -218,6 +221,8 @@ async function generateArt() {
     const img = document.getElementById('output-img');
     const loader = document.getElementById('gen-loader');
     const status = document.getElementById('canvas-status');
+    const safePrompt = encodeURIComponent(prompt.trim());
+    const seed = Math.floor(Math.random() * 1000000);
     if(!prompt) return;
     try {
         log("MINING INFERENCE...");
@@ -226,8 +231,17 @@ async function generateArt() {
         await tx.wait();
         log("RENDER SUCCESS", "success");
         loader.style.display = 'none'; status.innerText = "";
-        img.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${Math.random()}`;
+        img.src = `https://pollinations.ai/p/${safePrompt}?width=1024&height=1024&seed=${seed}`;
         img.style.display = 'block';
+        img.onload = () => {
+    img.style.display = 'block';
+    loader.style.display = 'none';
+    status.innerText = "NEURAL SYNC COMPLETE";
+};
+img.onerror = () => {
+    log("IMAGE RENDER ERROR", "error");
+    status.innerText = "RENDER ENGINE TIMEOUT - RETRYING...";
+};
         initGallery();
     } catch (e) { log("REJECTED"); loader.style.display = 'none'; }
 }
@@ -249,6 +263,7 @@ window.addEventListener('load', () => setTimeout(connectWallet, 500));
 </script>
 </body>
 </html>
+
 
 
 
