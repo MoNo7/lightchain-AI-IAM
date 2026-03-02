@@ -166,7 +166,7 @@ async function fetchPrices() {
         document.getElementById('eth-price').innerText = `$${ethData.ethereum.usd.toLocaleString()}`;
         const lcaiRes = await fetch(`https://api.dexscreener.com/latest/dex/pairs/ethereum/${CONFIG.lcaiPair}`);
         const lcaiData = await lcaiRes.json();
-        if (lcaiData.pair) document.getElementById('lcai-price').innerText = `$${parseFloat(lcaiData.pair.priceUsd).toFixed(5)}`;
+        if (lcaiData.pair) document.getElementById('lcai-price').innerText = `$${parseFloat(lcaiData.pair.priceUsd).toFixed(6)}`;
     } catch (e) { }
 }
 
@@ -191,7 +191,7 @@ async function connectWallet() {
 
 async function updateBalanceDisplay() {
     const bal = await provider.getBalance(user);
-    const formattedBal = parseFloat(ethers.formatEther(bal)).toFixed(2);
+    const formattedBal = parseFloat(ethers.formatEther(bal)).toFixed(4);
     const btn = document.getElementById('wallet-btn');
     btn.innerText = `${user.slice(0,6)}...${user.slice(-4)} | ${formattedBal} LCAI`;
     btn.classList.add('connected');
@@ -307,7 +307,8 @@ function showView(id, btn) {
     btn.classList.add('active');
 }
 
-window.onload = () => { fetchPrices(); setInterval(fetchPrices, 30000); };
+window.onload = () => { fetchPrices(); setInterval(fetchPrices,5000); };
 </script>
 </body>
 </html>
+
