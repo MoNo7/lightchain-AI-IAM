@@ -549,6 +549,40 @@ function startOAuth(providerName) {
     }
 }
 
+async function batchAction(action) {
+    const rawInput = document.getElementById('batchAddrs').value;
+    const addrs = rawInput.split(',').map(a => a.trim()).filter(a => ethers.isAddress(a));
+
+    if (addrs.length === 0) return log("No valid addresses found in list.");
+
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        
+        // Fix: Use the correct function names from LCAI-ZkKYCSBT.sol
+        const contract = new ethers.Contract(CONFIG.address, [
+            "function verifyUser(address _u) public",
+            "function revokeSBT(address _u) public",
+            "function deleteProfile(address _u) public"
+        ], signer);
+
+        for (let addr of addrs) {
+            log(`[SYS] Processing ${action} for ${addr}...`);
+            let tx;
+            if (action === 'verify') tx = await contract.verifyUser(addr);
+            if (action === 'revoke') tx = await contract.revokeSBT(addr);
+            if (action === 'delete') tx = await contract.deleteProfile(addr);
+            
+            await tx.wait();
+            log(`[SUCCESS] ${addr} updated.`);
+        }
+    } catch (e) {
+        log(`[ERROR] ${e.reason || e.message}`);
+        console.error(e);
+    }
+}
+    
+    
 // Add this to your existing DOMContentLoaded listener
 document.addEventListener('DOMContentLoaded', () => {
     handleOAuthCallback();
@@ -573,6 +607,7 @@ c.scrollTop = c.scrollHeight;
 </script>
 </body>
 </html>
+
 
 
 
