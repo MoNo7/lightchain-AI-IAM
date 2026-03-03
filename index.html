@@ -84,36 +84,18 @@ input, textarea { background: #000; border: 1px solid var(--border); color: #fff
                     <span class="pill" style="border-color: var(--accent); color: var(--accent);">DA-LAYER: ACTIVE</span>
                 </div>
                 
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="text-align: left; color: #484f58; border-bottom: 1px solid var(--border);">
-                            <th style="padding: 10px;">Model Name</th>
-                            <th style="padding: 10px;">Status</th>
-                            <th style="padding: 10px;">Load</th>
-                            <th style="padding: 10px;">Hash Address</th>
-                        </tr>
-                    </thead>
-                    <tbody style="font-size: 0.9rem;">
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <td style="padding: 12px; font-weight: bold;">Neural-Llama-3-70B</td>
-                            <td style="padding: 12px;"><span class="status-text online">● Online</span></td>
-                            <td style="padding: 12px;">12.4%</td>
-                            <td style="padding: 12px; font-family: monospace; color: var(--accent);">0xE035...1ea51d</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <td style="padding: 12px; font-weight: bold;">DeepSeek-V3-Base</td>
-                            <td style="padding: 12px;"><span class="status-text working">● Working</span></td>
-                            <td style="padding: 12px;">45.8%</td>
-                            <td style="padding: 12px; font-family: monospace; color: var(--accent);">0xB6f1...fd04E</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <td style="padding: 12px; font-weight: bold;">Mistral-Large-2</td>
-                            <td style="padding: 12px;"><span class="status-text locked">● Locked</span></td>
-                            <td style="padding: 12px;">0%</td>
-                            <td style="padding: 12px; font-family: monospace; color: var(--accent);">0xbcA3...D8FB</td>
-                        </tr>
-                    </tbody>
-                </table>
+<table style="width: 100%; border-collapse: collapse;">
+    <thead>
+        <tr style="text-align: left; color: #484f58; border-bottom: 1px solid var(--border);">
+            <th style="padding: 10px;">Model Name</th>
+            <th style="padding: 10px;">Status</th>
+            <th style="padding: 10px;">Load</th>
+            <th style="padding: 10px;">Full Hash Address</th>
+        </tr>
+    </thead>
+    <tbody id="realtimeModelTable" style="font-size: 0.9rem;">
+        </tbody>
+</table>
 
                 <div style="margin-top: 25px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border);">
                     <div style="font-size: 0.7rem; color: #484f58; margin-bottom: 5px;">DA LAYER HASH</div>
@@ -169,6 +151,63 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
 
 let userWallet;
 
+// Configuration for the Neural Models
+const inferenceModels = [
+    { name: "Neural-Llama-3-70B", hash: "0xE035b7192a5d816b0f420a9e755efc6a2c1ea51d", baseLoad: 12.4 },
+    { name: "DeepSeek-V3-Base", hash: "0xB6f1E497D6879C325c65fa77cB717227976fd04E", baseLoad: 45.8 },
+    { name: "Mistral-Large-2", hash: "0xbcA3b7b7975c1f544d69392603336feb27b8a83aD8FB", baseLoad: 0 }
+];
+async function refreshModelDashboard() {
+    const tableBody = document.getElementById('realtimeModelTable');
+    if (!tableBody) return;
+
+    // Sirius V2 Health Check
+    let nodeOnline = false;
+    try {
+        const healthCheck = await fetch("https://api-2.testnet2.xpxsirius.io/node/health");
+        const healthData = await healthCheck.json();
+        nodeOnline = healthData.status.apiNode === "up";
+    } catch (e) {
+        nodeOnline = false;
+    }
+
+    tableBody.innerHTML = inferenceModels.map(model => {
+        // Calculate Load: If model is "Locked" (0% base), keep it 0. 
+        // Otherwise, add a slight random fluctuation to simulate real-time inference stress.
+        const isLocked = model.baseLoad === 0;
+        const liveLoad = isLocked ? "0%" : (model.baseLoad + (Math.random() * 3 - 1.5)).toFixed(1) + "%";
+        
+        // Determine Status based on Node Health and Model Config
+        let statusHtml = '';
+        if (isLocked) {
+            statusHtml = `<span class="status-text locked" style="color: #ffcc00;">● Locked</span>`;
+        } else if (nodeOnline) {
+            // "Working" status for high-load models
+            const isWorking = parseFloat(liveLoad) > 40;
+            statusHtml = isWorking ? 
+                `<span class="status-text working" style="color: #00d4ff;"><i class="fas fa-sync fa-spin"></i> Working</span>` : 
+                `<span class="status-text online" style="color: #00ff88;">● Online</span>`;
+        } else {
+            statusHtml = `<span class="status-text offline" style="color: #ff4d4d;">● Offline</span>`;
+        }
+
+        return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 12px; font-weight: bold;">${model.name}</td>
+                <td style="padding: 12px;">${statusHtml}</td>
+                <td style="padding: 12px;">${liveLoad}</td>
+                <td style="padding: 12px; font-family: monospace; color: var(--accent); font-size: 0.75rem;">
+                    ${model.hash}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Update every 3 seconds for high-fidelity "Live" feel
+setInterval(refreshModelDashboard, 3000);
+refreshModelDashboard(); // Initial run  
+  
 async function updateBalance(provider) {
 try {
 const bal = await provider.getBalance(userWallet);
@@ -194,7 +233,7 @@ document.getElementById('lcaiTicker').innerText = "$" + price.toFixed(6);
 
 // Find ETH - Target the highest liquidity pair automatically
     
-            const ethPair = data.pairs.find(p => p.baseToken.address.toLowerCase() === ETH_TOKEN.toLowerCase());
+const ethPair = data.pairs.find(p => p.baseToken.address.toLowerCase() === ETH_TOKEN.toLowerCase());
 if (ethPair && document.getElementById('ethTicker')) {
 const price = parseFloat(ethPair.priceUsd);
 document.getElementById('ethTicker').innerText = "$" + price.toLocaleString(undefined, {
@@ -287,6 +326,7 @@ c.scrollTop = c.scrollHeight;
 </script>
 </body>
 </html>
+
 
 
 
