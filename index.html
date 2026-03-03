@@ -296,19 +296,64 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
         async function queryIdentity() {
             const input = document.getElementById('queryAddr').value.trim();
             const res = document.getElementById('queryResult');
-            console.log(`[SYS] Querying: ${input}`);
+            
+            if (!ethers.isAddress(input)) {
+                res.innerHTML = `<span style="color:var(--red)">INVALID ADDRESS</span>`;
+                return log("Query failed: Invalid Ethereum address.");
+            }
+        
+            log(`Querying Registry for: ${input}`);
             try {
-                const addr = ethers.getAddress(input);
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const contract = new ethers.Contract(CONFIG.contract, ["function profiles(address) view returns (string, string, bool, bool)"], provider);
-                const profile = await contract.profiles(addr);
-                if(profile[3]) {
-                    const s = profile[2] ? "VERIFIED" : "PENDING";
-                    res.innerHTML = `<span style="color:var(--green)">${s}:</span> ${profile[0]} (${profile[1]})`;
-                } else { res.innerHTML = `<span style="color:var(--red)">NOT FOUND</span>`; }
-            } catch(e) { console.error(e); res.innerHTML = `<span style="color:var(--red)">Error: Invalid Address</span>`; }
+                const profile = await contract.profiles(input);
+                
+                if (profile[3]) { // profile[3] is the 'exists' boolean
+                    const status = profile[2] ? "VERIFIED" : "PENDING";
+                    res.innerHTML = `<span style="color:var(--green)">${status}:</span> ${profile[0]} (${profile[1]})`;
+                    log(`Match Found: ${profile[0]} [${profile[1]}] is ${status}`);
+                } else {
+                    res.innerHTML = `<span style="color:var(--red)">NOT FOUND</span>`;
+                    log("No identity record found for this address.");
+                }
+            } catch (e) {
+                log("Protocol Error: Unable to fetch profile data.");
+                res.innerHTML = `<span style="color:var(--red)">ERROR</span>`;
+            }
         }
 
+        async function batchAction(action) {
+            const input = document.getElementById('batchAddrs').value;
+            const addrs = input.split(',').map(a => a.trim()).filter(a => ethers.isAddress(a));
+            
+            if (addrs.length === 0) return log("Error: No valid addresses in batch list.");
+            if (!userWallet) return log("Error: Please connect admin wallet first.");
+        
+            log(`Starting batch ${action} for ${addrs.length} identities...`);
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                // Interface for verification and revocation
+                const contract = new ethers.Contract(CONFIG.contract, [
+                    "function setVerification(address user, bool status) public",
+                    "function revokeIdentity(address user) public"
+                ], signer);
+        
+                for (const addr of addrs) {
+                    log(`Sending tx for: ${addr.slice(0,10)}...`);
+                    const tx = (action === 'verify') 
+                        ? await contract.setVerification(addr, true)
+                        : await contract.revokeIdentity(addr);
+                    
+                    await tx.wait();
+                    log(`Success: ${addr.slice(0,6)} updated.`);
+                }
+                log(`Registry Update Complete: ${action} sequence finished.`);
+            } catch (e) {
+                log(`Critical Failure: ${e.reason || e.message}`);
+            }
+        }
+        
         async function downloadRegistryCSV() {
             const addrs = document.getElementById('batchAddrs').value.split(',').map(a=>a.trim()).filter(a=>ethers.isAddress(a));
             if(addrs.length === 0) return log("Registry empty.");
@@ -367,5 +412,6 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
     </script>
 </body>
 </html>
+
 
 
