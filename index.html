@@ -484,6 +484,7 @@ async function queryIdentity() {
         result.innerHTML = `<span style="color:var(--red)">Address Error: Check format</span>`;
     }
 }
+    
 function startOAuth(providerName) {
     const provider = OAUTH_CONFIG[providerName];
     if (!provider) return log(`[SYS] Provider ${providerName} not configured.`);
@@ -576,6 +577,7 @@ async function batchAction(action) {
         ], signer);
 
         for (let addr of addrs) {
+            const cleanAddr = ethers.getAddress(addr);
             log(`[SYS] Processing ${action} for ${addr}...`);
             let tx;
             if (action === 'verify') tx = await contract.verifyUser(addr);
@@ -659,6 +661,7 @@ c.scrollTop = c.scrollHeight;
 </script>
 </body>
 </html>
+
 
 
 
