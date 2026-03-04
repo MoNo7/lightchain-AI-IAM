@@ -242,6 +242,8 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
 
 
         let userWallet;
+        let isRegistered = false;
+        
         const inferenceModels = [
             { name: "Neural-Llama-3-70B", hash: "0xE035b7192a5d816b0f420a9e755efc6a2c1ea51d", baseLoad: 12.4 },
             { name: "DeepSeek-V3-Base", hash: "0xB6f1E497D6879C325c65fa77cB717227976fd04E", baseLoad: 45.8 },
@@ -334,7 +336,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
         }
 
         async function registerLocal() {
-            const nick = document.getElementById('regNick').value.trim();
+            const nick = document.getElementById('nickName').value.trim();
             let did = document.getElementById('regDid').value.trim(); // Change const to let
             
             if (!nick) return log("Error: Display Name is required.");
@@ -672,6 +674,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
     </script>
 </body>
 </html>
+
 
 
 
