@@ -626,6 +626,10 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
                 galleryItem.classList.remove('locked-feature');
                 if (galleryLock) galleryLock.className = "fas fa-images"; // Changes lock to images icon
             }
+
+            galleryitem.classList.remove('locked-feature');
+            galleryitem.style.opacity = "1";
+            galleryItem.style.filter = "grayscale(0)";
             
             // Switch lock icon to the palette icon
             lockIcon.className = "fas fa-palette";
@@ -730,6 +734,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
     </script>
 </body>
 </html>
+
 
 
 
