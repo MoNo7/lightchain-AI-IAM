@@ -157,7 +157,7 @@
                 <textarea id="batchAddrs" placeholder="0x..., 0x..."></textarea>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
                     <button class="btn-zk" onclick="batchAction('verify')">VERIFY LIST</button>
-                    <button class="btn-zk" onclick="batchAction('revoke')" style="background:var(--red); color:#fff;">REVOKE SBT</button>
+                    <button class="btn-zk" onclick="batchAction('revoke')" style="background:var(--red); color:#fff;">REVOKE USER</button>
                     <button class="btn-zk" onclick="downloadRegistryCSV()" style="background:#2ea44f; color:#fff;"><i class="fas fa-file-download"></i> EXPORT CSV</button>
                 </div>
             </div>
@@ -342,8 +342,8 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
                 
                 // Match the function name in your LCAI-ZkKYCSBT.sol: "verifyUser"
                 const contract = new ethers.Contract(CONFIG.contract, [
-                    "function verifyUser(address _u) public"
-                    "function revokeUser(address _u) public"
+                    "function verifyUser(address _u) public",
+                    "function revokeUser(address _u) public",
                     "function removeSBT(address _u) public"
                 ], signer);
         
@@ -425,6 +425,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
     </script>
 </body>
 </html>
+
 
 
 
