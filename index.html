@@ -129,10 +129,14 @@
            <div style="border-right: 1px solid var(--border); padding-right: 30px;">
             <h3 style="color: var(--accent);"><i class="fas fa-user-plus"></i> 1. Site Registration</h3>
             <p style="font-size: 0.8rem; color: var(--text-dim);">Create a local profile to unlock registered areas. No gas fee required for this step.</p>
-               
-        <h3>Soulbound Identity Mint</h3>
+                   
         <div id="authStep" class="step-locked">
-            <p style="font-size:0.8rem; color:var(--accent);">1. Link Social Provider</p>
+            <input type="text" id="regNick" placeholder="Display Name">
+            <input type="text" id="regDid" placeholder="Social Handle or DID <blank for default did:lcai:walletaddress>">
+            <button class="btn-zk" style="background: var(--green);" onclick="registerLocal()">CREATE PROFILE</button>
+        </div>
+  
+               <p style="font-size:0.8rem; color:var(--accent);">1. Link Social Provider</p>
             <div class="social-grid">
                 <button id="btn-discord" class="btn-zk locked-provider" onclick="startOAuth('Discord')"><i class="fab fa-discord"></i> Discord</button>
                 <button id="btn-github" class="btn-zk locked-provider" onclick="startOAuth('GitHub')"><i class="fab fa-github"></i> GitHub</button>
@@ -140,10 +144,7 @@
                 <button id="btn-google" class="btn-zk locked-provider" onclick="startOAuth('Google')"><i class="fab fa-google"></i> Google</button>
                 <button id="btn-linkedin" class="btn-zk locked-provider" onclick="startOAuth('LinkedIn')"><i class="fab fa-linkedin"></i> LinkedIn</button>
             </div>
-            <input type="text" id="regNick" placeholder="Display Name">
-            <input type="text" id="regDid" placeholder="Social Handle or DID <blank for default did:lcai:walletaddress>">
-            <button class="btn-zk" style="background: var(--green);" onclick="registerLocal()">CREATE PROFILE</button>
-        </div>
+           <h3>Soulbound Identity Mint</h3>
         <div id="mintSection" class="step-locked">
             <h3 style="color: var(--accent);"><i class="fas fa-shield-check"></i> 2. Verify & Mint SBT</h3>
                 <p style="font-size: 0.8rem; color: var(--text-dim);">Mint your identity to the Lightchain blockchain to unlock Verified features and AIVM Art.</p>
@@ -151,8 +152,7 @@
                 <input type="text" id="nickName" placeholder="Identity Nickname">
                 <button class="btn-zk" onclick="mintWithImage()">MINT SBT</button>
         </div>
-    </div>
-
+  </div>
             <div id="batchView" class="card" style="display:none;">
                 <h3>Protocol Identity Registry</h3>
                 <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
@@ -562,6 +562,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
     </script>
 </body>
 </html>
+
 
 
 
