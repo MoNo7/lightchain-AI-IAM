@@ -315,14 +315,15 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
                 const isVerified = await contract.verified(input);
                 const adminStatus = await contract.isAdmin(input); 
                 
-                if (name !== "") {
-                    const status = isVerified ? "VERIFIED" : "PENDING";
-                    const role = adminStatus ? " (ADMIN)" : "";
-                    res.innerHTML = `<span style="color:var(--green)">${status}${role}:</span> ${name} (${did})`;
-                    log(`Match Found: ${name} is ${status}`);
-                } else {
-                    res.innerHTML = `<span style="color:var(--red)">NOT FOUND</span>`;
-                }
+            if (name && name !== "") {
+                const status = isVerified ? "VERIFIED" : "PENDING";
+                const adminTag = adminStatus ? " <span style='color:var(--accent)'>[ADMIN]</span>" : "";
+                res.innerHTML = `<span style="color:var(--green)">${status}:</span> ${name} (${did})${adminTag}`;
+                log(`Match Found: ${name} is ${status}`);
+            } else {
+                res.innerHTML = `<span style="color:var(--red)">NOT FOUND</span>`;
+                log("No identity record found.");
+            }
             } catch (e) {
                 log("Query Error: Protocol communication failed.");
                 res.innerHTML = `<span style="color:var(--red)">ERROR</span>`;
@@ -426,6 +427,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
     </script>
 </body>
 </html>
+
 
 
 
