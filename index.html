@@ -376,6 +376,14 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
             unlockArtStudio(); // This removes the lock immediately
             document.getElementById('mintSection').classList.remove('step-locked');
 
+            // 2. FORCE UNLOCK the Minting Area
+            const mintSection = document.getElementById('mintSection');
+            if (mintSection) {
+                mintSection.classList.remove('step-locked');
+                mintSection.style.opacity = "1"; // Ensure it becomes fully visible
+                mintSection.style.pointerEvents = "auto"; // Re-enable clicks
+            }
+
             
             // Auto-fill the Minting section nickname
             document.getElementById('nickName').value = nick;
@@ -694,6 +702,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
     </script>
 </body>
 </html>
+
 
 
 
