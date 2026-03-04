@@ -249,6 +249,16 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
             { name: "Mistral-Large-2", hash: "0xbcA3b7b7975c1f544d69392603336feb27b8a83aD8FB", baseLoad: 0 }
         ];
 
+        function handleArtNavClick() {
+            const artItem = document.getElementById('artNavItem');
+            if (artItem.classList.contains('locked-feature')) {
+                log("Action Required: Complete 'Site Registration' to unlock the Art Studio.");
+                showView('zkView'); // Redirect them to the registration page
+            } else {
+                showView('renderView');
+            }
+        }
+
         // --- CORE FUNCTIONS ---
       async function fetchPrices() {
         try {
@@ -684,6 +694,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
     </script>
 </body>
 </html>
+
 
 
 
