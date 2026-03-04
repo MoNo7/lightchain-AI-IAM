@@ -75,7 +75,7 @@
             <div class="nav-item active" onclick="showView('dashView')"><i class="fas fa-th-large"></i> Dashboard</div>
             <div class="nav-item" onclick="showView('zkView')"><i class="fas fa-fingerprint"></i> zkIdentity</div>
             <div id="artNavItem" class="nav-item locked-feature" onclick="handleArtClick()"><i class="fas fa-lock" id="artLockIcon"></i><span id="artLabel">AIVM Art Studio</span></div>
-            <div id="artNavItem" class="nav-item locked-feature" onclick="handleArtClick()"><i class="fas fa-lock" id="artLockIcon"></i><span id="artLabel">Gallery</span></div>            
+            <div id="galleryNavItem" class="nav-item locked-feature" onclick="handleGalleryClick()"><i class="fas fa-lock" id="galleryLockIcon"></i>Gallery</span></div>            
         </div>
 
         <div id="adminItems" class="nav-section" style="display:none;">
@@ -284,6 +284,16 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
                 showView('zkView'); // Redirect them to the registration page
             } else {
                 showView('renderView');
+            }
+        }
+
+        function handleGalleryClick() {
+            const item = document.getElementById('galleryNavItem');
+            if (item.classList.contains('locked-feature')) {
+                log("Access Denied: Please Register your Identity to view the AIVM Gallery.");
+                showView('zkView'); 
+            } else {
+                showView('galleryView');
             }
         }
 
@@ -603,14 +613,26 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
         function unlockArtStudio() {
             const artItem = document.getElementById('artNavItem');
             const lockIcon = document.getElementById('artLockIcon');
-            
+            if (artItem) {
+                artItem.classList.remove('locked-feature');
+                if (artLock) artLock.className = "fas fa-palette";
+            }
+
             artItem.classList.remove('locked-feature');
             artItem.style.opacity = "1";
             artItem.style.filter = "grayscale(0)";
+
+            // 2. Unlock Gallery
+            const galleryItem = document.getElementById('galleryNavItem');
+            const galleryLock = document.getElementById('galleryLockIcon');
+            if (galleryItem) {
+                galleryItem.classList.remove('locked-feature');
+                if (galleryLock) galleryLock.className = "fas fa-images"; // Changes lock to images icon
+            }
             
             // Switch lock icon to the palette icon
             lockIcon.className = "fas fa-palette";
-            log("AIVM Art Studio Unlocked!");
+            log("Art Studio & Gallery Unlocked!");
         }
 
         
@@ -711,6 +733,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
     </script>
 </body>
 </html>
+
 
 
 
