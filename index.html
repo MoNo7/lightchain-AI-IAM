@@ -328,7 +328,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
         }
 
         async function registerLocal() {
-            const nick = document.getElementById('nickName').value.trim();
+            const nick = document.getElementById('regNick').value.trim();
             let did = document.getElementById('regDid').value.trim(); // Change const to let
             
             if (!nick) return log("Error: Display Name is required.");
@@ -639,6 +639,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
     </script>
 </body>
 </html>
+
 
 
 
