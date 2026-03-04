@@ -305,17 +305,20 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
                 const contract = new ethers.Contract(CONFIG.contract, [
                     "function nicknames(address) view returns (string)",
                     "function dids(address) view returns (string)",
-                    "function verified(address) view returns (bool)"
+                    "function verified(address) view returns (bool)",
+                    "function isAdmin(address) view returns (bool)"
                 ], provider);
                 
                 // Fetch values from individual mappings
                 const name = await contract.nicknames(input);
                 const did = await contract.dids(input);
                 const isVerified = await contract.verified(input);
-        
+                const adminStatus = await contract.isAdmin(input); 
+                
                 if (name !== "") {
                     const status = isVerified ? "VERIFIED" : "PENDING";
-                    res.innerHTML = `<span style="color:var(--green)">${status}:</span> ${name} (${did})`;
+                    const role = adminStatus ? " (ADMIN)" : "";
+                    res.innerHTML = `<span style="color:var(--green)">${status}${role}:</span> ${name} (${did})`;
                     log(`Match Found: ${name} is ${status}`);
                 } else {
                     res.innerHTML = `<span style="color:var(--red)">NOT FOUND</span>`;
@@ -340,21 +343,26 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
                 // Match the function name in your LCAI-ZkKYCSBT.sol: "verifyUser"
                 const contract = new ethers.Contract(CONFIG.contract, [
                     "function verifyUser(address _u) public"
+                    "function revokeUser(address _u) public"
+                    "function removeSBT(address _u) public"
                 ], signer);
         
                 for (const addr of addrs) {
-                    log(`Sending Tx: ${addr.slice(0,10)}...`);
-                    // Note: Your current contract only has verifyUser, not a revoke function.
+                    log(`Processing: ${addr.slice(0,10)}...`);
+                    let tx;
                     if (action === 'verify') {
-                        const tx = await contract.verifyUser(addr);
-                        await tx.wait();
-                        log(`Success: ${addr.slice(0,6)} verified.`);
-                    } else {
-                        log("Notice: Revoke function not found in current contract.");
+                        tx = await contract.verifyUser(addr);
+                    } else if (action === 'revoke') {
+                        // This calls the simple un-verify function
+                        tx = await contract.revokeUser(addr);
+                    } else if (action === 'remove') {
+                        // This calls the function that wipes all data
+                        tx = await contract.removeSBT(addr);
                     }
-                }
-                log("Batch operation finished.");
-            } catch (e) {
+                    
+                    await tx.wait();
+                    log(`Success: ${addr.slice(0,6)} updated.`);
+                } catch (e) {
                 log(`Transaction Failed: ${e.message}`);
             }
         }
@@ -417,6 +425,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
     </script>
 </body>
 </html>
+
 
 
 
