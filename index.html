@@ -107,7 +107,7 @@
             <div id="dashView" class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3>AIVM Inference Models (Testnet-504)</h3>
-                    <span class="pill" style="color:var(--accent); border-color:var(--accent);">DA-LAYER: ACTIVE 0xdebf8a29fafa83603a58e9ed77e7f900984394a8c70f74f940f0b75c2704fc31 </span>
+                    <span class="pill" style="color:var(--accent); border-color:var(--accent);">DA-LAYER: 0xdebf8a29fafa83603a58e9ed77e7f900984394a8c70f74f940f0b75c2704fc31 </span>
                 </div>
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
@@ -621,12 +621,10 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
             const galleryLock = document.getElementById('galleryLockIcon');
             if (galleryItem) {
                 galleryItem.classList.remove('locked-feature');
-                if (galleryLock) galleryLock.className = "fas fa-images"; // Changes lock to images icon
+                galleryItem.style.opacity = "1";
+                galleryItem.style.pointerEvents = "auto"; // THIS is what fixes the "unclickable" issue
+                if (galleryLock) galleryLock.className = "fas fa-images";
             }
-
-            galleryitem.classList.remove('locked-feature');
-            galleryitem.style.opacity = "1";
-            galleryItem.style.filter = "grayscale(0)";
             
             // Switch lock icon to the palette icon
             lockIcon.className = "fas fa-palette";
@@ -731,6 +729,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
     </script>
 </body>
 </html>
+
 
 
 
