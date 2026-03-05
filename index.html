@@ -79,7 +79,7 @@
         </div>
         <div class="nav-section">
             <span class="nav-label">Marketplace</span>
-            <div id="marketNavItem" class="nav-item" onclick="showView('marketView')"><i class="fas fa-th-large"></i> Shop </div>
+            <div id="marketNavItem" class="nav-item" onclick="showView('marketView')"><i class="fas fa-gavel"></i> Auction House </div>
         </div>
 
         <div id="adminItems" class="nav-section" style="display:none;">
@@ -256,15 +256,18 @@
             </div>
             <div id="marketView" class="card" style="display:none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3>AIVM Marketplace</h3>
-                    <span class="pill" style="color:var(--accent); border-color:var(--accent);">LCAI NODE RENTAL</span>
+                    <div>
+                        <h3 style="margin:0;">AIVM Auction House</h3>
+                        <p style="color: var(--text-dim); font-size: 0.8rem; margin: 5px 0 0 0;">Bid on community-minted AIVM Art</p>
+                    </div>
+                    <button class="pill" onclick="openMintSelect()" style="background:var(--accent); color:#000; font-weight:bold; cursor:pointer; border:none;">+ LIST NFT FOR AUCTION</button>
                 </div>
-                <p style="color: var(--text-dim); font-size: 0.85rem;">
-                    Browse available AIVM inference capacity and premium AI art models.
-                </p>
-                <div style="border: 1px dashed var(--border); padding: 40px; text-align: center; border-radius: 8px;">
-                    <i class="fas fa-tools" style="font-size: 2rem; color: var(--text-dim); margin-bottom: 10px;"></i>
-                    <div style="color: var(--text-dim);">Marketplace Modules Loading...</div>
+            
+                <div id="auctionGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                    <div id="auctionEmpty" style="grid-column: 1/-1; text-align: center; padding: 40px; border: 1px dashed var(--border); border-radius: 8px;">
+                        <i class="fas fa-gavel" style="font-size: 2rem; color: var(--text-dim); margin-bottom: 10px;"></i>
+                        <div style="color: var(--text-dim);">No active auctions. Be the first to list!</div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -509,6 +512,67 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
             }).join('');
             document.getElementById('loadPill').innerText = (10 + Math.random()*5).toFixed(1) + "%";
         }
+
+        let activeAuctions = [];
+
+        function openMintSelect() {
+            if (!isRegistered) return log("Error: You must be registered to list art.");
+            
+            // For this surgical fix, we grab the last generated art from your canvas
+            const canvas = document.getElementById('generatedCanvas');
+            if (canvas.style.display === "none") {
+                return log("Action Required: Generate art in the Art Studio first to list it!");
+            }
+        
+            const imgData = canvas.toDataURL();
+            const nftName = prompt("Enter a name for your Masterpiece:", "AIVM Genesis #1");
+            const startPrice = prompt("Set starting bid (LCAI):", "0.05");
+        
+            if (nftName && startPrice) {
+                postToAuction(nftName, startPrice, imgData);
+            }
+        }
+        
+        function postToAuction(name, price, img) {
+            const auctionItem = {
+                id: Date.now(),
+                seller: userWallet,
+                name: name,
+                price: price,
+                image: img,
+                endTime: Date.now() + (24 * 60 * 60 * 1000) // 24 Hour Auction
+            };
+        
+            activeAuctions.push(auctionItem);
+            renderAuctions();
+            log(`[MARKET] Success: ${name} listed for ${price} LCAI.`);
+        }
+        
+        function renderAuctions() {
+            const grid = document.getElementById('auctionGrid');
+            const empty = document.getElementById('auctionEmpty');
+            
+            if (activeAuctions.length > 0) empty.style.display = 'none';
+            
+            grid.innerHTML = activeAuctions.map(a => `
+                <div class="card" style="margin:0; padding:15px; border-color:var(--border);">
+                    <img src="${a.image}" style="width:100%; border-radius:8px; margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:bold; color:var(--accent);">${a.name}</span>
+                        <span style="font-size:0.7rem; color:var(--text-dim);">By: ${a.seller.slice(0,6)}</span>
+                    </div>
+                    <div style="margin:10px 0; font-family:monospace;">
+                        <div style="font-size:0.7rem; color:var(--text-dim);">CURRENT BID</div>
+                        <div style="color:var(--green); font-size:1.2rem;">${a.price} LCAI</div>
+                    </div>
+                    <button class="btn-zk" onclick="log('Bid functionality coming in v2 Update')">PLACE BID</button>
+                    <div style="text-align:center; font-size:0.6rem; color:var(--red); margin-top:8px;">
+                        <i class="fas fa-clock"></i> ENDS IN 23h 59m
+                    </div>
+                </div>
+            `).join('');
+        }
+        
 
         // --- ADMIN FUNCTIONS ---
         async function queryIdentity() {
@@ -840,6 +904,7 @@ renderAIVMResult(finalImage, selectedModel);
     </script>
 </body>
 </html>
+
 
 
 
