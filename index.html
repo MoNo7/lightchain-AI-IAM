@@ -759,57 +759,64 @@ async function generateAIVMArt() {
     const selectedModel = document.getElementById('modelSelector').value;
 
     if (!basePrompt) return log("Error: Please enter a prompt first.");
-    if (!userWallet) return log("Error: Connect wallet to anchor PoI on Testnet.");
+    if (!userWallet) return log("Error: Connect wallet to anchor PoI.");
 
     isGenerating = true; 
     const finalPrompt = (basePrompt + styleSuffix).replace(/\s+/g, ' ');
 
-    // --- LCAI PROTOCOL ANCHOR (PoI) ---
-    // Generate the unique task hash (promptId) as required by AIVMInferenceV2
-    const promptId = ethers.keccak256(ethers.toUtf8Bytes(finalPrompt + Date.now()));
-    log(`[PROTOCOL] Initiating PoI Anchor: ${promptId.slice(0,18)}...`);
-    
     // UI Feedback
     document.getElementById('renderStatusText').style.display = 'none';
     document.getElementById('aivmOutputImage').style.display = 'none';
     const loader = document.getElementById('renderLoader');
     loader.style.display = 'block';
-    loader.querySelector('div').innerText = `PoI Anchoring & Rendering...`;
+    loader.querySelector('div').innerText = `Anchoring PoI to Testnet...`;
 
     try {
-        const seed = Math.floor(Math.random() * 10000000);
-        const encodedPrompt = encodeURIComponent(finalPrompt);
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
         
-        // Stabilized URL: Removed model parameters that cause "Connection Reset"
+        // --- STEP 1: PROTOCOL ANCHOR (PoI) ---
+        // We anchor the prompt hash to the LCAI AIVM V2 Registry
+        const promptId = ethers.keccak256(ethers.toUtf8Bytes(finalPrompt + Date.now()));
+        log(`[PROTOCOL] Sending PoI Anchor: ${promptId.slice(0,18)}...`);
+
+        // This ensures the task is recorded on-chain before the render proceeds
+        // Using the contract ABI for PoI anchoring
+        const contract = new ethers.Contract(CONFIG.contract, [
+            "function requestInferenceV2(bytes32 promptId, string prompt) public payable"
+        ], signer);
+
+        // Optional: Small fee if required by your specific testnet deployment
+        const tx = await contract.requestInferenceV2(promptId, finalPrompt, { 
+            value: ethers.parseEther("0.005") 
+        });
+        log(`[PROTOCOL] PoI Tx Sent: ${tx.hash.slice(0,18)}...`);
+        await tx.wait();
+
+        // --- STEP 2: STABILIZED RENDER ---
+        const seed = Math.floor(Math.random() * 1000000);
+        const encodedPrompt = encodeURIComponent(finalPrompt);
         const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
 
         const img = new Image();
-        img.crossOrigin = "anonymous"; // Essential for the 'Mint SBT' function
+        img.crossOrigin = "anonymous"; 
 
         img.onload = () => {
             const canvas = document.getElementById('generatedCanvas');
             const ctx = canvas.getContext('2d');
             canvas.width = 1024; canvas.height = 1024;
-            ctx.clearRect(0, 0, 1024, 1024);
             ctx.drawImage(img, 0, 0, 1024, 1024);
             
-            const finalImage = canvas.toDataURL('image/png');
-            renderAIVMResult(finalImage, selectedModel);
-            
-            isGenerating = false; // RELEASE LOCK
-            log(`[AIVM] Success: Render complete. PoI task hashed.`);
+            renderAIVMResult(canvas.toDataURL('image/png'), selectedModel);
+            isGenerating = false; 
+            log(`[AIVM] Success: Render complete. PoI Verified on-chain.`);
         };
 
         img.onerror = () => {
-            log(`[AIVM Error] Engine Busy. Retrying via Fallback...`);
-            img.src = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}`;
-            
-            img.onerror = () => {
-                isGenerating = false; // RELEASE LOCK
-                loader.style.display = 'none';
-                document.getElementById('renderStatusText').style.display = 'block';
-                document.getElementById('renderStatusText').innerText = "Inference Error: Please try again.";
-            };
+            isGenerating = false;
+            loader.style.display = 'none';
+            document.getElementById('renderStatusText').style.display = 'block';
+            log(`[AIVM Error] Connection Reset. PoI remains anchored.`);
         };
 
         img.src = aiImageUrl;
@@ -952,3 +959,4 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
