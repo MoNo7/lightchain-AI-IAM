@@ -330,22 +330,33 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
             }
         }
 
-        const NETLIFY_IDENTITY_URL = "https://melodious-pothos-df5743.netlify.app";
-       async function startOAuth(provider) {
-            if (provider.toLowerCase() === 'github') {
-                log(`[Zk-Auth] Opening GitHub Secure Gateway...`);
-                window.netlifyIdentity.open('login'); // Opens the Netlify Identity widget
-                
-                window.netlifyIdentity.on('login', user => {
-                    const socialHash = ethers.keccak256(ethers.toUtf8Bytes(user.email + user.id));
-                    window.lastSocialHash = socialHash;
-                    
-                    log(`[Zk-Auth] GitHub Linked! Social Hash: ${socialHash.slice(0,16)}...`);
-                    document.getElementById('btn-github').style.border = "2px solid var(--green)";
-                    window.netlifyIdentity.close();
-                });
-            }
-        } 
+async function startOAuth(provider) {
+    if (provider.toLowerCase() === 'github') {
+        log(`[Zk-Auth] Redirecting to GitHub Secure Gateway...`);
+        // Use your Client ID from the GitHub settings tab
+        const clientId = "Ov23liu6ofJwlcYN1dc7"; 
+        const redirectUri = window.location.origin; // Automatically uses your Cloudflare URL
+        window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
+    }
+}
+
+        // Check for the GitHub code in the URL after redirect
+function checkGitHubCallback() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+        log("[Zk-Auth] GitHub Handshake successful!");
+        // We generate a deterministic hash based on the auth code for the SBT
+        const socialHash = ethers.keccak256(ethers.toUtf8Bytes(code));
+        window.lastSocialHash = socialHash;
+        
+        document.getElementById('btn-github').style.border = "2px solid var(--green)";
+        log(`[Zk-Auth] Social Hash Linked: ${socialHash.slice(0,16)}...`);
+        
+        // Clean the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
 
         // --- CORE FUNCTIONS ---
       async function fetchPrices() {
@@ -989,8 +1000,9 @@ async function generateAIVMArt() {
         setInterval(refreshModelDashboard, 3000);
         fetchPrices();
         refreshModelDashboard();
-        initNetlifyIdentity();
+        checkGitHubCallback();
     </script>
 </body>
 </html>
+
 
