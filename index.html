@@ -77,9 +77,8 @@
             <div id="artNavItem" class="nav-item locked-feature" onclick="handleArtClick()"><i class="fas fa-lock" id="artLockIcon"></i><span id="artLabel">AIVM Art Studio</span></div>
             <div id="galleryNavItem" class="nav-item locked-feature" onclick="handleGalleryClick()"><i id="galleryLockIcon" class="fas fa-lock"></i><span id="artLabel">Gallery</span></div>            
         </div>
-        <div>
+        <div class="nav-section">
             <span class="nav-label">Marketplace</span>
-            <div class="nav-item " onclick="showView('marketView')"><i class="fas fa-th-large"></i> Shop</div>
             <div class="marketNavItem" onclick="showView('marketView')"><i class="fas fa-th-large"></i> </div>
         </div>
 
@@ -255,6 +254,19 @@
                     <p style="color:var(--text-dim)">Gallery items will appear here after minting...</p>
                 </div>
             </div>
+            <div id="marketView" class="card" style="display:none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>AIVM Marketplace</h3>
+                    <span class="pill" style="color:var(--accent); border-color:var(--accent);">LCAI NODE RENTAL</span>
+                </div>
+                <p style="color: var(--text-dim); font-size: 0.85rem;">
+                    Browse available AIVM inference capacity and premium AI art models.
+                </p>
+                <div style="border: 1px dashed var(--border); padding: 40px; text-align: center; border-radius: 8px;">
+                    <i class="fas fa-tools" style="font-size: 2rem; color: var(--text-dim); margin-bottom: 10px;"></i>
+                    <div style="color: var(--text-dim);">Marketplace Modules Loading...</div>
+                </div>
+            </div>
         </main>
 
         <div id="console">> [SYS] Initializing Lightchain AI Portal...</div>
@@ -291,8 +303,8 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
         ];
 
         function handleArtClick() {
-            const item = document.getElementById('artNavItem');
-            const lockIcon = document.getElementById('artLockIcon'); // Ensure capital I
+            const artitem = document.getElementById('artNavItem');
+            const artLockIcon = document.getElementById('artLockIcon'); // Ensure capital I
             
             if (item.classList.contains('locked-feature')) {
                 log("Access Denied: Please Register or Mint an Identity to unlock the Art Studio.");
@@ -828,6 +840,7 @@ renderAIVMResult(finalImage, selectedModel);
     </script>
 </body>
 </html>
+
 
 
 
