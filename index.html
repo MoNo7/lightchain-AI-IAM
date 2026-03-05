@@ -332,8 +332,8 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
 async function startOAuth(provider) {
     if (provider.toLowerCase() === 'github') {
         log(`[Zk-Auth] Redirecting to GitHub Secure Gateway...`);
-        const clientId = "Ov23liu6ofJwlcYN1dc7";
-        // This ensures you return to your Cloudflare URL
+        const clientId = "Ov23liu6ofJwlcYN1dc7"; 
+        // Force the redirect to the specific worker URL to prevent dashboard looping
         const redirectUri = encodeURIComponent("https://lightchain-ai-iam.lcaitestnet.workers.dev/");
         window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
     }
@@ -1024,6 +1024,7 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
 
 
 
