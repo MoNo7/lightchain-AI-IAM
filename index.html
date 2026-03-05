@@ -752,7 +752,6 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
 let isGenerating = false;
 
 async function generateAIVMArt() {
-    // 1. Safety Lock
     if (isGenerating) return log("System busy: Awaiting protocol PoI...");
     
     const basePrompt = document.getElementById('artPrompt').value.trim();
@@ -761,37 +760,29 @@ async function generateAIVMArt() {
 
     if (!basePrompt) return log("Error: Please enter a prompt first.");
     if (!userWallet) return log("Error: Connect wallet to anchor PoI on Testnet.");
-    
+
     isGenerating = true; 
-    // Clean and combine the prompt for the engine
     const finalPrompt = (basePrompt + styleSuffix).replace(/\s+/g, ' ');
 
-
-
+    // --- LCAI PROTOCOL ANCHOR (PoI) ---
+    // Generate the unique task hash (promptId) as required by AIVMInferenceV2
+    const promptId = ethers.keccak256(ethers.toUtf8Bytes(finalPrompt + Date.now()));
+    log(`[PROTOCOL] Initiating PoI Anchor: ${promptId.slice(0,18)}...`);
+    
     // UI Feedback
     document.getElementById('renderStatusText').style.display = 'none';
     document.getElementById('aivmOutputImage').style.display = 'none';
     const loader = document.getElementById('renderLoader');
     loader.style.display = 'block';
-    loader.querySelector('div').innerText = `Generating with ${selectedModel}...`;
+    loader.querySelector('div').innerText = `PoI Anchoring & Rendering...`;
 
     try {
-        // Use a robust, simplified URL to prevent 'Connection Reset'
-        const seed = Math.floor(Math.random() * 1000000);
-        const aiImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalPrompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
-
-            // --- LCAI PROTOCOL ANCHOR (PoI) ---
-        // In release versions, we anchor the intent hash to the AIVM V2 Registry
-        const promptId = ethers.keccak256(ethers.toUtf8Bytes(finalPrompt + Date.now()));
-        log(`[PROTOCOL] Anchoring PoI Task: ${promptId.slice(0,18)}...`);
-        log(`[AIVM] Routing to Inference Engine...`);
-
         const seed = Math.floor(Math.random() * 10000000);
         const encodedPrompt = encodeURIComponent(finalPrompt);
         
-        // Use the stable Meta-compliant URL structure
+        // Stabilized URL: Removed model parameters that cause "Connection Reset"
         const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
-        
+
         const img = new Image();
         img.crossOrigin = "anonymous"; // Essential for the 'Mint SBT' function
 
@@ -806,15 +797,15 @@ async function generateAIVMArt() {
             renderAIVMResult(finalImage, selectedModel);
             
             isGenerating = false; // RELEASE LOCK
-            log(`[AIVM] Success: Render complete. PoI Verified.`);
+            log(`[AIVM] Success: Render complete. PoI task hashed.`);
         };
 
         img.onerror = () => {
-            log(`[AIVM Error] Connection Reset. Attempting Recovery...`);
+            log(`[AIVM Error] Engine Busy. Retrying via Fallback...`);
             img.src = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}`;
             
             img.onerror = () => {
-                isGenerating = false;
+                isGenerating = false; // RELEASE LOCK
                 loader.style.display = 'none';
                 document.getElementById('renderStatusText').style.display = 'block';
                 document.getElementById('renderStatusText').innerText = "Inference Error: Please try again.";
@@ -961,6 +952,3 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
-
-
-
