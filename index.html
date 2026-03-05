@@ -372,10 +372,12 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
             try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const contract = new ethers.Contract(CONFIG.contract, [
-                    "function nicknames(address) view returns (string)"
+                    "function nicknames(address) view returns (string)",
+                    "function verified(address) view returns (bool)"
                 ], provider);
         
                 const name = await contract.nicknames(address);
+                const isVerified = await contract.verified(address);
 
                 // ALWAYS keep the item visible (flex)
             //    artItem.style.display = 'flex';
@@ -397,17 +399,29 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
                     
                     log("Identity Verified: Art Studio Unlocked.");
                 } else {
-                    // NEW USER: Keep Locked
-                    artItem.classList.add('locked-feature');
-                    if (galleryItem) galleryItem.classList.add('locked-feature');
-                    artItem.innerHTML = '<i class="fas fa-lock"></i> AIVM Art Studio';
-                    log("Status: Please register to unlock Art Studio and Gallery.");
+                  // LOCK EVERYTHING if not verified
+                artItem.classList.add('locked-feature');
+                artItem.style.pointerEvents = "none";
+                artItem.innerHTML = '<i class="fas fa-lock"></i> AIVM Art Studio';
+                
+                if (galleryItem) {
+                    galleryItem.classList.add('locked-feature');
+                    galleryItem.style.pointerEvents = "none";
+                    galleryItem.innerHTML = '<i class="fas fa-lock"></i> Gallery';
                 }
+            
+            if (name && !isVerified) {
+                log("Status: Your identity has been REVOKED. Access denied.");
+            } else {
+                log("Status: Please register to unlock Art Studio and Gallery.");
+            }
+        }
             } catch (e) {
                 console.error("Status check failed", e);
                 // Fallback: Keep it visible but locked if node fails
                 //artItem.style.display = 'flex';
                 artItem.classList.add('locked-feature');
+                galleryItem.classList.add('locked-feature');
             }
         }
 
@@ -764,6 +778,7 @@ renderAIVMResult(finalImage, selectedModel);
     </script>
 </body>
 </html>
+
 
 
 
