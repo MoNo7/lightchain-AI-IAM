@@ -814,8 +814,16 @@ renderAIVMResult(finalImage, selectedModel);
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
                 const contract = new ethers.Contract(CONFIG.contract, [
+                    "function nicknames(address) view returns (string)",
                     "function mintWithSocial(string _n, string _d, bytes32 _h, string _img) public payable"
-                ], signer);
+                ], provider);
+
+                // CHECK BEFORE MINTING
+                const existingName = await contract.nicknames(userWallet);
+                if (existingName && existingName !== "") {
+                    log("Error: Identity already exists for this wallet. Use 'Owner -> Wipe' to reset.");
+                    return; 
+                }
         
                 // Generate a unique identity hash (using nick + did + wallet)
                 const idHash = ethers.keccak256(ethers.toUtf8Bytes(nick + did + userWallet));
@@ -904,15 +912,4 @@ renderAIVMResult(finalImage, selectedModel);
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
 
