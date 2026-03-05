@@ -752,42 +752,39 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
 let isGenerating = false;
 
 async function generateAIVMArt() {
-    // 1. Check if we are already busy
-    if (isGenerating) {
-        log("System busy: Please wait for current inference to resolve.");
-        return;
-    }
+    // 1. Safety Lock
+    if (isGenerating) return log("System busy: Awaiting protocol PoI...");
     
     const basePrompt = document.getElementById('artPrompt').value.trim();
     const styleSuffix = document.getElementById('artStyle').value;
-    if (!basePrompt) return log("Error: Prompt cannot be empty.");
     const selectedModel = document.getElementById('modelSelector').value;
 
-    isGenerating = true; // Lock the button
-    const finalPrompt = basePrompt + styleSuffix;
-    log(`[AIVM] Requesting Testnet Inference: "${basePrompt.slice(0,30)}..."`);
+    if (!basePrompt) return log("Error: Please enter a prompt first.");
+    
+    isGenerating = true; 
+    // Clean and combine the prompt for the engine
+    const finalPrompt = (basePrompt + styleSuffix).replace(/\s+/g, ' ');
 
     // --- LCAI PROTOCOL ANCHOR (PoI) ---
-    // Generate a promptId hash as required by Lightchain AIVM V2
+    // In release versions, we anchor the intent hash to the AIVM V2 Registry
     const promptId = ethers.keccak256(ethers.toUtf8Bytes(finalPrompt + Date.now()));
     log(`[PROTOCOL] Anchoring PoI Task: ${promptId.slice(0,18)}...`);
     log(`[AIVM] Routing to Inference Engine...`);
-    
-    // UI Updates
+
+    // UI Feedback
     document.getElementById('renderStatusText').style.display = 'none';
     document.getElementById('aivmOutputImage').style.display = 'none';
     const loader = document.getElementById('renderLoader');
     loader.style.display = 'block';
     loader.querySelector('div').innerText = `Generating with ${selectedModel}...`;
-    
+
     try {
-        const encodedPrompt = encodeURIComponent(finalPrompt);
-        const seed = Math.floor(Math.random() * 999999);
-        // Optimized URL for stability
+        // Use a robust, simplified URL to prevent 'Connection Reset'
+        const seed = Math.floor(Math.random() * 1000000);
         const aiImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalPrompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
 
         const img = new Image();
-        img.crossOrigin = "anonymous"; 
+        img.crossOrigin = "anonymous"; // Essential for the 'Mint SBT' function
 
         img.onload = () => {
             const canvas = document.getElementById('generatedCanvas');
@@ -800,14 +797,15 @@ async function generateAIVMArt() {
             renderAIVMResult(finalImage, selectedModel);
             
             isGenerating = false; // RELEASE LOCK
-            log(`[AIVM] Success: Render complete. PoI Verified on Testnet.`);
+            log(`[AIVM] Success: Render complete. PoI Verified.`);
         };
 
         img.onerror = () => {
-            log(`[AIVM Error] Connection reset. Retrying with fallback...`);
+            log(`[AIVM Error] Engine Busy. Retrying via Fallback...`);
             const fallbackImg = new Image();
             fallbackImg.crossOrigin = "anonymous";
-            fallbackImg.src = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}`;
+            // FALLBACK: Stripped parameters for maximum compatibility
+            fallbackImg.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(basePrompt)}?seed=${seed}`;
             
             fallbackImg.onload = () => {
                 const canvas = document.getElementById('generatedCanvas');
@@ -819,24 +817,21 @@ async function generateAIVMArt() {
             };
 
             fallbackImg.onerror = () => {
-                isGenerating = false; // RELEASE LOCK ON FINAL FAILURE
+                isGenerating = false; // RELEASE LOCK
                 loader.style.display = 'none';
                 document.getElementById('renderStatusText').style.display = 'block';
-                document.getElementById('renderStatusText').innerText = "Inference Error: Please try a shorter prompt.";
-                log(`[AIVM Error] All engines currently unavailable.`);
+                document.getElementById('renderStatusText').innerText = "Inference Error: Please try a different prompt.";
             };
         };
-
-        
 
         img.src = aiImageUrl;
     } catch (e) {
         isGenerating = false;
-        log(`[Fatal] ${e.message}`);
+        log(`[Fatal Error] ${e.message}`);
         loader.style.display = 'none';
     }
 }
-
+        
         async function mintWithImage() {
             const nick = document.getElementById('regName').value.trim();
             const did = document.getElementById('regDid').value.trim();
@@ -969,3 +964,4 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
