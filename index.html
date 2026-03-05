@@ -464,10 +464,6 @@ if (isVerified) {
         } else {
             adminPanel.style.display = 'none';
         }
-                if (window.netlifyIdentity) {
-    window.netlifyIdentity.init({
-        APIUrl: "https://melodious-pothos-df5743.netlify.app/.netlify/identity"
-    });
 }
             } catch (e) {
                 console.error("Status check failed", e);
@@ -977,9 +973,11 @@ async function generateAIVMArt() {
         setInterval(refreshModelDashboard, 3000);
         fetchPrices();
         refreshModelDashboard();
+        initNetlifyIdentity();
     </script>
 </body>
 </html>
+
 
 
 
