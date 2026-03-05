@@ -601,7 +601,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
 
 
         function unlockArtStudio() {
-            const artItem = document.getElementById('artItem');
+            const artItem = document.getElementById('artNavItem');
             const artLockIcon = document.getElementById('artLockIcon');
             if (artItem) {
                 artItem.classList.remove('locked-feature');
@@ -612,7 +612,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
             }
 
             // 2. Unlock Gallery
-            const galleryItem = document.getElementById('galleryItem');
+            const galleryItem = document.getElementById('galleryNavItem');
             const galleryLockicon = document.getElementById('galleryLockIcon');
             if (galleryItem) {
                 galleryItem.classList.remove('locked-feature');
@@ -744,4 +744,5 @@ renderAIVMResult(finalImage, selectedModel);
     </script>
 </body>
 </html>
+
 
