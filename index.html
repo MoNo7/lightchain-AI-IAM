@@ -760,16 +760,13 @@ async function generateAIVMArt() {
     const selectedModel = document.getElementById('modelSelector').value;
 
     if (!basePrompt) return log("Error: Please enter a prompt first.");
+    if (!userWallet) return log("Error: Connect wallet to anchor PoI on Testnet.");
     
     isGenerating = true; 
     // Clean and combine the prompt for the engine
     const finalPrompt = (basePrompt + styleSuffix).replace(/\s+/g, ' ');
 
-    // --- LCAI PROTOCOL ANCHOR (PoI) ---
-    // In release versions, we anchor the intent hash to the AIVM V2 Registry
-    const promptId = ethers.keccak256(ethers.toUtf8Bytes(finalPrompt + Date.now()));
-    log(`[PROTOCOL] Anchoring PoI Task: ${promptId.slice(0,18)}...`);
-    log(`[AIVM] Routing to Inference Engine...`);
+
 
     // UI Feedback
     document.getElementById('renderStatusText').style.display = 'none';
@@ -783,6 +780,18 @@ async function generateAIVMArt() {
         const seed = Math.floor(Math.random() * 1000000);
         const aiImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalPrompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
 
+            // --- LCAI PROTOCOL ANCHOR (PoI) ---
+        // In release versions, we anchor the intent hash to the AIVM V2 Registry
+        const promptId = ethers.keccak256(ethers.toUtf8Bytes(finalPrompt + Date.now()));
+        log(`[PROTOCOL] Anchoring PoI Task: ${promptId.slice(0,18)}...`);
+        log(`[AIVM] Routing to Inference Engine...`);
+
+        const seed = Math.floor(Math.random() * 10000000);
+        const encodedPrompt = encodeURIComponent(finalPrompt);
+        
+        // Use the stable Meta-compliant URL structure
+        const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
+        
         const img = new Image();
         img.crossOrigin = "anonymous"; // Essential for the 'Mint SBT' function
 
@@ -801,26 +810,14 @@ async function generateAIVMArt() {
         };
 
         img.onerror = () => {
-            log(`[AIVM Error] Engine Busy. Retrying via Fallback...`);
-            const fallbackImg = new Image();
-            fallbackImg.crossOrigin = "anonymous";
-            // FALLBACK: Stripped parameters for maximum compatibility
-            fallbackImg.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(basePrompt)}?seed=${seed}`;
+            log(`[AIVM Error] Connection Reset. Attempting Recovery...`);
+            img.src = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}`;
             
-            fallbackImg.onload = () => {
-                const canvas = document.getElementById('generatedCanvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = 1024; canvas.height = 1024;
-                ctx.drawImage(fallbackImg, 0, 0, 1024, 1024);
-                renderAIVMResult(canvas.toDataURL('image/png'), selectedModel);
+            img.onerror = () => {
                 isGenerating = false;
-            };
-
-            fallbackImg.onerror = () => {
-                isGenerating = false; // RELEASE LOCK
                 loader.style.display = 'none';
                 document.getElementById('renderStatusText').style.display = 'block';
-                document.getElementById('renderStatusText').innerText = "Inference Error: Please try a different prompt.";
+                document.getElementById('renderStatusText').innerText = "Inference Error: Please try again.";
             };
         };
 
@@ -964,4 +961,5 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
 
