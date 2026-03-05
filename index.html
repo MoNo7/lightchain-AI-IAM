@@ -75,7 +75,7 @@
             <div class="nav-item active" onclick="showView('dashView')"><i class="fas fa-th-large"></i> Dashboard</div>
             <div class="nav-item" onclick="showView('zkView')"><i class="fas fa-fingerprint"></i> zkIdentity</div>
             <div id="artNavItem" class="nav-item locked-feature" onclick="handleArtClick()"><i class="fas fa-lock" id="artLockIcon"></i><span id="artLabel">AIVM Art Studio</span></div>
-            <div id="galleryNavItem" class="nav-item locked-feature" onclick="handleGalleryClick()"><i id="galleryLockIcon" class="fas fa-lock"></i>Gallery</span></div>            
+            <div id="galleryNavItem" class="nav-item locked-feature" onclick="handleGalleryClick()"><i id="galleryLockIcon" class="fas fa-lock"></i><span id="artLabel">Gallery</span></div>            
         </div>
 
         <div id="adminItems" class="nav-section" style="display:none;">
@@ -234,6 +234,12 @@
                     <div style="background: #000; padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
                         <button class="btn-zk" onclick="withdrawRevenue()">WITHDRAW REVENUE</button>
                     </div>
+                </div>
+            </div>
+            <div id="galleryView" class="card" style="display:none;">
+                <h3>AIVM Community Gallery</h3>
+                <div id="galleryGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                    <p style="color:var(--text-dim)">Gallery items will appear here after minting...</p>
                 </div>
             </div>
         </main>
@@ -591,7 +597,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
             loader.style.display = 'block';
             placeholder.style.display = 'none';
             img.style.display = 'none';
-            document.getElementById('modelNameDisplay').innerText = model;
+            //document.getElementById('modelNameDisplay').innerText = model;
             
             if(data.startsWith('data:image')) { img.src = data; document.getElementById('renderCID').innerText = "Base64 Stream"; }
             else { img.src = `https://ipfs.io/ipfs/${data}`; document.getElementById('renderCID').innerText = data; }
@@ -613,7 +619,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
 
             // 2. Unlock Gallery
             const galleryItem = document.getElementById('galleryNavItem');
-            const galleryLockicon = document.getElementById('galleryLockIcon');
+            const galleryLockIcon = document.getElementById('galleryLockIcon');
             if (galleryItem) {
                 galleryItem.classList.remove('locked-feature');
                 galleryItem.style.opacity = "1";
@@ -744,5 +750,6 @@ renderAIVMResult(finalImage, selectedModel);
     </script>
 </body>
 </html>
+
 
 
