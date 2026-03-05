@@ -408,6 +408,16 @@ async function connect() {
         const bal = await provider.getBalance(userWallet);
         document.getElementById('balancePill').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2) + " LCAI";
 
+        userWallet = ethers.getAddress(accounts[0]);
+
+        // NEW: Unlock the Registration inputs immediately upon connection
+        const authStep = document.getElementById('authStep');
+        if (authStep) {
+            authStep.classList.remove('step-locked');
+            authStep.style.opacity = "1";
+            authStep.style.pointerEvents = "auto";
+        }
+        
         log("Connected via MetaMask: " + userWallet);
         initNetlifyIdentity();
         await checkRegistrationStatus(userWallet);
@@ -983,3 +993,4 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
