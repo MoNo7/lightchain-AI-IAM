@@ -417,30 +417,28 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
         
 
         async function checkRegistrationStatus(address) {
-            const artItem = document.getElementById('artNavItem');
-            const galleryItem = document.getElementById('galleryNavItem');
-            const adminPanel = document.getElementById('adminItems');
-            const auctionBtn = document.querySelector('[onclick="openMintSelect()"]');
-            
-            try {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const contract = new ethers.Contract(CONFIG.contract, [
-                    "function nicknames(address) view returns (string)",
-                    "function verified(address) view returns (bool)",
-                    "function isAdmin(address) view returns (bool)",
-                    "function owner() view returns (address)"
-                ], provider);
-        
-const [nickname, isVerified, adminStatus, contractOwner] = await Promise.all([
-    contract.nicknames(address),
-    contract.verified(address),
-    contract.isAdmin(address),
-    contract.owner()
-]);
-                // ALWAYS keep the item visible (flex)
-            //    artItem.style.display = 'flex';
-                
-    // 1. Check Registered Status (Unlock Studio/Gallery)
+    const artItem = document.getElementById('artNavItem');
+    const galleryItem = document.getElementById('galleryNavItem');
+    const adminPanel = document.getElementById('adminItems');
+    const auctionBtn = document.querySelector('[onclick="openMintSelect()"]');
+
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const contract = new ethers.Contract(CONFIG.contract, [
+            "function nicknames(address) view returns (string)",
+            "function verified(address) view returns (bool)",
+            "function isAdmin(address) view returns (bool)",
+            "function owner() view returns (address)"
+        ], provider);
+
+        const [nickname, isVerified, adminStatus, contractOwner] = await Promise.all([
+            contract.nicknames(address),
+            contract.verified(address),
+            contract.isAdmin(address),
+            contract.owner()
+        ]);
+
+        // 1. Check Registered Status (Unlock Studio/Gallery)
         if (nickname || isRegistered) {
             unlockFeature('artNavItem', 'fas fa-palette');
             unlockFeature('galleryNavItem', 'fas fa-images');
@@ -449,30 +447,27 @@ const [nickname, isVerified, adminStatus, contractOwner] = await Promise.all([
             lockFeature('galleryNavItem');
         }
 
-        // 2. Check Verified Status (Unlock Auction House interaction)
-// Verified Status -> Unlocks Auction Posting/Bidding
-if (isVerified) {
-    document.getElementById('auctionNavItem').classList.remove('locked-feature');
-    log("[SYS] Verified Role: Full Marketplace access granted.");
-} else {
+        // 2. Check Verified Status (Unlock Auction House)
+        if (isVerified) {
+            const auctionNav = document.getElementById('marketNavItem');
+            if(auctionNav) auctionNav.classList.remove('locked-feature');
+            log("[SYS] Verified Role: Full Marketplace access granted.");
+        } else {
             if (auctionBtn) auctionBtn.style.display = 'none';
         }
 
         // 3. Admin & Owner Panels
-        if (isAdmin || address.toLowerCase() === contractOwner.toLowerCase()) {
+        if (adminStatus || address.toLowerCase() === contractOwner.toLowerCase()) {
             adminPanel.style.display = 'block';
         } else {
             adminPanel.style.display = 'none';
         }
+    } catch (e) {
+        console.error("Status check failed", e);
+        if(artItem) artItem.classList.add('locked-feature');
+        if(galleryItem) galleryItem.classList.add('locked-feature');
+    }
 }
-            } catch (e) {
-                console.error("Status check failed", e);
-                // Fallback: Keep it visible but locked if node fails
-                //artItem.style.display = 'flex';
-                artItem.classList.add('locked-feature');
-                galleryItem.classList.add('locked-feature');
-            }
-        }
 
         async function registerLocal() {
             const nick = document.getElementById('regNick').value.trim();
@@ -977,20 +972,3 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
