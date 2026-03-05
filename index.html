@@ -338,6 +338,7 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
                 // Replace /.netlify/identity with the full URL to your Netlify instance
                 APIUrl: "https://melodious-pothos-df5743.netlify.app/.netlify/identity"
               });
+                window.netlifyIdentity.on('error', err => console.error("Netlify Error:", err));
             }
         }
 
@@ -966,6 +967,7 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
 
 
 
