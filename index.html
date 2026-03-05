@@ -334,7 +334,7 @@ async function startOAuth(provider) {
         log(`[Zk-Auth] Redirecting to GitHub Secure Gateway...`);
         const clientId = "Ov23liu6ofJwlcYN1dc7";
         // This ensures you return to your Cloudflare URL
-        const redirectUri = encodeURIComponent(window.location.origin); 
+        const redirectUri = encodeURIComponent("https://lightchain-ai-iam.lcaitestnet.workers.dev/");
         window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
     }
 }
@@ -996,4 +996,5 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
 
