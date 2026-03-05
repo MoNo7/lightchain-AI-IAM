@@ -334,16 +334,10 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
         function initNetlifyIdentity() {
             // This tells the widget to look at Netlify even though we are on GitHub
             if (window.netlifyIdentity) {
-                window.netlifyIdentity.on('init', user => {
-                    if (!user) {
-                        log("[Zk-Auth] Identity Ready. Please Link Social.");
-                    }
-                });
-                
-                // Initialize with the external API URL
-                window.netlifyIdentity.init({
-                    APIUrl: `${NETLIFY_IDENTITY_URL}/.netlify/identity`
-                });
+              window.netlifyIdentity.init({
+                // Replace /.netlify/identity with the full URL to your Netlify instance
+                APIUrl: "https://melodious-pothos-df5743.netlify.app/.netlify/identity"
+              });
             }
         }
 
@@ -972,6 +966,7 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
 
 
 
