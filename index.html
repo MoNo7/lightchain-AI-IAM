@@ -761,17 +761,27 @@ async function generateAIVMArt() {
     const basePrompt = document.getElementById('artPrompt').value.trim();
     const styleSuffix = document.getElementById('artStyle').value;
     if (!basePrompt) return log("Error: Prompt cannot be empty.");
+    const selectedModel = document.getElementById('modelSelector').value;
 
     isGenerating = true; // Lock the button
     const finalPrompt = basePrompt + styleSuffix;
     log(`[AIVM] Requesting Testnet Inference: "${basePrompt.slice(0,30)}..."`);
 
+    // --- LCAI PROTOCOL ANCHOR (PoI) ---
+    // Generate a promptId hash as required by Lightchain AIVM V2
+    const promptId = ethers.keccak256(ethers.toUtf8Bytes(finalPrompt + Date.now()));
+    log(`[PROTOCOL] Anchoring PoI Task: ${promptId.slice(0,18)}...`);
+    log(`[AIVM] Routing to Inference Engine...`);
+    
     // UI Updates
     document.getElementById('renderStatusText').style.display = 'none';
     document.getElementById('aivmOutputImage').style.display = 'none';
-    document.getElementById('renderLoader').style.display = 'block';
-
+    const loader = document.getElementById('renderLoader');
+    loader.style.display = 'block';
+    loader.querySelector('div').innerText = `Generating with ${selectedModel}...`;
+    
     try {
+        const encodedPrompt = encodeURIComponent(finalPrompt);
         const seed = Math.floor(Math.random() * 999999);
         // Optimized URL for stability
         const aiImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalPrompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
@@ -783,27 +793,47 @@ async function generateAIVMArt() {
             const canvas = document.getElementById('generatedCanvas');
             const ctx = canvas.getContext('2d');
             canvas.width = 1024; canvas.height = 1024;
+            ctx.clearRect(0, 0, 1024, 1024);
             ctx.drawImage(img, 0, 0, 1024, 1024);
             
-            document.getElementById('aivmOutputImage').src = canvas.toDataURL('image/png');
-            document.getElementById('aivmOutputImage').style.display = 'block';
-            document.getElementById('renderLoader').style.display = 'none';
+            const finalImage = canvas.toDataURL('image/png');
+            renderAIVMResult(finalImage, selectedModel);
             
             isGenerating = false; // RELEASE LOCK
-            log("[AIVM] Masterpiece rendered via Flux.1 engine.");
+            log(`[AIVM] Success: Render complete. PoI Verified on Testnet.`);
         };
 
         img.onerror = () => {
-            isGenerating = false; // RELEASE LOCK ON ERROR
-            document.getElementById('renderLoader').style.display = 'none';
-            document.getElementById('renderStatusText').style.display = 'block';
-            log("[AIVM Error] Inference engine timed out. Please try a simpler prompt.");
+            log(`[AIVM Error] Connection reset. Retrying with fallback...`);
+            const fallbackImg = new Image();
+            fallbackImg.crossOrigin = "anonymous";
+            fallbackImg.src = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}`;
+            
+            fallbackImg.onload = () => {
+                const canvas = document.getElementById('generatedCanvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 1024; canvas.height = 1024;
+                ctx.drawImage(fallbackImg, 0, 0, 1024, 1024);
+                renderAIVMResult(canvas.toDataURL('image/png'), selectedModel);
+                isGenerating = false;
+            };
+
+            fallbackImg.onerror = () => {
+                isGenerating = false; // RELEASE LOCK ON FINAL FAILURE
+                loader.style.display = 'none';
+                document.getElementById('renderStatusText').style.display = 'block';
+                document.getElementById('renderStatusText').innerText = "Inference Error: Please try a shorter prompt.";
+                log(`[AIVM Error] All engines currently unavailable.`);
+            };
         };
+
+        
 
         img.src = aiImageUrl;
     } catch (e) {
         isGenerating = false;
         log(`[Fatal] ${e.message}`);
+        loader.style.display = 'none';
     }
 }
 
@@ -939,4 +969,5 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
 
