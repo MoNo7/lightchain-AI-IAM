@@ -483,6 +483,7 @@ async function connect() {
         } else {
             adminPanel.style.display = 'none';
         }
+        loadGallery()
     } catch (e) {
         console.error("Status check failed", e);
         if(artItem) artItem.classList.add('locked-feature');
@@ -974,6 +975,33 @@ async function generateAIVMArt() {
             });
         }
 
+        async function loadGallery() {
+            const grid = document.getElementById('galleryGrid');
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const contract = new ethers.Contract(CONFIG.contract, [
+                    "function imageData(address) view returns (string)",
+                    "function nicknames(address) view returns (string)"
+                ], provider);
+        
+                // For this testnet version, we pull the user's latest mint
+                const img = await contract.imageData(userWallet);
+                const name = await contract.nicknames(userWallet);
+        
+                if (img && img.startsWith('data:image')) {
+                    grid.innerHTML = `
+                        <div class="card" style="margin:0; padding:10px; border-color:var(--accent);">
+                            <img src="${img}" style="width:100%; border-radius:8px;">
+                            <div style="margin-top:10px; font-weight:bold; color:var(--accent);">${name}</div>
+                            <div style="font-size:0.7rem; color:var(--text-dim);">PoI Verified On-Chain</div>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.log("Gallery sync pending...");
+            }
+        }
+
         function showView(id) {
             document.querySelectorAll('main > div').forEach(v => v.style.display = 'none');
             document.getElementById(id).style.display = 'block';
@@ -996,5 +1024,6 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
 
 
