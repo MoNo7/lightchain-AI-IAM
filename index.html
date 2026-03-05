@@ -283,8 +283,8 @@ const LCAI_PAIR = "0x0d047a370611437a1b8e6c2a95ea36f69fdda3be";
 const ETH_TOKEN = "0x0000000000000000000000000000000000000000";
 //owner: "0x6378A6993C7C77E4A28f8f263e778401309fD9E4",    
 const CONFIG = {
-contract: "0x1f58e1fCCC01BD10F3e6F591817C85B10613600A",
-address: "0x1f58e1fCCC01BD10F3e6F591817C85B10613600A",
+contract: "0x3589dd3D0c51174C69D417Dddd8264968f55187A",
+address: "0x3589dd3D0c51174C69D417Dddd8264968f55187A",
 owner: "0x4D36B31d4BFB957A5D816B0f420a9e755EFc6a2c",    
 LCAI_PAIR : "0x0d047a370611437a1b8e6c2a95ea36f69fdda3be",
 ETH_PAIR : "0x96d4b53a38337a5733179751781178a2613306063c511b78cd02684739288c0a",
@@ -396,53 +396,49 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
         async function checkRegistrationStatus(address) {
             const artItem = document.getElementById('artNavItem');
             const galleryItem = document.getElementById('galleryNavItem');
+            const adminPanel = document.getElementById('adminItems');
+            const auctionBtn = document.querySelector('[onclick="openMintSelect()"]');
             
             try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const contract = new ethers.Contract(CONFIG.contract, [
                     "function nicknames(address) view returns (string)",
-                    "function verified(address) view returns (bool)"
+                    "function verified(address) view returns (bool)",
+                    "function isAdmin(address) view returns (bool)",
+                    "function owner() view returns (address)"
                 ], provider);
         
-                const name = await contract.nicknames(address);
-                const isVerified = await contract.verified(address);
-
+            const [nickname, isVerified, isAdmin, contractOwner] = await Promise.all([
+                contract.nicknames(address),
+                contract.verified(address),
+                contract.isAdmin(address),
+                contract.owner()
+            ]);
                 // ALWAYS keep the item visible (flex)
             //    artItem.style.display = 'flex';
                 
-                // If nickname exists, they are registered
-                if (name && name !== "") {
-                    artItem.classList.remove('locked-feature');
-                    artItem.style.opacity = "1";
-                    artItem.style.pointerEvents = "auto";
-                    artItem.innerHTML = '<i class="fas fa-palette"></i> AIVM Art Studio';
-                      // 2. UNLOCK GALLERY (This was the missing logic)
-                    if (galleryItem) {
-                        galleryItem.classList.remove('locked-feature');
-                        galleryItem.style.opacity = "1";
-                        galleryItem.style.pointerEvents = "auto";
-                        galleryItem.innerHTML = '<i class="fas fa-images"></i> Gallery';
-                    }
-                    
-                    
-                    log("Identity Verified: Art Studio Unlocked.");
-                } else {
-                  // LOCK EVERYTHING if not verified
-                artItem.classList.add('locked-feature');
-                artItem.style.pointerEvents = "none";
-                artItem.innerHTML = '<i class="fas fa-lock"></i> AIVM Art Studio';
-                
-                if (galleryItem) {
-                    galleryItem.classList.add('locked-feature');
-                    galleryItem.style.pointerEvents = "none";
-                    galleryItem.innerHTML = '<i class="fas fa-lock"></i> Gallery';
-                }
-            
-            if (name && !isVerified) {
-                log("Status: Your identity has been REVOKED. Access denied.");
-            } else {
-                log("Status: Please register to unlock Art Studio and Gallery.");
-            }
+    // 1. Check Registered Status (Unlock Studio/Gallery)
+        if (nickname || isRegistered) {
+            unlockFeature('artNavItem', 'fas fa-palette');
+            unlockFeature('galleryNavItem', 'fas fa-images');
+        } else {
+            lockFeature('artNavItem');
+            lockFeature('galleryNavItem');
+        }
+
+        // 2. Check Verified Status (Unlock Auction House interaction)
+        if (isVerified) {
+            if (auctionBtn) auctionBtn.style.display = 'block';
+            log("Identity Verified: Full Auction access granted.");
+        } else {
+            if (auctionBtn) auctionBtn.style.display = 'none';
+        }
+
+        // 3. Admin & Owner Panels
+        if (isAdmin || address.toLowerCase() === contractOwner.toLowerCase()) {
+            adminPanel.style.display = 'block';
+        } else {
+            adminPanel.style.display = 'none';
         }
             } catch (e) {
                 console.error("Status check failed", e);
@@ -455,37 +451,20 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
 
         async function registerLocal() {
             const nick = document.getElementById('regNick').value.trim();
-            let did = document.getElementById('regDid').value.trim(); // Change const to let
-            document.getElementById('mfaStep').style.display = 'block';
-            
-            if (!nick) return log("Error: Display Name is required.");
-            if (!userWallet) return log("Error: Connect wallet first to generate default DID.");
+            if (!nick || !userWallet) return log("Error: Name and Wallet required.");
         
-            // DEFAULT DID LOGIC: If blank, create did:lcai:<walletaddress>
-            if (did === "") {
-                did = `did:lcai:${userWallet.toLowerCase()}`;
-                log(`No DID provided. Generated default: ${did}`);
-            }
+            isRegistered = true; // Local state
+            log(`[Local] Welcome ${nick}! Studio & Gallery unlocked.`);
             
-            isRegistered = true;
-            log(`Registration Successful: Welcome, ${nick}!`);
+            // UI Transitions
+            unlockFeature('artNavItem', 'fas fa-palette');
+            unlockFeature('galleryNavItem', 'fas fa-images');
             
-            // Unlock UI areas
-            //document.getElementById('artNavItem').style.display = 'flex';
-            //document.getElementById('galleryNavItem').style.display = 'flex';
-            unlockArtStudio(); // This removes the lock immediately
-            document.getElementById('mintSection').classList.remove('step-locked');
-
-            // 2. FORCE UNLOCK the Minting Area
             const mintSection = document.getElementById('mintSection');
-            if (mintSection) {
-                mintSection.classList.remove('step-locked');
-                mintSection.style.opacity = "1"; // Ensure it becomes fully visible
-                mintSection.style.pointerEvents = "auto"; // Re-enable clicks
-            }
-
+            mintSection.classList.remove('step-locked');
+            mintSection.style.opacity = "1";
+            mintSection.style.pointerEvents = "auto";
             
-            // Auto-fill the Minting section nickname
             document.getElementById('nickName').value = nick;
         }
 
@@ -722,6 +701,20 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
 
             img.onload = () => { loader.style.display = 'none'; img.style.display = 'block'; log(`[RENDER] Inference complete.`); };
         }
+        
+        function unlockFeature(id, iconClass) {
+            const el = document.getElementById(id);
+            el.classList.remove('locked-feature');
+            el.style.pointerEvents = "auto";
+            el.querySelector('i').className = iconClass;
+        }
+        
+        function lockFeature(id) {
+            const el = document.getElementById(id);
+            el.classList.add('locked-feature');
+            el.style.pointerEvents = "none";
+            el.querySelector('i').className = "fas fa-lock";
+        }
 
 
         function unlockArtStudio() {
@@ -928,6 +921,7 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
 
 
 
