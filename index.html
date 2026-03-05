@@ -332,14 +332,24 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
 
         const NETLIFY_IDENTITY_URL = "https://melodious-pothos-df5743.netlify.app";
         function initNetlifyIdentity() {
-            // This tells the widget to look at Netlify even though we are on GitHub
-            if (window.netlifyIdentity) {
-              window.netlifyIdentity.init({
-                // Replace /.netlify/identity with the full URL to your Netlify instance
+        // FORCE Netlify Identity to point to your specific instance
+        if (window.netlifyIdentity) {
+            window.netlifyIdentity.init({
                 APIUrl: "https://melodious-pothos-df5743.netlify.app/.netlify/identity"
-              });
-                window.netlifyIdentity.on('error', err => console.error("Netlify Error:", err));
-            }
+            });
+        
+            // Handle successful login to generate the Social Hash
+            window.netlifyIdentity.on('login', user => {
+                const socialHash = ethers.keccak256(ethers.toUtf8Bytes(user.email + user.id));
+                window.lastSocialHash = socialHash;
+                log(`[Zk-Auth] GitHub Linked! Hash: ${socialHash.slice(0,16)}...`);
+                
+                // Visual feedback
+                const ghBtn = document.getElementById('btn-github');
+                if(ghBtn) ghBtn.style.border = "2px solid #28a745";
+                window.netlifyIdentity.close();
+            });
+        }
         }
 
         // --- CORE FUNCTIONS ---
@@ -970,6 +980,7 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
 
 
 
