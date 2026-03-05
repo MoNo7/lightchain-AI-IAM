@@ -330,6 +330,23 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
             }
         }
 
+        const NETLIFY_IDENTITY_URL = "https://melodious-pothos-df5743.netlify.app";
+        function initNetlifyIdentity() {
+            // This tells the widget to look at Netlify even though we are on GitHub
+            if (window.netlifyIdentity) {
+                window.netlifyIdentity.on('init', user => {
+                    if (!user) {
+                        log("[Zk-Auth] Identity Ready. Please Link Social.");
+                    }
+                });
+                
+                // Initialize with the external API URL
+                window.netlifyIdentity.init({
+                    APIUrl: `${NETLIFY_IDENTITY_URL}/.netlify/identity`
+                });
+            }
+        }
+
         // --- CORE FUNCTIONS ---
       async function fetchPrices() {
         try {
@@ -754,6 +771,23 @@ netlifyIdentity.on('login', user => {
             log("Art Studio & Gallery Unlocked!");
         }
 
+       async function startOAuth(provider) {
+            if (provider.toLowerCase() === 'github') {
+                log(`[Zk-Auth] Opening GitHub Secure Gateway...`);
+                window.netlifyIdentity.open('login'); // Opens the Netlify Identity widget
+                
+                window.netlifyIdentity.on('login', user => {
+                    const socialHash = ethers.keccak256(ethers.toUtf8Bytes(user.email + user.id));
+                    window.lastSocialHash = socialHash;
+                    
+                    log(`[Zk-Auth] GitHub Linked! Social Hash: ${socialHash.slice(0,16)}...`);
+                    document.getElementById('btn-github').style.border = "2px solid var(--green)";
+                    window.netlifyIdentity.close();
+                });
+            }
+        } 
+        
+        
 let isGenerating = false;
 
 async function generateAIVMArt() {
@@ -932,6 +966,7 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
 
 
 
