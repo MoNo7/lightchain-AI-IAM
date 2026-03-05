@@ -332,9 +332,9 @@ abi: ["function mintWithSocial(string n, string d, bytes32 h, string i) public p
 async function startOAuth(provider) {
     if (provider.toLowerCase() === 'github') {
         log(`[Zk-Auth] Redirecting to GitHub Secure Gateway...`);
-        // Use your Client ID from the GitHub settings tab
-        const clientId = "Ov23liu6ofJwlcYN1dc7"; 
-        const redirectUri = window.location.origin; // Automatically uses your Cloudflare URL
+        const clientId = "Ov23liu6ofJwlcYN1dc7";
+        // This ensures you return to your Cloudflare URL
+        const redirectUri = encodeURIComponent(window.location.origin); 
         window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
     }
 }
@@ -996,3 +996,4 @@ async function generateAIVMArt() {
     </script>
 </body>
 </html>
+
