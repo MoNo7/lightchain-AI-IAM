@@ -235,6 +235,14 @@
                         <button class="btn-zk" onclick="withdrawRevenue()">WITHDRAW REVENUE</button>
                     </div>
                 </div>
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border);">
+                    <h4 style="color: var(--red); margin-bottom: 5px;"><i class="fas fa-exclamation-triangle"></i> Emergency Registry Cleanup</h4>
+                    <p style="font-size: 0.75rem; color: var(--text-dim);">Permanently delete all identity data (Nicknames, DIDs, Images) for an address. This action is irreversible.</p>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <input type="text" id="removeAddrInput" placeholder="User Wallet Address (0x...)" style="margin:0;">
+                        <button class="btn-zk" onclick="ownerRemoveSBT()" style="margin:0; width: auto; padding: 0 25px; background:var(--red); color:#fff;">WIPE IDENTITY</button>
+                    </div>
+                </div>
             </div>
             <div id="galleryView" class="card" style="display:none;">
                 <h3>AIVM Community Gallery</h3>
@@ -750,6 +758,43 @@ renderAIVMResult(finalImage, selectedModel);
             }
         }
 
+        async function ownerRemoveSBT() {
+            const targetAddr = document.getElementById('removeAddrInput').value.trim();
+            
+            if (!ethers.isAddress(targetAddr)) return log("Error: Invalid address provided.");
+            if (!userWallet) return log("Error: Please connect your admin wallet.");
+        
+            log(`[OWNER] Initiating permanent wipe for: ${targetAddr}`);
+            
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                
+                // Define the contract with the removeSBT interface
+                const contract = new ethers.Contract(CONFIG.contract, [
+                    "function removeSBT(address _u) public",
+                    "function owner() view returns (address)"
+                ], signer);
+        
+                // Pre-flight check
+                const contractOwner = await contract.owner();
+                if (userWallet.toLowerCase() !== contractOwner.toLowerCase()) {
+                    return log("Critical Error: Unauthorized. Only the contract owner can wipe identities.");
+                }
+        
+                const tx = await contract.removeSBT(targetAddr);
+                log("Transaction sent. Waiting for block confirmation...");
+                
+                await tx.wait();
+                log(`Success: Identity for ${targetAddr.slice(0,10)}... has been wiped from the blockchain.`);
+                
+                // Clear input after success
+                document.getElementById('removeAddrInput').value = "";
+            } catch (e) {
+                log(`Removal Failed: ${e.reason || e.message}`);
+            }
+        }
+
         function updateRevenueDisplay() {
             const provider = new ethers.BrowserProvider(window.ethereum);
             provider.getBalance(CONFIG.contract).then(bal => {
@@ -778,6 +823,7 @@ renderAIVMResult(finalImage, selectedModel);
     </script>
 </body>
 </html>
+
 
 
 
