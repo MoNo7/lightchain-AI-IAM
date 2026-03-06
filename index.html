@@ -329,9 +329,8 @@ window.onload = async () => {
 
     if (code && window.opener) {
         // Push the code back to your main dashboard
-        window.opener.processGitHubLink(code);
-        // Immediately kill the popup window
-        setTimeout(() => { window.close(); }, 100);
+        window.opener.postMessage({ type: 'GITHUB_OAUTH', code: code }, '*');
+            window.close(); // Die immediately
         return; // Prevent the popup from running anything else
     }
 
@@ -341,6 +340,16 @@ window.onload = async () => {
         console.log("Welcome back, " + user.nickname);
     }
 
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'GITHUB_OAUTH') {
+            log("[Zk-Auth] Secure payload received. Unlocking social layer...");
+            processGitHubLink(event.data.code); // Call your existing function
+        }
+    });
+
+    // Auto-sync wallet so refresh doesn't break state
+    await autoConnectWallet();
+    
     // ... Keep your existing Ticker/Model logic below this ...
     setInterval(fetchPrices, 3000);
     setInterval(refreshModelDashboard, 3000);
@@ -349,6 +358,8 @@ window.onload = async () => {
     checkGitHubCallback();
 
 };
+
+    
         let userWallet;
         let isRegistered = false;
 
@@ -381,7 +392,34 @@ window.onload = async () => {
                 showView('galleryView');
             }
         }
+async function autoConnectWallet() {
+    if (window.ethereum) {
+        try {
+            // Silently check for already connected accounts
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts.length > 0) {
+                userWallet = accounts[0];
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                
+                // Update your UI button (adjust ID if yours is different)
+                const connectBtn = document.querySelector('.connect-btn'); 
+                if (connectBtn) connectBtn.innerHTML = `${userWallet.slice(0,6)}...${userWallet.slice(-4)}`;
+                
+                log(`[SYS] Wallet auto-synced: ${userWallet.slice(0,8)}...`);
+                
+                // Re-verify their identity status
+                const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, signer);
+                checkRegistrationStatus(userWallet, contract);
+            }
+        } catch (e) {
+            console.error("Auto-connect check failed:", e);
+        }
+    }
+}
+        
 
+        
 async function updateUI(addr) {
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
@@ -1297,6 +1335,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
