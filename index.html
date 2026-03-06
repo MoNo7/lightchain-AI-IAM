@@ -328,18 +328,18 @@ window.onload = async () => {
         console.log("Welcome back, " + user.nickname);
     }
     // 1. SURGICAL FIX: Detect if this is the Auth Popup
-    const urlParams = new URLSearchParams(window.location.search);
-    const authCode = urlParams.get('code');
-    
-    if (authCode && window.opener) {
-        // Send the code to the main window and close this popup immediately
-        window.opener.processGitHubLink(authCode);
+     const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+
+    if (code && window.opener) {
+        // Push the code back to your main dashboard
+        window.opener.processGitHubLink(code);
+        // Immediately kill the popup window
         window.close();
-        return; // Stop the rest of the script from loading the site in the popup
+        return; // Prevent the popup from running anything else
     }
 
-    
-    // Start tickers first so they show up regardless of wallet
+    // ... Keep your existing Ticker/Model logic below this ...
     setInterval(fetchPrices, 3000);
     setInterval(refreshModelDashboard, 3000);
     fetchPrices(); 
@@ -1294,6 +1294,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
