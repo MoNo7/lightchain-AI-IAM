@@ -497,6 +497,13 @@ try {
             // Update the revenue display while we are here
             if (typeof updateRevenueDisplay === 'function') updateRevenueDisplay();
         }
+        const adminSection = document.getElementById('adminItems');
+        if (adminSection && userWallet.toLowerCase() === CONFIG.owner.toLowerCase()) {
+            adminSection.style.display = 'block';
+            log("[AUTH] Admin Privileges Granted.");
+        }
+
+    
         // Trigger status check
         await checkRegistrationStatus(userAddress, contract);
       // Unlock the registration panel
@@ -539,6 +546,12 @@ async function checkRegistrationStatus(addr, contract) {
             if (authStep) authStep.style.display = 'none';
             // Switch the view to the Passport automatically upon login
             showView('zkView');
+
+            const zkViewContainer = document.getElementById('zkView');
+            if (zkViewContainer) {
+                // This ensures the registration inputs vanish and the passport appears
+                renderPassport(userWallet, nick, contract);
+            }
 
             // Ensure the Passport is actually rendered
             if (typeof renderPassport === 'function') {
@@ -691,7 +704,9 @@ async function registerLocal() {
         let html = '';
         inferenceModels.forEach(model => {
             // Add a little random fluctuation to the load to make it look "live"
+            const currentLoad = model.baseLoad || 0;
             const simulatedLoad = (parseFloat(model.load) + (Math.random() * 1.5 - 0.5)).toFixed(1) + "%";
+            const statusText = currentLoad > 0 ? "ONLINE" : "IDLE";
             const statusColor = model.status === 'ONLINE' ? '#39d353' : '#f1e05a';
 
             html += `
@@ -1246,6 +1261,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
