@@ -564,26 +564,33 @@ async function checkRegistrationStatus(addr, contract) {
 
 // Move this OUTSIDE as a standalone function
 async function renderPassport(addr, nick, contract) {
+
+    try {
+        log("[IAM] Downloading ZK SBT Metadata...");
+        
+        //1. Fetch the image from the contract
     let img = await contract.base64Image();
+        // 2. Ensure correct data URI format
     if (!img.startsWith("data:image")) img = "data:image/png;base64," + img;
 
     const zkView = document.getElementById('zkView');
+    if (!zkView) return;
     zkView.innerHTML = `
         <div style="text-align: center; padding: 40px; background: var(--panel); border-radius: 15px; border: 1px solid var(--green);">
             <h2 style="color: var(--green);"><i class="fas fa-check-circle"></i> Identity Verified</h2>
             <div style="margin: 20px auto; width: 300px; border: 2px solid var(--accent); border-radius: 10px; overflow: hidden; background: #000;">
-                <img src="${sbtImg}" style="width: 100%; display: block;">
+                <img src="${Img}" style="width: 100%; display: block;">
                 <div style="padding: 15px;">
-                    <div style="font-size: 1.2rem; font-weight: bold; color: var(--accent);">${nickName}</div>
-                    <div style="font-size: 0.7rem; color: var(--text-dim); font-family: monospace;">${address}</div>
+                    <div style="font-size: 1.2rem; font-weight: bold; color: var(--accent);">${nick}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-dim); font-family: monospace;">${addr}</div>
                 </div>
             </div>
-            <div id="verifiedQR" style="background: white; padding: 10px; border-radius: 8px; margin: 20px auto; width: fit-content; cursor: pointer;" onclick="window.open('https://testnet.lightscan.app/address/${address}')"></div>
+            <div id="verifiedQR" style="background: white; padding: 10px; border-radius: 8px; margin: 20px auto; width: fit-content; cursor: pointer;" onclick="window.open('https://testnet.lightscan.app/address/${addr}')"></div>
         </div>
     `;
 
     new QRCode(document.getElementById("verifiedQR"), {
-        text: `lcai:id:${address}`,
+        text: `lcai:id:${addr}`,
         width: 128,
         height: 128
     });
@@ -1210,18 +1217,3 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
