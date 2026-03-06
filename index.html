@@ -509,7 +509,9 @@ if (isVerifiedOnChain) {
             // 1. Hide the Registration & Minting boxes
             document.getElementById('zkView').querySelector('.social-grid')
             document.getElementById('authStep').parentElement.style.display = 'none';
-            
+            document.querySelector('.social-grid').parentElement.parentElement.style.display = 'none';
+
+    showPassportUI();
           // 2. Show the Metadata + Clickable QR Code
     const zkContainer = document.getElementById('zkView');
     zkContainer.innerHTML = `
@@ -967,7 +969,7 @@ async function mintWithSocial() {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(CONFIG.contract, [
-            "function mintWithSocial(string _n, string _d, bytes32 _h, string _img) public payable"
+            "function mintWithSocial(string _n, string _d, bytes32 _h) public payable"
         ], signer);
 
         const idHash = window.lastSocialHash || ethers.keccak256(ethers.toUtf8Bytes(nick + did + userWallet));
@@ -1079,27 +1081,3 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
