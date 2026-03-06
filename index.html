@@ -314,7 +314,7 @@ abi: [
         "function verified(address) view returns (bool)",
         "function base64Image() view returns (string)",
         "function removeSBT(address _u) public",
-        "function withdrawRevenue() public", // Matches restored Solidity
+        "function withdrawRevenue() public", 
         "function owner() view returns (address)"
 
     ]
@@ -364,8 +364,7 @@ window.onload = async () => {
     }
 
     // Auto-sync wallet
-    await autoConnectWallet(); // Assuming you added this from the previous step
-
+    await autoConnectWallet();
     // Start your normal UI tickers
     setInterval(fetchPrices, 3000);
     setInterval(refreshModelDashboard, 3000);
@@ -1350,6 +1349,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
