@@ -647,6 +647,10 @@ async function registerLocal() {
     const did = document.getElementById('regDid').value.trim();
     if (!nick || !userWallet) return log("Error: Name and Wallet required.");
 
+    // SURGICAL FIX: Autofill the minting field
+    const mintNickField = document.getElementById('nickName');
+    if (mintNickField) mintNickField.value = nick;
+
     // SAVE TO BROWSER STORAGE
     const profile = { nick, did, wallet: userWallet };
     localStorage.setItem('lcai_profile', JSON.stringify(profile));
@@ -1249,6 +1253,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
