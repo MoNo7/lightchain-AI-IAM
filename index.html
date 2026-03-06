@@ -283,8 +283,8 @@ const LCAI_PAIR = "0x0d047a370611437a1b8e6c2a95ea36f69fdda3be";
 const ETH_TOKEN = "0x0000000000000000000000000000000000000000";
 //owner: "0x6378A6993C7C77E4A28f8f263e778401309fD9E4",    
 const CONFIG = {
-contract: "0x8A8A94Af0FA6246f48f042bf66a6F16Cc179C426",
-address: "0x8A8A94Af0FA6246f48f042bf66a6F16Cc179C426",
+contract: "0xaFF2eDe7ea5D71C69b5b117d6aA650E28CA69CB1",
+address: "0xaFF2eDe7ea5D71C69b5b117d6aA650E28CA69CB1",
 owner: "0x4D36B31d4BFB957A5D816B0f420a9e755EFc6a2c",    
 LCAI_PAIR : "0x0d047a370611437a1b8e6c2a95ea36f69fdda3be",
 ETH_PAIR : "0x96d4b53a38337a5733179751781178a2613306063c511b78cd02684739288c0a",
@@ -969,7 +969,7 @@ async function mintWithImage() {
         const idHash = window.lastSocialHash || ethers.keccak256(ethers.toUtf8Bytes(nick + did + userWallet));
         
         log(`[SYS] Minting SBT with Banner Identity...`);
-        const tx = await contract.mintWithSocial(nick, did, idHash, sbtImage, {
+        const tx = await contract.mintWithSocial(nick, did, idHash, {
             value: ethers.parseEther("0.01") 
         });
         
@@ -1075,6 +1075,7 @@ async function mintWithImage() {
     </script>
 </body>
 </html>
+
 
 
 
