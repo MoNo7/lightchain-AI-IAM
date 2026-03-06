@@ -311,7 +311,8 @@ abi: [
         "function isAdmin(address) view returns (bool)",
         "function isOwner(address) view returns (bool)",
         "function imageData(address) view returns (string)",
-        "function mintWithSocial(string, string, bytes32) payable",
+        "function mintWithSocial(string, string, string, bytes32) payable",
+        "function socialProvider(address) view returns (string)",
         "function nicknames(address) view returns (string)",
         "function verified(address) view returns (bool)",
         "function base64Image() view returns (string)",
@@ -1165,7 +1166,7 @@ async function generateAIVMArt() {
 async function mintWithSocial() {
     const nick = document.getElementById('regNick').value.trim();
     const did = document.getElementById('regDid').value.trim();
-
+    const providerName = "GitHub"; // Explicit string, no objects
     // Instead of the dynamic canvas, we use your specified stable asset
     const sbtImage = "https://testnet.lightscan.app/assets/images/banner/banner-thumb.png";
 
@@ -1188,7 +1189,7 @@ async function mintWithSocial() {
             return checkRegistrationStatus(userWallet, contract);
         }
         log(`[SYS] Minting SBT with Banner Identity...`);
-        const tx = await contract.mintWithSocial(nick, did, provider, idHash, {
+        const tx = await contract.mintWithSocial(nick, did, providerName, idHash, {
             value: ethers.parseEther("0.01") 
         });
 
@@ -1379,6 +1380,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
