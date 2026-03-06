@@ -498,8 +498,8 @@ async function checkRegistrationStatus(addr, contract) {
         if (isVerified) {
             // Hide the registration boxes
             // 2. Hide the registration step entirely
-            const authStep = document.getElementById('authStep');
-            const authStep = document.getElementById('mintSection');
+           // const authStep = document.getElementById('authStep');
+           // const authStep = document.getElementById('mintSection');
             
             if (document.getElementById('authStep')) document.getElementById('authStep').style.display = 'none';
             if (document.getElementById('mintSection')) document.getElementById('mintSection').style.display = 'none';
@@ -1125,6 +1125,7 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
 
