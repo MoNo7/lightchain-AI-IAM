@@ -454,10 +454,10 @@ async function connect() {
 
 //        userWallet = ethers.getAddress(accounts[0]);
 //        document.getElementById('walletBtn').innerText = userWallet.slice(0,6) + "...";
-        document.getElementById('walletBtn').innerText = userWallet.slice(0,6) + "...";
+        document.getElementById('walletBtn').innerText = userAddress.substring(0,6) + "...";
         const bal = await provider.getBalance(userWallet);
 //        document.getElementById('balancePill').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2) + " LCAI";
-if (document.getElementById('balancePill')) {
+        if (document.getElementById('balancePill')) {
             document.getElementById('balancePill').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2) + " LCAI";
         }
         
@@ -473,7 +473,7 @@ if (document.getElementById('balancePill')) {
         
         console.log("ConnectedL", address);
         log("Connected via MetaMask: " + userWallet);
-        await checkRegistrationStatus(userwallet, contract);
+        await checkRegistrationStatus(userAddress, contract);
  //       await checkRegistrationStatus(userWallet);
     } catch(e) { 
         log("Connection failed: " + e.message); 
@@ -491,6 +491,44 @@ if (document.getElementById('balancePill')) {
     const galleryItem = document.getElementById('galleryNavItem');
     const adminPanel = document.getElementById('adminItems');
     const auctionBtn = document.querySelector('[onclick="openMintSelect()"]');
+
+            if (isVerified) {
+            console.log("User is Verified!");
+            
+            // 1. Hide Setup UI
+            document.getElementById('authStep').style.display = 'none';
+            document.getElementById('mintSection').style.display = 'none';
+            
+            // 2. Unlock Gallery
+            document.getElementById('artNavItem').classList.remove('locked-feature');
+            document.getElementById('galleryNavItem').classList.remove('locked-feature');
+
+            // 3. Show Passport with Image
+            const nickname = await contract.nicknames(address);
+            let sbtImg = "";
+            try { 
+                sbtImg = await contract.base64Image(); 
+                // Fix the blank image: Ensure it has the data prefix if missing
+                if (!sbtImg.startsWith("data:image")) {
+                    sbtImg = "data:image/png;base64," + sbtImg;
+                }
+            } catch(e) { 
+                console.log("No image found on contract"); 
+            }
+
+            document.getElementById('zkView').innerHTML = `
+                <div style="text-align: center; padding: 20px; background: #111; border: 1px solid #00ffcc; border-radius: 10px;">
+                    <h3 style="color: #00ffcc;">Passport Verified</h3>
+                    <img src="${sbtImg}" style="width: 200px; border-radius: 8px; margin: 15px 0;" alt="SBT Image">
+                    <h4 style="color: white;">${nickname}</h4>
+                </div>
+            `;
+        }
+
+            // Show Admin Panel if Owner
+        if (address.toLowerCase() === contractOwner.toLowerCase()) {
+            document.getElementById('adminSection').style.display = 'block';
+        }
 
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
@@ -1146,6 +1184,7 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
 
