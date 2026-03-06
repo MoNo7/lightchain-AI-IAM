@@ -329,11 +329,11 @@ window.onload = async () => {
     }
     // 1. SURGICAL FIX: Detect if this is the Auth Popup
     const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
+    const authCode = urlParams.get('code');
     
-    if (code && window.opener) {
+    if (authCode && window.opener) {
         // Send the code to the main window and close this popup immediately
-        window.opener.processGitHubLink(code);
+        window.opener.processGitHubLink(authCode);
         window.close();
         return; // Stop the rest of the script from loading the site in the popup
     }
@@ -344,7 +344,7 @@ window.onload = async () => {
     setInterval(refreshModelDashboard, 3000);
     fetchPrices(); 
     refreshModelDashboard();
-
+    checkGitHubCallback();
 };
         let userWallet;
         let isRegistered = false;
@@ -1100,7 +1100,14 @@ async function mintWithSocial() {
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, signer);
 
-        const idHash = window.lastSocialHash || ethers.keccak256(ethers.toUtf8Bytes(nick + did + userWallet));
+        //const idHash = window.lastSocialHash || ethers.keccak256(ethers.toUtf8Bytes(nick + did + userWallet));
+        const idHash = ethers.keccak256(
+            ethers.solidityPacked(
+                ["bytes32", "string", "address"],
+                [window.lastSocialHash || ethers.ZeroHash, nick, userWallet]
+            )
+        );
+        
         const isAlreadyVerified = await contract.verified(userWallet);
         if (isAlreadyVerified) {
             log("[SYS] Identity already verified on-chain. Updating local view...");
@@ -1287,6 +1294,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
