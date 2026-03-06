@@ -553,6 +553,10 @@ async function registerLocal() {
         timestamp: Date.now()
     }));
     document.getElementById('authStep').style.display = 'none';
+    // Save and Unlock
+    localStorage.setItem('lcai_user', JSON.stringify({nickname: nick, wallet: userWallet}));
+    document.getElementById('authStep').style.display = 'none';
+
     unlockFeature('artNavItem', 'fas fa-palette');
     unlockFeature('galleryNavItem', 'fas fa-images');
 }
@@ -1043,6 +1047,7 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
 
