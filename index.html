@@ -61,6 +61,18 @@
         .status-text.offline { color: #ff4d4d; }
 
         #console { height: 120px; background: #000; border-top: 1px solid var(--border); color: var(--green); padding: 15px; font-family: monospace; overflow-y: auto; font-size: 0.75rem; }
+       @keyframes pulse-green {
+            0% { background-color: rgba(57, 211, 83, 0.5); transform: scale(1.05); }
+            100% { background-color: transparent; transform: scale(1); }
+        }
+        
+        @keyframes pulse-red {
+            0% { background-color: rgba(255, 68, 68, 0.5); transform: scale(1.05); }
+            100% { background-color: transparent; transform: scale(1); }
+        }
+        
+        .blink-add { animation: pulse-green 1.5s ease-out; }
+        .blink-sub { animation: pulse-red 1.5s ease-out; }
     </style>
 </head>
 <body>
@@ -1155,27 +1167,51 @@ async function mintWithSocial() {
         /**
          * The standalone silent refetcher
          */
-        async function syncBalance(addr) {
-            try {
-                // Use the official Stress Test RPC for speed
-                const provider = new ethers.JsonRpcProvider("https://light-testnet-rpc.lightchain.ai");
-                const balanceWei = await provider.getBalance(addr);
-                const balanceFormatted = ethers.formatEther(balanceWei);
-                
-                const balancePill = document.getElementById('balancePill');
-                if (balancePill) {
-                    // Surgical update: Only changes the text, doesn't touch the button or styles
-                    balancePill.innerText = parseFloat(balanceFormatted).toFixed(2) + " LCAI";
-                }
-            } catch (e) {
-                // Silent fail to prevent console clutter during network spikes
+let lastBalance = null; // Global tracker
+
+async function syncBalance(addr) {
+    try {
+        const provider = new ethers.JsonRpcProvider("https://light-testnet-rpc.lightchain.ai");
+        const balanceWei = await provider.getBalance(addr);
+        const currentBalance = parseFloat(ethers.formatEther(balanceWei));
+        
+        const balancePill = document.getElementById('balancePill');
+        if (balancePill && lastBalance !== null) {
+            
+            // Detect Change
+            if (currentBalance > lastBalance) {
+                // ADDITION (Green)
+                triggerBlink(balancePill, 'blink-add');
+                console.log(`[SYS] Payment Received: +${(currentBalance - lastBalance).toFixed(4)} LCAI`);
+            } else if (currentBalance < lastBalance) {
+                // SUBTRACTION (Red)
+                triggerBlink(balancePill, 'blink-sub');
+                console.log(`[SYS] Payment Sent: -${(lastBalance - currentBalance).toFixed(4)} LCAI`);
             }
         }
-
+        
+        // Update values for next check
+        lastBalance = currentBalance;
+        if (balancePill) {
+            balancePill.innerText = currentBalance.toFixed(2) + " LCAI";
+        }
+    } catch (e) {
+        console.warn("Sync error - retrying...");
+    }
+}
+/**
+ * Helper to restart the animation class
+ */
+function triggerBlink(element, className) {
+    element.classList.remove('blink-add', 'blink-sub');
+    void element.offsetWidth; // Force reflow to restart animation
+    element.classList.add(className);
+}
         
     </script>
 </body>
 </html>
+
 
 
 
