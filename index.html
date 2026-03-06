@@ -303,18 +303,6 @@ abi: [
     ]
 };
 
-window.onload = async () => {
-    // Start tickers first so they show up regardless of wallet
-    setInterval(updateTickers, 3000);
-    updateTickers(); 
-    
-    // Check if user was already logged in locally
-    const savedUser = localStorage.getItem('lcai_user');
-    if (savedUser) {
-        const user = JSON.parse(savedUser);
-        console.log("Welcome back, " + user.nickname);
-    }
-};
         let userWallet = null;
         let isRegistered = false;
         
@@ -402,6 +390,7 @@ function checkGitHubCallback() {
         const provider = new ethers.JsonRpcProvider("https://testnet-rpc.lightchain.ai");
         
         // Example logic for LCAI Price
+        const provider = new ethers.JsonRpcProvider("https://testnet-rpc.lightchain.ai");
         const pairAbi = ["function getReserves() view returns (uint112, uint112, uint32)"];
         const pair = new ethers.Contract(CONFIG.lcaiPair, pairAbi, provider);
         const reserves = await pair.getReserves();
@@ -462,6 +451,7 @@ async function checkRegistrationStatus(addr, contract) {
         // 1. UNLOCK OWNER/ADMIN SECTION
         if (addr.toLowerCase() === ownerAddr.toLowerCase()) {
             // We target both possible IDs to be safe
+            document.getElementById('adminItems').style.display = 'block';
             const adminPanel = document.getElementById('adminSection') || document.getElementById('adminItems');
             if (adminPanel) {
                 adminPanel.style.display = 'block';
@@ -490,6 +480,7 @@ async function checkRegistrationStatus(addr, contract) {
 
 // Move this OUTSIDE as a standalone function
 async function renderPassport(addr, nick, contract) {
+    try{
     let img = await contract.base64Image();
     if (!img.startsWith("data:image")) img = "data:image/png;base64," + img;
 
@@ -509,10 +500,11 @@ zkView.innerHTML = `
 `;
 
     new QRCode(document.getElementById("verifiedQR"), {
-        text: `lcai:id:${address}`,
+        text: `lcai:id:${addr}`,
         width: 128,
         height: 128
     });
+}
 }
 
 
@@ -533,6 +525,14 @@ async function registerLocal() {
         timestamp: Date.now()
     };
     
+    // Save to local storage so the site remembers you
+    localStorage.setItem('lcai_user', JSON.stringify({
+        nickname: nick,
+        did: did,
+        wallet: userWallet,
+        timestamp: Date.now()
+    }));
+    
     isRegistered = true;
     log(`[Local] Welcome ${nick}! Profile saved for session.`);
     
@@ -552,13 +552,7 @@ async function registerLocal() {
         btn.style.opacity = "1";
         btn.style.cursor = "pointer";
     });
-    // Save to local storage so the site remembers you
-    localStorage.setItem('lcai_user', JSON.stringify({
-        nickname: nick,
-        did: did,
-        wallet: userWallet,
-        timestamp: Date.now()
-    }));
+  
     // Save and Unlock
     //localStorage.setItem('lcai_user', JSON.stringify({nickname: nick, wallet: userWallet}));
     document.getElementById('authStep').style.display = 'none';
@@ -802,10 +796,11 @@ async function registerLocal() {
         }
         
         function unlockFeature(id, iconClass) {
-            const el = document.getElementById(id);
-            el.classList.remove('locked-feature');
-            el.style.pointerEvents = "auto";
-            el.querySelector('i').className = iconClass;
+            constitem = document.getElementById(id);
+        if (item) {
+            item.classList.remove('locked-feature');
+            const icon = item.querySelector('i');
+            if (icon) icon.className = iconClass;
         }
         
         function lockFeature(id) {
@@ -1044,6 +1039,20 @@ async function mintWithSocial() {
             c.scrollTop = c.scrollHeight;
         }
 
+window.onload = async () => {
+    // Start tickers first so they show up regardless of wallet
+    setInterval(updateTickers, 3000);
+    updateTickers(); 
+    
+    // Check if user was already logged in locally
+    const savedUser = localStorage.getItem('lcai_user');
+    if (savedUser) {
+        const user = JSON.parse(savedUser);
+        console.log("Welcome back, " + user.nickname);
+    }
+};
+        
+        
         // Init
         setInterval(fetchPrices, 5000);
         setInterval(refreshModelDashboard, 3000);
@@ -1053,6 +1062,7 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
 
