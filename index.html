@@ -436,30 +436,30 @@ function checkGitHubCallback() {
              // --- CORE FUNCTIONS ---
       async function fetchPrices() {
         try {
-        // Multi-token fetch for efficiency
-        const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${LCAI_TOKEN},${ETH_TOKEN}`);
-        const data = await response.json();
-
-        if (data.pairs && data.pairs.length > 0) {
-          // Find LCAI - Target the highest liquidity pair automatically
-          const lcaiPair = data.pairs.find(p => p.baseToken.address.toLowerCase() === LCAI_TOKEN.toLowerCase());
-          if (lcaiPair && document.getElementById('lcaiTicker')) {
-            const price = parseFloat(lcaiPair.priceUsd);
-            document.getElementById('lcaiTicker').innerText = "$" + price.toFixed(6);
-          }
-
-          // Find ETH - Target the highest liquidity pair automatically
-
-          const ethPair = data.pairs.find(p => p.baseToken.address.toLowerCase() === ETH_TOKEN.toLowerCase());
-          if (ethPair && document.getElementById('ethTicker')) {
-            const price = parseFloat(ethPair.priceUsd);
-            document.getElementById('ethTicker').innerText = "$" + price.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          });
-         }
-            console.log("Tickers updated: " + new Date().toLocaleTimeString());
-        }
+            // Multi-token fetch for efficiency
+            const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${LCAI_TOKEN},${ETH_TOKEN}`);
+            const data = await response.json();
+    
+            if (data.pairs && data.pairs.length > 0) {
+              // Find LCAI - Target the highest liquidity pair automatically
+              const lcaiPair = data.pairs.find(p => p.baseToken.address.toLowerCase() === LCAI_TOKEN.toLowerCase());
+              if (lcaiPair && document.getElementById('lcaiTicker')) {
+                const price = parseFloat(lcaiPair.priceUsd);
+                document.getElementById('lcaiTicker').innerText = "$" + price.toFixed(6);
+              }
+    
+              // Find ETH - Target the highest liquidity pair automatically
+    
+              const ethPair = data.pairs.find(p => p.baseToken.address.toLowerCase() === ETH_TOKEN.toLowerCase());
+              if (ethPair && document.getElementById('ethTicker')) {
+                const price = parseFloat(ethPair.priceUsd);
+                document.getElementById('ethTicker').innerText = "$" + price.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              });
+             }
+                console.log("Tickers updated: " + new Date().toLocaleTimeString());
+            }
         } catch (error) {
         // Silently retry to keep the UI clean
         console.warn("Price sync pending...");
@@ -594,6 +594,13 @@ async function renderPassport(addr, nick, contract) {
         width: 128,
         height: 128
     });
+
+        log("[IAM] ZK Passport Rendered Successfully.");
+
+    } catch (e) {
+        console.error("Passport Render Error:", e);
+        log("Error: Failed to fetch on-chain identity assets.");
+    }
 }
 
 
@@ -771,15 +778,15 @@ async function registerLocal() {
                 const isVerified = await contract.verified(input);
                 const adminStatus = await contract.isAdmin(input); 
 
-            if (name && name !== "") {
-                const status = isVerified ? "VERIFIED" : "PENDING";
-                const adminTag = adminStatus ? " <span style='color:var(--accent)'>[ADMIN]</span>" : "";
-                res.innerHTML = `<span style="color:var(--green)">${status}:</span> ${name} (${did})${adminTag}`;
-                log(`Match Found: ${name} is ${status}`);
-            } else {
-                res.innerHTML = `<span style="color:var(--red)">NOT FOUND</span>`;
-                log("No identity record found.");
-            }
+                if (name && name !== "") {
+                    const status = isVerified ? "VERIFIED" : "PENDING";
+                    const adminTag = adminStatus ? " <span style='color:var(--accent)'>[ADMIN]</span>" : "";
+                    res.innerHTML = `<span style="color:var(--green)">${status}:</span> ${name} (${did})${adminTag}`;
+                    log(`Match Found: ${name} is ${status}`);
+                } else {
+                    res.innerHTML = `<span style="color:var(--red)">NOT FOUND</span>`;
+                    log("No identity record found.");
+                }
             } catch (e) {
                 log("Query Error: Protocol communication failed.");
                 res.innerHTML = `<span style="color:var(--red)">ERROR</span>`;
@@ -1217,3 +1224,4 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
