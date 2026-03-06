@@ -298,6 +298,7 @@ abi: [
         "function verified(address) view returns (bool)",
         "function imageData(address) view returns (string)",
         "function owner() view returns (address)",
+        "function base64Image() view returns (string)",
         "function tokenURI(uint256) view returns (string)"
     ]
 };
@@ -421,6 +422,11 @@ function checkGitHubCallback() {
         }
 
 async function connect() {
+    const contractOwner = await contract.owner();
+if (address.toLowerCase() === contractOwner.toLowerCase()) {
+    console.log("[SYS] Owner detected. Unlocking Admin Registry.");
+    document.getElementById('adminSection').style.display = 'block'; 
+}
     if (!window.ethereum) return log("Metamask not found.");
     
     try {
@@ -1081,5 +1087,6 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
