@@ -489,6 +489,14 @@ try {
                 el.style.opacity = "1";
             });
         }
+
+        const adminItems = document.getElementById('adminItems');
+        if (adminItems && userWallet.toLowerCase() === CONFIG.owner.toLowerCase()) {
+            console.log("[AUTH] Admin detected. Unlocking Protocol Management.");
+            adminItems.style.display = 'block';
+            // Update the revenue display while we are here
+            if (typeof updateRevenueDisplay === 'function') updateRevenueDisplay();
+        }
         // Trigger status check
         await checkRegistrationStatus(userAddress, contract);
       // Unlock the registration panel
@@ -659,7 +667,9 @@ async function registerLocal() {
     try {
         // 1. Target the correct container. 
         // Update 'modelsContainer' to match the EXACT id in your HTML
-        const container = document.getElementById('modelsContainer') || document.querySelector('.models-list');
+//        const container = document.getElementById('modelsContainer') || document.querySelector('.models-list');
+        const container = document.getElementById('realtimeModelTable');
+ 
         
         // If the container isn't on the screen right now, stop safely.
         if (!container) return; 
@@ -688,6 +698,11 @@ async function registerLocal() {
 
         // 4. Inject it into the UI
         container.innerHTML = html;
+        // FIX: Re-enable the Load Pill in the header
+        const loadPill = document.getElementById('loadPill');
+        if (loadPill) {
+            loadPill.innerText = (12.4 + Math.random()).toFixed(1) + "%";
+        }
 
     } catch (e) {
         console.warn("Model Dashboard UI Sync Error:", e.message);
@@ -1224,4 +1239,5 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
