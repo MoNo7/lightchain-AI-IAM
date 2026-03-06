@@ -395,7 +395,7 @@ async function startOAuth(provider) {
         // Force the redirect to the specific worker URL to prevent dashboard looping
         const redirectUri = encodeURIComponent("https://lightchain-ai-iam.lcaitestnet.workers.dev/");
         const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
-        window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
+        // window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
 
         // SURGICAL FIX: Open in a popup instead of redirecting the main page
         const popup = window.open(authUrl, "GitHub Auth", "width=600,height=700");
@@ -1290,6 +1290,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
