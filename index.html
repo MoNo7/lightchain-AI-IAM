@@ -305,8 +305,8 @@ abi: [
 
 window.onload = async () => {
     // Start tickers first so they show up regardless of wallet
-    setInterval(updateTickers, 3000);
-    updateTickers(); 
+    setInterval(fetchPrices, 3000);
+    fetchPrices(); 
 
     // Check if user was already logged in locally
     const savedUser = localStorage.getItem('lcai_user');
@@ -348,28 +348,29 @@ window.onload = async () => {
             }
         }
 
-//const contractOwner = await contract.owner();
+        const contractOwner = await contract.owner();
         if (typeof userWallet === 'string' && typeof contractOwner === 'string') {
-if (userWallet.toLowerCase() === contractOwner.toLowerCase()) {
-    const adminSection = document.getElementById('adminSection');
-        if (adminSection) {
-            adminSection.style.display = 'block';
-        }
+            if (userWallet.toLowerCase() === contractOwner.toLowerCase()) {
+            const adminSection = document.getElementById('adminSection');
+                if (adminSection) {
+                    adminSection.style.display = 'block';
+                }
 
-        // Safe check for ownerSection
-        const ownerSection = document.getElementById('ownerSection');
-        if (ownerSection) {
-            ownerSection.style.display = 'block';
-        }
+                // Safe check for ownerSection
+                const ownerSection = document.getElementById('ownerSection');
+                if (ownerSection) {
+                    ownerSection.style.display = 'block';
+                }
     
     document.getElementById('adminSection').style.display = 'block';
     document.getElementById('ownerSection').style.display = 'block';
     console.log("Admin Access Verified");
-}
-            } else {
-    // Handle the scenario where one or both are not strings (e.g., undefined)
-    console.error("userWallet or contractOwner is not a string:", { userWallet, contractOwner });
+            }
+        } else {
+            // Handle the scenario where one or both are not strings (e.g., undefined)
+            console.error("userWallet or contractOwner is not a string:", { userWallet, contractOwner });
         }
+        
 async function startOAuth(provider) {
     if (provider.toLowerCase() === 'github') {
         log(`[Zk-Auth] Redirecting to GitHub Secure Gateway...`);
@@ -1090,6 +1091,7 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
 
