@@ -429,11 +429,7 @@ async function connect() {
             return;
         }
         
-        if (address.toLowerCase() === contractOwner.toLowerCase()) {
-            console.log("[SYS] Owner detected. Unlocking Admin Registry.");
-            document.getElementById('adminSection').style.display = 'block'; 
-        }
-        
+
 
         // FORCE MetaMask if multiple providers (like Coinbase) are present
         if (window.ethereum.providers) {
@@ -456,14 +452,20 @@ async function connect() {
 
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, signer);
+
+        if (address.toLowerCase() === contractOwner.toLowerCase()) {
+            console.log("[SYS] Owner detected. Unlocking Admin Registry.");
+            document.getElementById('adminSection').style.display = 'block'; 
+        }
+        
+
+
         
         userWallet = ethers.getAddress(accounts[0]);
         document.getElementById('walletBtn').innerText = userWallet.slice(0,6) + "...";
         
         const bal = await provider.getBalance(userWallet);
         document.getElementById('balancePill').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2) + " LCAI";
-
-        userWallet = ethers.getAddress(accounts[0]);
 
         // NEW: Unlock the Registration inputs immediately upon connection
         const authStep = document.getElementById('authStep');
@@ -475,7 +477,7 @@ async function connect() {
         console.log("ConnectedL", address);
         log("Connected via MetaMask: " + userWallet);
         await checkRegistrationStatus(address, contract);
-        await checkRegistrationStatus(userWallet);
+ //       await checkRegistrationStatus(userWallet);
     } catch(e) { 
         log("Connection failed: " + e.message); 
     }
@@ -484,6 +486,8 @@ async function connect() {
         
 
         async function checkRegistrationStatus(address, contract) {
+            const isVerifiedOnChain = await contract.verified(address);
+        const nickname = await contract.nicknames(address);
     const isVerified = await contract.verified(address);
     const contractOwner = await contract.owner();        
     const artItem = document.getElementById('artNavItem');
@@ -540,31 +544,6 @@ if (isVerifiedOnChain) {
 // Render the Passport QR if we are in the zkView
             renderPassportUI(userAddress, nickname);
           // 2. Show the Metadata + Clickable QR Code
-function renderPassportUI(address, nickName) {
-    const zkContainer = document.getElementById('zkView');
-    if (!zkContainer) return;
-    zkContainer.innerHTML = `
-        <div style="text-align: center; padding: 40px; background: var(--panel); border-radius: 15px; border: 1px solid var(--green);">
-            <h2 style="color: var(--green);"><i class="fas fa-check-circle"></i> Identity Verified</h2>
-            <div style="margin: 20px auto; width: 300px; border: 2px solid var(--accent); border-radius: 10px; overflow: hidden; background: #000;">
-                <img src="${await contract.base64Image()}" style="width: 100%; display: block;">
-                <div style="padding: 15px;">
-                    <div style="font-size: 1.2rem; font-weight: bold; color: var(--accent);">${await contract.nicknames(address)}</div>
-                    <div style="font-size: 0.7rem; color: var(--text-dim); font-family: monospace;">${address}</div>
-                </div>
-            </div>
-            <div id="verifiedQR" style="background: white; padding: 10px; border-radius: 8px; margin: 20px auto; width: fit-content; cursor: pointer;" 
-                 onclick="window.open('https://testnet.lightscan.app/address/${address}')"></div>
-            <p style="font-size: 0.8rem; color: var(--text-dim);">Click QR to view on Explorer</p>
-        </div>
-    `;
-
-    new QRCode(document.getElementById("verifiedQR"), {
-        text: `lcai:id:${address}`,
-        width: 128,
-        height: 128
-    });
-}
 
             // Unlock the rest of the Portal
             unlockFeature('artNavItem', 'fas fa-palette');
@@ -595,6 +574,8 @@ function renderPassportUI(address, nickName) {
         // Check if current user is the Contract Owner (Admin)
     if (address.toLowerCase() === contractOwner.toLowerCase()) {
         document.getElementById('adminSection').style.display = 'block';
+        const adminPanel = document.getElementById('adminItems');
+            if (adminPanel) adminPanel.style.display = 'block';
         console.log("Admin Access Granted");
     }
         loadGallery()
@@ -605,6 +586,35 @@ function renderPassportUI(address, nickName) {
         if(galleryItem) galleryItem.classList.add('locked-feature');
     }
 }
+
+// Move this OUTSIDE as a standalone function
+async function renderPassportUI(address, nickName, contract) {
+    const zkContainer = document.getElementById('zkView');
+    if (!zkContainer) return;
+    
+    const sbtImg = await contract.base64Image();
+
+    zkContainer.innerHTML = `
+        <div style="text-align: center; padding: 40px; background: var(--panel); border-radius: 15px; border: 1px solid var(--green);">
+            <h2 style="color: var(--green);"><i class="fas fa-check-circle"></i> Identity Verified</h2>
+            <div style="margin: 20px auto; width: 300px; border: 2px solid var(--accent); border-radius: 10px; overflow: hidden; background: #000;">
+                <img src="${sbtImg}" style="width: 100%; display: block;">
+                <div style="padding: 15px;">
+                    <div style="font-size: 1.2rem; font-weight: bold; color: var(--accent);">${nickName}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-dim); font-family: monospace;">${address}</div>
+                </div>
+            </div>
+            <div id="verifiedQR" style="background: white; padding: 10px; border-radius: 8px; margin: 20px auto; width: fit-content; cursor: pointer;" onclick="window.open('https://testnet.lightscan.app/address/${address}')"></div>
+        </div>
+    `;
+
+    new QRCode(document.getElementById("verifiedQR"), {
+        text: `lcai:id:${address}`,
+        width: 128,
+        height: 128
+    });
+}
+
 
 async function registerLocal() {
     const nick = document.getElementById('regNick').value.trim();
@@ -1122,6 +1132,7 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
 
