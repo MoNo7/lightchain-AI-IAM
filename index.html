@@ -487,6 +487,9 @@ try {
     // Check if this wallet is the Owner/Admin
         await checkRegistrationStatus(userWallet, contract);
         console.log("Connected Successfully:", userAddress);
+        if (userWallet) {
+            startBalanceSystems(userWallet); 
+        }
     } catch (err) {
         console.error("Connection Error:", err.message);
     }
@@ -1126,7 +1129,6 @@ async function mintWithSocial() {
         // Init
         setInterval(fetchPrices, 5000);
         setInterval(refreshModelDashboard, 3000);
-        fetchPrices();
         refreshModelDashboard();
         checkGitHubCallback();
         // Ensure listeners are attached AFTER page load
@@ -1137,9 +1139,44 @@ async function mintWithSocial() {
             const btn = document.getElementById('walletBtn');
             if (btn) btn.addEventListener('click', connect);
         });
+        
+        function startBalanceSystems(addr) {
+            console.log("[SYS] Starting Live Balance Sync for:", addr);
+            
+            // Initial fetch
+            syncBalance(addr);
+            
+            // Refetch every 10 seconds (standard block time for LCAI testnet)
+            setInterval(() => {
+                syncBalance(addr);
+            }, 10000);
+        }
+        
+        /**
+         * The standalone silent refetcher
+         */
+        async function syncBalance(addr) {
+            try {
+                // Use the official Stress Test RPC for speed
+                const provider = new ethers.JsonRpcProvider("https://light-testnet-rpc.lightchain.ai");
+                const balanceWei = await provider.getBalance(addr);
+                const balanceFormatted = ethers.formatEther(balanceWei);
+                
+                const balancePill = document.getElementById('balancePill');
+                if (balancePill) {
+                    // Surgical update: Only changes the text, doesn't touch the button or styles
+                    balancePill.innerText = parseFloat(balanceFormatted).toFixed(2) + " LCAI";
+                }
+            } catch (e) {
+                // Silent fail to prevent console clutter during network spikes
+            }
+        }
+
+        
     </script>
 </body>
 </html>
+
 
 
 
