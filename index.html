@@ -318,8 +318,9 @@ abi: [
 window.onload = async () => {
     // Start tickers first so they show up regardless of wallet
     setInterval(fetchPrices, 3000);
+    setInterval(refreshModelDashboard, 3000);
     fetchPrices(); 
-
+    refreshModelDashboard();
     // Check if user was already logged in locally
     const savedUser = localStorage.getItem('lcai_user');
     if (savedUser) {
@@ -535,7 +536,9 @@ async function checkRegistrationStatus(addr, contract) {
             if (identityLabel) identityLabel.innerHTML = `<i class="fas fa-fingerprint"></i> ${nick}`;
 
             if (authStep) authStep.style.display = 'none';
-            if (dashboardView) dashboardView.style.display = 'none'; // Force the dashboard to hide
+           // if (dashboardView) dashboardView.style.display = 'none'; // Force the dashboard to hide
+            if (dashboardView) dashboardView.style.display = 'block'; // Keep Dashboard visible!
+            log(`[IAM] Identity Authenticated: ${nick}`);
             if (passportView) {
                 passportView.style.display = 'block';
                 passportView.style.opacity = '1';
@@ -1207,6 +1210,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
