@@ -321,7 +321,28 @@ abi: [
 
     ]
 };
-
+// 1. IMMEDIATE SHORT-CIRCUIT FOR OAUTH POPUPS
+(function() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    
+    // If we have a code and we are in a popup (window.opener exists)
+    if (code && window.opener) {
+        // Send the code to the parent window
+        window.opener.postMessage({ type: 'GITHUB_OAUTH', code: code }, "*");
+        
+        // Stop the rest of the page from loading
+        window.stop(); 
+        
+        // Close the popup
+        window.close();
+        
+        // Final kill switch for JS execution
+        document.documentElement.innerHTML = "Auth Successful. Closing...";
+        throw new Error("OAuth Redirect Detected: Closing Popup.");
+    }
+})();
+        
 window.onload = async () => {
 const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
@@ -334,6 +355,13 @@ const urlParams = new URLSearchParams(window.location.search);
         window.close();
         return; 
     }
+
+    window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'GITHUB_OAUTH') {
+        console.log("Received code from popup:", event.data.code);
+        processGitHubLink(event.data.code);
+    }
+});
 
     // 2. MAIN WINDOW MODE: Restore wallet sync
     await autoConnectWallet();
@@ -1351,6 +1379,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
