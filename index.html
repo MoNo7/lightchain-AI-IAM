@@ -964,7 +964,7 @@ async function registerLocal() {
                     log(`Processing: ${addr.slice(0,10)}...`);
                     let tx;
                     if (action === 'verify') {
-                        tx = await contract.verifyUser(addr);
+                        tx = await contract.verifyUser(addr, { gasLimit: 100000 } );
                     } else if (action === 'revoke') {
                         // This calls the simple un-verify function
                         tx = await contract.revokeUser(addr);
@@ -1380,6 +1380,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
