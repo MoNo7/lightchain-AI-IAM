@@ -531,7 +531,7 @@ async function checkRegistrationStatus(addr, contract) {
         }
 
         // 2. UNLOCK VERIFIED FEATURES
-if (isVerified) {
+        if (isVerified) {
             console.log("PoI Identity Verified for:", nickname);
             
             // 1. Force hide the registration container
@@ -562,7 +562,7 @@ if (isVerified) {
 
             // Show the Passport
             renderPassport(addr, nick, contract);
-        }
+        
     } catch (e) {
         console.error("Status Check Failed:", e);
     }
@@ -1211,6 +1211,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
