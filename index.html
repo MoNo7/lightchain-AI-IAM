@@ -348,28 +348,7 @@ window.onload = async () => {
             }
         }
 
-        const contractOwner = await contract.owner();
-        if (typeof userWallet === 'string' && typeof contractOwner === 'string') {
-            if (userWallet.toLowerCase() === contractOwner.toLowerCase()) {
-            const adminSection = document.getElementById('adminSection');
-                if (adminSection) {
-                    adminSection.style.display = 'block';
-                }
 
-                // Safe check for ownerSection
-                const ownerSection = document.getElementById('ownerSection');
-                if (ownerSection) {
-                    ownerSection.style.display = 'block';
-                }
-    
-    document.getElementById('adminSection').style.display = 'block';
-    document.getElementById('ownerSection').style.display = 'block';
-    console.log("Admin Access Verified");
-            }
-        } else {
-            // Handle the scenario where one or both are not strings (e.g., undefined)
-            console.error("userWallet or contractOwner is not a string:", { userWallet, contractOwner });
-        }
         
 async function startOAuth(provider) {
     if (provider.toLowerCase() === 'github') {
@@ -422,6 +401,31 @@ function checkGitHubCallback() {
 
         // --- CORE FUNCTIONS ---
       async function fetchPrices() {
+
+        const contractOwner = await contract.owner();
+            if (typeof userWallet === 'string' && typeof contractOwner === 'string') {
+                if (userWallet.toLowerCase() === contractOwner.toLowerCase()) {
+                    const adminSection = document.getElementById('adminSection');
+                        if (adminSection) {
+                        adminSection.style.display = 'block';
+                        }
+                    
+                    // Safe check for ownerSection
+                    const ownerSection = document.getElementById('ownerSection');
+                    if (ownerSection) {
+                        ownerSection.style.display = 'block';
+                    }
+                
+                document.getElementById('adminSection').style.display = 'block';
+                document.getElementById('ownerSection').style.display = 'block';
+                console.log("Admin Access Verified");
+                }
+            } else {
+            // Handle the scenario where one or both are not strings (e.g., undefined)
+            console.error("userWallet or contractOwner is not a string:", { userWallet, contractOwner });
+        }
+
+          
         try {
         // Multi-token fetch for efficiency
         const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${LCAI_TOKEN},${ETH_TOKEN}`);
@@ -1091,3 +1095,4 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
