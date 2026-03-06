@@ -510,12 +510,19 @@ async function connect() {
 
         // 1. Check Registered Status (Unlock Studio/Gallery)
         if (nickname || isRegistered) {
+        if (isVerified || addr.toLowerCase() === owner.toLowerCase()) {
             unlockFeature('artNavItem', 'fas fa-palette');
             unlockFeature('galleryNavItem', 'fas fa-images');
         } else {
             lockFeature('artNavItem');
             lockFeature('galleryNavItem');
         }
+
+            if (document.getElementById('adminSection')) {
+            document.getElementById('adminSection').style.display = 'block';
+        }
+
+           
 if (isVerifiedOnChain) {
             const nick = await contract.nicknames(address);
             const sbtImg = await contract.imageData(address);
@@ -1111,6 +1118,7 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
 
