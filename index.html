@@ -497,8 +497,34 @@ async function checkRegistrationStatus(addr, contract) {
         // 2. UNLOCK VERIFIED FEATURES
         if (isVerified) {
             // Hide the registration boxes
+            // 2. Hide the registration step entirely
+            const authStep = document.getElementById('authStep');
+            const authStep = document.getElementById('mintSection');
+            
             if (document.getElementById('authStep')) document.getElementById('authStep').style.display = 'none';
             if (document.getElementById('mintSection')) document.getElementById('mintSection').style.display = 'none';
+
+            const passportContainer = document.getElementById('passportContainer');
+            if (passportContainer) {
+                passportContainer.style.display = 'block';
+                passportContainer.style.opacity = '1';
+            }
+
+            // 4. Trigger the Passport Rendering
+            if (typeof renderPassport === 'function') {
+                console.log("[IAM] Generating ZK Passport for:", nick);
+                renderPassport(addr, nick, contract);
+            }
+            
+            // 5. Unlock the Sidebar Navigation
+            ['artNavItem', 'galleryNavItem', 'registryNavItem'].forEach(id => {
+                const navItem = document.getElementById(id);
+                if (navItem) {
+                    navItem.classList.remove('locked-feature');
+                    navItem.style.pointerEvents = 'auto';
+                    navItem.style.opacity = '1';
+                }
+            });
 
             // Unlock the Sidebar Nav Items
             unlockFeature('artNavItem', 'fas fa-palette');
@@ -1099,6 +1125,7 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
 
