@@ -1088,8 +1088,17 @@ async function mintWithSocial() {
         fetchPrices();
         refreshModelDashboard();
         checkGitHubCallback();
+        // Ensure listeners are attached AFTER page load
+        window.addEventListener('load', () => {
+            fetchPrices();
+            setInterval(fetchPrices, 5000);
+            
+            const btn = document.getElementById('walletBtn');
+            if (btn) btn.addEventListener('click', connect);
+        });
     </script>
 </body>
 </html>
+
 
 
