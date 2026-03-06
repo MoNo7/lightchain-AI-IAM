@@ -507,7 +507,7 @@ if (isVerifiedOnChain) {
             document.getElementById('mintSection').style.display = 'none';
 
             // 1. Hide the Registration & Minting boxes
-            document.getElementById('zkView').querySelector('.social-grid').parentElement.parentElement.style.display = 'none';
+            document.getElementById('zkView').querySelector('.social-grid')
             document.getElementById('authStep').parentElement.style.display = 'none';
             
           // 2. Show the Metadata + Clickable QR Code
@@ -1079,6 +1079,7 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
 
