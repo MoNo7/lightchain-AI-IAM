@@ -321,15 +321,11 @@ abi: [
 };
 
 window.onload = async () => {
-        // Check if user was already logged in locally
-    const savedUser = localStorage.getItem('lcai_user');
-    if (savedUser) {
-        const user = JSON.parse(savedUser);
-        console.log("Welcome back, " + user.nickname);
-    }
-    // 1. SURGICAL FIX: Detect if this is the Auth Popup
-     const urlParams = new URLSearchParams(window.location.search);
+
+    const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
+
+    // 1. SURGICAL FIX: Detect if this is the Auth Popup
 
     if (code && window.opener) {
         // Push the code back to your main dashboard
@@ -339,12 +335,19 @@ window.onload = async () => {
         return; // Prevent the popup from running anything else
     }
 
+    const savedUser = localStorage.getItem('lcai_user');
+    if (savedUser) {
+        const user = JSON.parse(savedUser);
+        console.log("Welcome back, " + user.nickname);
+    }
+
     // ... Keep your existing Ticker/Model logic below this ...
     setInterval(fetchPrices, 3000);
     setInterval(refreshModelDashboard, 3000);
     fetchPrices(); 
     refreshModelDashboard();
     checkGitHubCallback();
+
 };
         let userWallet;
         let isRegistered = false;
@@ -1294,6 +1297,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
