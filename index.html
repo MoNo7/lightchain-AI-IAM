@@ -326,23 +326,32 @@ window.onload = async () => {
 const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
 
-    // IF THIS IS THE POPUP
-    if (code && window.opener) {
-        localStorage.setItem('gh_code', code); // Trigger storage event for parent
-        window.opener.processGitHubLink(code); // Attempt direct call
-        window.close(); // Kill popup
-        return; 
+if (code && window.opener) {
+        window.opener.postMessage({ type: 'GITHUB_OAUTH', code: code }, "*");
+        window.close();
+        return; // Stop execution in the popup
     }
 
     // IF THIS IS THE MAIN WINDOW: Listen for the code
-    window.addEventListener('storage', (e) => {
-        if (e.key === 'gh_code' && e.newValue) {
-            processGitHubLink(e.newValue);
-            localStorage.removeItem('gh_code');
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'GITHUB_OAUTH') {
+            processGitHubLink(event.data.code);
         }
     });
 
-    await autoConnectWallet();
+    if (window.ethereum) {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+            userWallet = accounts[0];
+            const navBtn = document.getElementById('walletBtn');
+            if (navBtn) navBtn.innerText = `${userWallet.slice(0,6)}...${userWallet.slice(-4)}`;
+            
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, signer);
+            checkRegistrationStatus(userWallet, contract);
+        }
+    }
 
     setInterval(fetchPrices, 3000);
     setInterval(refreshModelDashboard, 3000);
@@ -451,6 +460,13 @@ function processGitHubLink(code) {
     log("[Zk-Auth] GitHub Handshake successful. Unlocking Minting...");
     const socialHash = ethers.keccak256(ethers.toUtf8Bytes(code));
     window.lastSocialHash = socialHash;
+
+    const mintSection = document.getElementById('mintSection');
+    if (mintSection) {
+        mintSection.classList.remove('step-locked');
+        mintSection.style.opacity = "1";
+        mintSection.style.pointerEvents = "auto";
+    }
     
     const ghBtn = document.getElementById('btn-github');
     if (ghBtn) {
@@ -1336,6 +1352,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
