@@ -321,41 +321,56 @@ abi: [
 };
 
 window.onload = async () => {
-
+// ==========================================
+    // 1. POPUP TERMINATOR: Runs ONLY in the popup
+    // ==========================================
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
 
-    // 1. SURGICAL FIX: Detect if this is the Auth Popup
-
-    if (code && window.opener) {
-        // Push the code back to your main dashboard
-        window.opener.postMessage({ type: 'GITHUB_OAUTH', code: code }, '*');
-            window.close(); // Die immediately
-        return; // Prevent the popup from running anything else
+    if (code) {
+        // Drop the code in local storage for the parent window to find
+        localStorage.setItem('oauth_code_transfer', code);
+        
+        // Force close the popup immediately
+        window.close(); 
+        
+        // Fallback in case the browser blocks window.close()
+        document.body.innerHTML = "<h3 style='color:var(--green); text-align:center; padding:50px;'>Auth successful! Closing window...</h3>";
+        return; // CRITICAL: Stops the popup from running any dashboard logic
     }
 
+    // ==========================================
+    // 2. MAIN WINDOW LOGIC: Runs ONLY in the parent
+    // ==========================================
+    
+    // Listen for the popup dropping the code into storage
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'oauth_code_transfer' && event.newValue) {
+            log("[Zk-Auth] Secure handshake received from popup.");
+            
+            // Run the UI update on the MAIN window
+            processGitHubLink(event.newValue);
+            
+            // Clean up the storage so it's ready for next time
+            localStorage.removeItem('oauth_code_transfer'); 
+        }
+    });
+
+    // Restore previous sessions 
     const savedUser = localStorage.getItem('lcai_user');
     if (savedUser) {
         const user = JSON.parse(savedUser);
         console.log("Welcome back, " + user.nickname);
     }
 
-    window.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'GITHUB_OAUTH') {
-            log("[Zk-Auth] Secure payload received. Unlocking social layer...");
-            processGitHubLink(event.data.code); // Call your existing function
-        }
-    });
+    // Auto-sync wallet
+    await autoConnectWallet(); // Assuming you added this from the previous step
 
-    // Auto-sync wallet so refresh doesn't break state
-    await autoConnectWallet();
-    
-    // ... Keep your existing Ticker/Model logic below this ...
+    // Start your normal UI tickers
     setInterval(fetchPrices, 3000);
     setInterval(refreshModelDashboard, 3000);
-    fetchPrices(); 
+    fetchPrices();
     refreshModelDashboard();
-    checkGitHubCallback();
 
 };
 
@@ -1335,6 +1350,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
