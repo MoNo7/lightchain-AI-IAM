@@ -465,6 +465,7 @@ if (addr.toLowerCase() === ownerAddr.toLowerCase() || addr.toLowerCase() === CON
         }
 // 2. UNLOCK VERIFIED FEATURES
         if (isVerified) {
+            
             const nick = await contract.nicknames(addr);
             const authStep = document.getElementById('authStep');
             const mintSection = document.getElementById('mintSection');
@@ -474,7 +475,17 @@ if (addr.toLowerCase() === ownerAddr.toLowerCase() || addr.toLowerCase() === CON
                 el.classList.remove('locked-feature');
             });
             if (typeof renderPassport === 'function') renderPassport(addr, nick, contract);
-            
+            const features = ['artNavItem', 'galleryNavItem', 'passportNavItem'];
+            features.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.remove('locked-feature');
+                    el.style.opacity = "1";
+                    el.style.pointerEvents = "auto";
+                    // Update the icon to show it's unlocked
+                    const icon = el.querySelector('i');
+                    if (icon) icon.className = icon.className.replace('fa-lock', 'fa-check-circle');
+                }
             unlockFeature('artNavItem', 'fas fa-palette');
             unlockFeature('galleryNavItem', 'fas fa-images');
         }
@@ -1072,6 +1083,7 @@ window.onload = async () => {
     </script>
 </body>
 </html>
+
 
 
 
