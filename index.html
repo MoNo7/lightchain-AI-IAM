@@ -383,22 +383,19 @@ if (!window.ethereum) return;
     const accounts = await window.ethereum.request({ method: 'eth_accounts' });
     
     if (accounts.length > 0) {
-        userWallet = accounts[0];
-        // 1. Update the Nav Button
+        // CRITICAL: This sets the global variable so registerLocal can see it
+        userWallet = accounts[0]; 
+        
         const navBtn = document.getElementById('walletBtn');
         if (navBtn) {
             navBtn.innerText = `${userWallet.slice(0,6)}...${userWallet.slice(-4)}`;
-            navBtn.classList.add('connected'); // Optional: add a green glow class
         }
 
-        // 2. Refresh the contract instance
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, signer);
         
-        // 3. Sync Identity State
         checkRegistrationStatus(userWallet, contract);
-        log(`[SYS] Wallet Restored: ${userWallet.slice(0,8)}...`);
     }
 }
         
@@ -719,6 +716,12 @@ async function renderPassport(addr, nick, contract) {
 async function registerLocal() {
     const nick = document.getElementById('regNick').value.trim();
     const did = document.getElementById('regDid').value.trim();
+    
+    if (!userWallet && window.ethereum) {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        userWallet = accounts[0];
+    }
+    
     if (!nick || !userWallet) return log("Error: Name and Wallet required.");
 
     // SURGICAL FIX: Autofill the minting field
@@ -727,7 +730,6 @@ async function registerLocal() {
 
     // SAVE TO BROWSER STORAGE
     const profile = { nick, did, wallet: userWallet };
-    localStorage.setItem('lcai_profile', JSON.stringify(profile));
 
     const userData = {
         nickname: nick,
@@ -739,6 +741,7 @@ async function registerLocal() {
 
     isRegistered = true;
     log(`[Local] Welcome ${nick}! Profile saved for session.`);
+    localStorage.setItem('lcai_profile', JSON.stringify({ nick, did, wallet: userWallet }));
 
     // UI Transitions
     unlockFeature('artNavItem', 'fas fa-palette');
@@ -1345,6 +1348,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
