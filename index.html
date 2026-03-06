@@ -894,11 +894,12 @@ async function registerLocal() {
                 const did = await contract.dids(input);
                 const isVerified = await contract.verified(input);
                 const adminStatus = await contract.isAdmin(input); 
+                const idHash = await contract.identityHashes(input);
 
                 if (name && name !== "") {
                     const status = isVerified ? "VERIFIED" : "PENDING";
                     const adminTag = adminStatus ? " <span style='color:var(--accent)'>[ADMIN]</span>" : "";
-                    res.innerHTML = `<span style="color:var(--green)">${status}:</span> ${name} (${did})${adminTag}`;
+                    res.innerHTML = `<span style="color:var(--green)">${status}:</span> ${name} (${did})${adminTag}(${sProvider})`;
                     log(`Match Found: ${name} is ${status}`);
                 } else {
                     res.innerHTML = `<span style="color:var(--red)">NOT FOUND</span>`;
@@ -1348,6 +1349,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
