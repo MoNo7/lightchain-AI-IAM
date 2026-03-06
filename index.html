@@ -437,7 +437,11 @@ try {
         
         // Trigger status check
         await checkRegistrationStatus(userAddress, contract);
-        
+        const authStep = document.getElementById('authStep');
+if (authStep) {
+    authStep.classList.remove('step-locked'); // Removes the dimming effect
+    authStep.style.pointerEvents = 'auto';    // Allows clicking/typing
+}
         console.log("Connected Successfully:", userAddress);
     } catch (err) {
         console.error("Connection Error:", err.message);
@@ -541,6 +545,16 @@ async function registerLocal() {
         btn.style.opacity = "1";
         btn.style.cursor = "pointer";
     });
+    // Save to local storage so the site remembers you
+    localStorage.setItem('lcai_user', JSON.stringify({
+        nickname: nick,
+        did: did,
+        wallet: userWallet,
+        timestamp: Date.now()
+    }));
+    document.getElementById('authStep').style.display = 'none';
+    unlockFeature('artNavItem', 'fas fa-palette');
+    unlockFeature('galleryNavItem', 'fas fa-images');
 }
 
         async function refreshModelDashboard() {
@@ -1029,6 +1043,7 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
 
