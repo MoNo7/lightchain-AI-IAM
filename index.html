@@ -472,7 +472,7 @@ try {
             authStep.classList.remove('step-locked');
             authStep.style.opacity = "1";
         }
-    / Check if this wallet is the Owner/Admin
+    // Check if this wallet is the Owner/Admin
         await checkRegistrationStatus(userWallet, contract);
         console.log("Connected Successfully:", userAddress);
     } catch (err) {
@@ -1086,5 +1086,6 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
