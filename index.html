@@ -401,6 +401,7 @@ function checkGitHubCallback() {
 
         // --- CORE FUNCTIONS ---
       async function fetchPrices() {
+               const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, signer);
 
         const contractOwner = await contract.owner();
             if (typeof userWallet === 'string' && typeof contractOwner === 'string') {
@@ -1095,3 +1096,4 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
