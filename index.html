@@ -790,10 +790,11 @@ const nickEl = document.getElementById('regNick');
         
         function unlockFeature(id, iconClass) {
             constitem = document.getElementById(id);
-        if (item) {
-            item.classList.remove('locked-feature');
-            const icon = item.querySelector('i');
-            if (icon) icon.className = iconClass;
+            if (item) {
+                item.classList.remove('locked-feature');
+                const icon = item.querySelector('i');
+                if (icon) icon.className = iconClass;
+            }
         }
         
         function lockFeature(id) {
@@ -1055,6 +1056,7 @@ window.onload = async () => {
     </script>
 </body>
 </html>
+
 
 
 
