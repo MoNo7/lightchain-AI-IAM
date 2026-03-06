@@ -468,6 +468,11 @@ function checkGitHubCallback() {
 
         
 async function connect() {
+    // Force the ID to reveal if you are the owner defined in CONFIG
+if (userWallet && userWallet.toLowerCase() === CONFIG.owner.toLowerCase()) {
+    const adminMenu = document.getElementById('adminItems');
+    if (adminMenu) adminMenu.setAttribute('style', 'display: block !important');
+}
 try {
         if (!window.ethereum) return alert("MetaMask not found!");
 
@@ -531,8 +536,13 @@ async function checkRegistrationStatus(addr, contract) {
         const nick = await contract.nicknames(addr);
 
         if (isVerified && nick) {
-            console.log("[IAM] Verified Identity Found:", nick);
-            
+
+            // 1. Clear the Registration Form
+            const authBox = document.getElementById('authStep');
+            const mintBox = document.getElementById('mintSection');
+            if (authBox) authBox.style.display = 'none';
+            if (mintBox) mintBox.style.display = 'none';
+
             // Populate nickname inputs so the user sees their current name
             const nickInput = document.getElementById('nickName');
             const regInput = document.getElementById('regNick');
@@ -683,53 +693,42 @@ async function registerLocal() {
     unlockFeature('galleryNavItem', 'fas fa-images');
 }
 
-  function refreshModelDashboard() {
-    try {
-        // 1. Target the correct container. 
-        // Update 'modelsContainer' to match the EXACT id in your HTML
-//        const container = document.getElementById('modelsContainer') || document.querySelector('.models-list');
-        const container = document.getElementById('realtimeModelTable');
- 
+          function refreshModelDashboard() {
+            try {
+                const container = document.getElementById('realtimeModelTable');
+                if (!container) return; 
         
-        // If the container isn't on the screen right now, stop safely.
-        if (!container) return; 
-
-        // 2. Ensure your array from line 333 exists
-        if (typeof inferenceModels === 'undefined') {
-            console.warn("[SYS] inferenceModels array not found.");
-            return;
+                if (typeof inferenceModels === 'undefined') return;
+        
+                let html = '';
+                inferenceModels.forEach(model => {
+                    // FIX: Use model.baseLoad (from your array) instead of model.load
+                    const loadValue = model.baseLoad || 0;
+                    const simulatedLoad = (loadValue + (Math.random() * 1.5)).toFixed(1) + "%";
+                    
+                    // FIX: Derive status from loadValue
+                    const statusText = loadValue > 0 ? "ONLINE" : "IDLE";
+                    const statusColor = loadValue > 0 ? "var(--green)" : "var(--text-dim)";
+        
+                    html += `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 12px; color: var(--text);">${model.name}</td>
+                        <td style="padding: 12px; color: ${statusColor}; font-weight: bold;">${statusText}</td>
+                        <td style="padding: 12px;">${simulatedLoad}</td>
+                        <td style="padding: 12px; font-family: monospace; color: var(--text-dim); font-size: 0.75rem;">${model.hash}</td>
+                    </tr>`;
+                });
+                container.innerHTML = html;
+        
+                // Keep the Header Load Pill in sync
+                const loadPill = document.getElementById('loadPill');
+                if (loadPill) {
+                    loadPill.innerText = (12.4 + Math.random()).toFixed(1) + "%";
+                }
+            } catch (e) {
+                console.error("Dashboard Sync Error:", e);
+            }
         }
-
-        // 3. Build the HTML dynamically
-        let html = '';
-        inferenceModels.forEach(model => {
-            // Add a little random fluctuation to the load to make it look "live"
-            const currentLoad = model.baseLoad || 0;
-            const simulatedLoad = (parseFloat(model.load) + (Math.random() * 1.5 - 0.5)).toFixed(1) + "%";
-            const statusText = currentLoad > 0 ? "ONLINE" : "IDLE";
-            const statusColor = model.status === 'ONLINE' ? '#39d353' : '#f1e05a';
-
-            html += `
-            <div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #222; font-size: 0.9rem;">
-                <span style="flex: 2; font-weight: bold; color: #c9d1d9;">${model.name}</span>
-                <span style="flex: 1; color: ${statusColor}; font-weight: 600;">${model.status}</span>
-                <span style="flex: 1; color: #c9d1d9;">${simulatedLoad}</span>
-                <span style="flex: 2; font-family: monospace; color: #8b949e; text-align: right;">${model.hash}</span>
-            </div>`;
-        });
-
-        // 4. Inject it into the UI
-        container.innerHTML = html;
-        // FIX: Re-enable the Load Pill in the header
-        const loadPill = document.getElementById('loadPill');
-        if (loadPill) {
-            loadPill.innerText = (12.4 + Math.random()).toFixed(1) + "%";
-        }
-
-    } catch (e) {
-        console.warn("Model Dashboard UI Sync Error:", e.message);
-    }
-}
 
         let activeAuctions = [];
 
@@ -1261,6 +1260,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
