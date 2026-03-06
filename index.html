@@ -422,16 +422,13 @@ function checkGitHubCallback() {
         }
 
 async function connect() {
-
     try {
         if (typeof window.ethereum === 'undefined') {
             alert("MetaMask not found!");
             return;
         }
-        
-
-
-        // FORCE MetaMask if multiple providers (like Coinbase) are present
+        let providerChoice = window.ethereum;
+         // FORCE MetaMask if multiple providers (like Coinbase) are present
         if (window.ethereum.providers) {
             const mm = window.ethereum.providers.find(p => p.isMetaMask);
             if (mm) {
@@ -449,24 +446,21 @@ async function connect() {
         const accounts = await provider.send("eth_requestAccounts", []);
         const address = accounts[0];
         const userAddress = accounts[0];
+        userWallet = ethers.getAddress(address);
 
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, signer);
 
-        if (address.toLowerCase() === contractOwner.toLowerCase()) {
-            console.log("[SYS] Owner detected. Unlocking Admin Registry.");
-            document.getElementById('adminSection').style.display = 'block'; 
+
+//        userWallet = ethers.getAddress(accounts[0]);
+//        document.getElementById('walletBtn').innerText = userWallet.slice(0,6) + "...";
+        document.getElementById('walletBtn').innerText = userWallet.slice(0,6) + "...";
+        const bal = await provider.getBalance(userWallet);
+//        document.getElementById('balancePill').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2) + " LCAI";
+if (document.getElementById('balancePill')) {
+            document.getElementById('balancePill').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2) + " LCAI";
         }
         
-
-
-        
-        userWallet = ethers.getAddress(accounts[0]);
-        document.getElementById('walletBtn').innerText = userWallet.slice(0,6) + "...";
-        
-        const bal = await provider.getBalance(userWallet);
-        document.getElementById('balancePill').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2) + " LCAI";
-
         // NEW: Unlock the Registration inputs immediately upon connection
         const authStep = document.getElementById('authStep');
         if (authStep) {
@@ -474,9 +468,12 @@ async function connect() {
             authStep.style.opacity = "1";
             authStep.style.pointerEvents = "auto";
         }
+
+        
+        
         console.log("ConnectedL", address);
         log("Connected via MetaMask: " + userWallet);
-        await checkRegistrationStatus(address, contract);
+        await checkRegistrationStatus(userwallet, contract);
  //       await checkRegistrationStatus(userWallet);
     } catch(e) { 
         log("Connection failed: " + e.message); 
@@ -511,19 +508,27 @@ async function connect() {
             contract.isAdmin(address),
             contract.owner()
         ]);
-
+        if (address.toLowerCase() === contractOwner.toLowerCase()) {
+                console.log("[SYS] Owner detected. Unlocking Admin Registry.");
+                const adminSection = document.getElementById('adminSection');
+                const adminItems = document.getElementById('adminItems');
+                if (adminSection) adminSection.style.display = 'block';
+                if (adminItems) adminItems.style.display = 'block';
+//                document.getElementById('adminSection').style.display = 'block'; 
+            
+            }
         // 1. Check Registered Status (Unlock Studio/Gallery)
-        if (nickname || isRegistered) {
-        if (isVerified || addr.toLowerCase() === owner.toLowerCase()) {
-            unlockFeature('artNavItem', 'fas fa-palette');
-            unlockFeature('galleryNavItem', 'fas fa-images');
-        } else {
-            lockFeature('artNavItem');
-            lockFeature('galleryNavItem');
-        }
+//        if (nickname || isRegistered) {
+//        if (isVerified || addr.toLowerCase() === owner.toLowerCase()) {
+ //           unlockFeature('artNavItem', 'fas fa-palette');
+//            unlockFeature('galleryNavItem', 'fas fa-images');
+//        } else {
+//            lockFeature('artNavItem');
+//            lockFeature('galleryNavItem');
+//        }
 
-            if (document.getElementById('adminSection')) {
-            document.getElementById('adminSection').style.display = 'block';
+//            if (document.getElementById('adminSection')) {
+ //           document.getElementById('adminSection').style.display = 'block';
         }
 
            
@@ -533,18 +538,25 @@ if (isVerifiedOnChain) {
 
             unlockFeature('artNavItem', 'fas fa-palette');
             unlockFeature('galleryNavItem', 'fas fa-images');
+            const auctionNav = document.getElementById('marketNavItem');
+            if(auctionNav) auctionNav.classList.remove('locked-feature');
             // 1. Hide the Registration & Minting boxes
-            document.getElementById('authStep').style.display = 'none';
-            document.getElementById('mintSection').style.display = 'none';
+            if(document.getElementById('authStep')) document.getElementById('authStep').style.display = 'none';
+            if(document.getElementById('mintSection')) document.getElementById('mintSection').style.display = 'none';
+            const socialGrid = document.querySelector('.social-grid');
 
+            if(socialGrid && socialGrid.parentElement && socialGrid.parentElement.parentElement) {
+                socialGrid.parentElement.parentElement.style.display = 'none';
+            }
+    
             // 1. Hide the Registration & Minting boxes
-            document.getElementById('zkView').querySelector('.social-grid')
-            document.getElementById('authStep').parentElement.style.display = 'none';
             document.querySelector('.social-grid').parentElement.parentElement.style.display = 'none';
 // Render the Passport QR if we are in the zkView
             renderPassportUI(userAddress, nickname);
           // 2. Show the Metadata + Clickable QR Code
-
+        // Show Passport UI
+            await renderPassportUI(address, nickname, contract);
+        } else if (nickname || isRegistered) {
             // Unlock the rest of the Portal
             unlockFeature('artNavItem', 'fas fa-palette');
             unlockFeature('galleryNavItem', 'fas fa-images');
@@ -591,6 +603,8 @@ if (isVerifiedOnChain) {
 async function renderPassportUI(address, nickName, contract) {
     const zkContainer = document.getElementById('zkView');
     if (!zkContainer) return;
+    let imgData = "";
+    try { imgData = await contract.base64Image(); } catch(e) { console.warn("Could not fetch image"); }
     
     const sbtImg = await contract.base64Image();
 
@@ -1132,6 +1146,7 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
 
