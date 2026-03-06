@@ -422,231 +422,65 @@ function checkGitHubCallback() {
         }
 
 async function connect() {
-    try {
-        if (typeof window.ethereum === 'undefined') {
-            alert("MetaMask not found!");
-            return;
-        }
-        let providerChoice = window.ethereum;
-         // FORCE MetaMask if multiple providers (like Coinbase) are present
-        if (window.ethereum.providers) {
-            const mm = window.ethereum.providers.find(p => p.isMetaMask);
-            if (mm) {
-                providerChoice = mm;
-                log("[SYS] Multi-provider detected: Forcing MetaMask.");
-            }
-        } 
-        // Fail-safe: If only one is present but it is Coinbase
-        else if (!window.ethereum.isMetaMask && window.ethereum.isCoinbaseWallet) {
-            return log("Error: Coinbase is hijacking. Disable 'Default Wallet' in Coinbase settings.");
-        }
+try {
+        if (!window.ethereum) return alert("MetaMask not found!");
 
-        const contractOwner = await contract.owner();
-        const provider = new ethers.BrowserProvider(providerChoice);
+        const provider = new ethers.BrowserProvider(window.ethereum);
         const accounts = await provider.send("eth_requestAccounts", []);
-        const address = accounts[0];
         const userAddress = accounts[0];
-        userWallet = ethers.getAddress(address);
 
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, signer);
 
-
-//        userWallet = ethers.getAddress(accounts[0]);
-//        document.getElementById('walletBtn').innerText = userWallet.slice(0,6) + "...";
-        document.getElementById('walletBtn').innerText = userAddress.substring(0,6) + "...";
-        const bal = await provider.getBalance(userWallet);
-//        document.getElementById('balancePill').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2) + " LCAI";
-        if (document.getElementById('balancePill')) {
-            document.getElementById('balancePill').innerText = parseFloat(ethers.formatEther(bal)).toFixed(2) + " LCAI";
-        }
+        // Update UI
+        document.getElementById('walletBtn').innerText = userAddress.slice(0, 6) + "...";
         
-        // NEW: Unlock the Registration inputs immediately upon connection
-        const authStep = document.getElementById('authStep');
-        if (authStep) {
-            authStep.classList.remove('step-locked');
-            authStep.style.opacity = "1";
-            authStep.style.pointerEvents = "auto";
-        }
-
-        
-        
-        console.log("ConnectedL", address);
-        log("Connected via MetaMask: " + userWallet);
+        // Trigger status check
         await checkRegistrationStatus(userAddress, contract);
- //       await checkRegistrationStatus(userWallet);
-    } catch(e) { 
-        log("Connection failed: " + e.message); 
+        
+        console.log("Connected Successfully:", userAddress);
+    } catch (err) {
+        console.error("Connection Error:", err.message);
     }
 }
 
         
 
-        async function checkRegistrationStatus(address, contract) {
-            const isVerifiedOnChain = await contract.verified(address);
-        const nickname = await contract.nicknames(address);
-    const isVerified = await contract.verified(address);
-    const contractOwner = await contract.owner();        
-    const artItem = document.getElementById('artNavItem');
-    const galleryItem = document.getElementById('galleryNavItem');
-    const adminPanel = document.getElementById('adminItems');
-    const auctionBtn = document.querySelector('[onclick="openMintSelect()"]');
-
-            if (isVerified) {
-            console.log("User is Verified!");
-            
-            // 1. Hide Setup UI
-            document.getElementById('authStep').style.display = 'none';
-            document.getElementById('mintSection').style.display = 'none';
-            
-            // 2. Unlock Gallery
-            document.getElementById('artNavItem').classList.remove('locked-feature');
-            document.getElementById('galleryNavItem').classList.remove('locked-feature');
-
-            // 3. Show Passport with Image
-            const nickname = await contract.nicknames(address);
-            let sbtImg = "";
-            try { 
-                sbtImg = await contract.base64Image(); 
-                // Fix the blank image: Ensure it has the data prefix if missing
-                if (!sbtImg.startsWith("data:image")) {
-                    sbtImg = "data:image/png;base64," + sbtImg;
-                }
-            } catch(e) { 
-                console.log("No image found on contract"); 
-            }
-
-            document.getElementById('zkView').innerHTML = `
-                <div style="text-align: center; padding: 20px; background: #111; border: 1px solid #00ffcc; border-radius: 10px;">
-                    <h3 style="color: #00ffcc;">Passport Verified</h3>
-                    <img src="${sbtImg}" style="width: 200px; border-radius: 8px; margin: 15px 0;" alt="SBT Image">
-                    <h4 style="color: white;">${nickname}</h4>
-                </div>
-            `;
-        }
-
-            // Show Admin Panel if Owner
-        if (address.toLowerCase() === contractOwner.toLowerCase()) {
-            document.getElementById('adminSection').style.display = 'block';
-        }
-
+   async function checkRegistrationStatus(addr, contract) {
     try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const contract = new ethers.Contract(CONFIG.contract, [
-            "function nicknames(address) view returns (string)",
-            "function verified(address) view returns (bool)",
-            "function isAdmin(address) view returns (bool)",
-            "function imageData(address) view returns (string)",
-            "function owner() view returns (address)"
-        ], provider);
-        const isVerifiedOnChain = await contract.verified(address);
-        const [nickname, isVerified, adminStatus, contractOwner] = await Promise.all([
-            contract.nicknames(address),
-            contract.verified(address),
-            contract.isAdmin(address),
+        const [isVerified, nickname, ownerAddr] = await Promise.all([
+            contract.verified(addr),
+            contract.nicknames(addr),
             contract.owner()
         ]);
-        if (address.toLowerCase() === contractOwner.toLowerCase()) {
-                console.log("[SYS] Owner detected. Unlocking Admin Registry.");
-                const adminSection = document.getElementById('adminSection');
-                const adminItems = document.getElementById('adminItems');
-                if (adminSection) adminSection.style.display = 'block';
-                if (adminItems) adminItems.style.display = 'block';
-//                document.getElementById('adminSection').style.display = 'block'; 
-            
-            }
-        // 1. Check Registered Status (Unlock Studio/Gallery)
-//        if (nickname || isRegistered) {
-//        if (isVerified || addr.toLowerCase() === owner.toLowerCase()) {
- //           unlockFeature('artNavItem', 'fas fa-palette');
-//            unlockFeature('galleryNavItem', 'fas fa-images');
-//        } else {
-//            lockFeature('artNavItem');
-//            lockFeature('galleryNavItem');
-//        }
 
-//            if (document.getElementById('adminSection')) {
- //           document.getElementById('adminSection').style.display = 'block';
-        }
-
-           
-if (isVerifiedOnChain) {
-            const nick = await contract.nicknames(address);
-            const sbtImg = await contract.imageData(address);
-
-            unlockFeature('artNavItem', 'fas fa-palette');
-            unlockFeature('galleryNavItem', 'fas fa-images');
-            const auctionNav = document.getElementById('marketNavItem');
-            if(auctionNav) auctionNav.classList.remove('locked-feature');
-            // 1. Hide the Registration & Minting boxes
-            if(document.getElementById('authStep')) document.getElementById('authStep').style.display = 'none';
-            if(document.getElementById('mintSection')) document.getElementById('mintSection').style.display = 'none';
-            const socialGrid = document.querySelector('.social-grid');
-
-            if(socialGrid && socialGrid.parentElement && socialGrid.parentElement.parentElement) {
-                socialGrid.parentElement.parentElement.style.display = 'none';
-            }
-    
-            // 1. Hide the Registration & Minting boxes
-            document.querySelector('.social-grid').parentElement.parentElement.style.display = 'none';
-// Render the Passport QR if we are in the zkView
-            renderPassportUI(userAddress, nickname);
-          // 2. Show the Metadata + Clickable QR Code
-        // Show Passport UI
-            await renderPassportUI(address, nickname, contract);
-        } else if (nickname || isRegistered) {
-            // Unlock the rest of the Portal
-            unlockFeature('artNavItem', 'fas fa-palette');
-            unlockFeature('galleryNavItem', 'fas fa-images');
-        }
-        // 2. Check Verified Status (Unlock Auction House)
         if (isVerified) {
-            const auctionNav = document.getElementById('marketNavItem');
-            if(auctionNav) auctionNav.classList.remove('locked-feature');
-            log("[SYS] Verified Role: Full Marketplace access granted.");
-            // Unlock Studio and Gallery
-        unlockFeature('artNavItem', 'fas fa-palette');
-        unlockFeature('galleryNavItem', 'fas fa-images');
-        
-        // Hide Minting Box, Show Registry management
-        document.getElementById('mintSection').style.display = 'none';
-        document.getElementById('registrySection').style.display = 'block';
-        } else {
-            if (auctionBtn) auctionBtn.style.display = 'none';
+            // Unlock Features
+            document.getElementById('artNavItem').classList.remove('locked-feature');
+            document.getElementById('galleryNavItem').classList.remove('locked-feature');
+            
+            // Hide Registration UI
+            if (document.getElementById('authStep')) document.getElementById('authStep').style.display = 'none';
+            
+            // Show Passport UI (Call a standalone function)
+            renderPassport(addr, nickname, contract);
         }
 
-        // 3. Admin & Owner Panels
-        if (adminStatus || address.toLowerCase() === contractOwner.toLowerCase()) {
-            adminPanel.style.display = 'block';
-        } else {
-            adminPanel.style.display = 'none';
+        if (addr.toLowerCase() === ownerAddr.toLowerCase()) {
+            document.getElementById('adminSection').style.display = 'block';
         }
-        // Check if current user is the Contract Owner (Admin)
-    if (address.toLowerCase() === contractOwner.toLowerCase()) {
-        document.getElementById('adminSection').style.display = 'block';
-        const adminPanel = document.getElementById('adminItems');
-            if (adminPanel) adminPanel.style.display = 'block';
-        console.log("Admin Access Granted");
-    }
-        loadGallery()
-        
     } catch (e) {
-        console.error("Status check failed", e);
-        if(artItem) artItem.classList.add('locked-feature');
-        if(galleryItem) galleryItem.classList.add('locked-feature');
+        console.warn("Status check failed - check your contract address.");
     }
 }
 
 // Move this OUTSIDE as a standalone function
-async function renderPassportUI(address, nickName, contract) {
-    const zkContainer = document.getElementById('zkView');
-    if (!zkContainer) return;
-    let imgData = "";
-    try { imgData = await contract.base64Image(); } catch(e) { console.warn("Could not fetch image"); }
-    
-    const sbtImg = await contract.base64Image();
+async function renderPassport(addr, nick, contract) {
+    let img = await contract.base64Image();
+    if (!img.startsWith("data:image")) img = "data:image/png;base64," + img;
 
-    zkContainer.innerHTML = `
+    const zkView = document.getElementById('zkView');
+    zkView.innerHTML = `
         <div style="text-align: center; padding: 40px; background: var(--panel); border-radius: 15px; border: 1px solid var(--green);">
             <h2 style="color: var(--green);"><i class="fas fa-check-circle"></i> Identity Verified</h2>
             <div style="margin: 20px auto; width: 300px; border: 2px solid var(--accent); border-radius: 10px; overflow: hidden; background: #000;">
@@ -1184,6 +1018,7 @@ async function mintWithSocial() {
     </script>
 </body>
 </html>
+
 
 
 
