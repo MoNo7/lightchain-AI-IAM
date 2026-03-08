@@ -1461,10 +1461,11 @@ async function mintWithSocial() {
 
                     if (uri.startsWith("U2Fsd")) {
                         try {
-                            displaySrc = await decryptArt(uri);
-                                log(`[GALLERY] Token #${tokenId} decrypted successfully.`);
+                            let decrypted = await decryptArt(uri);
+                            // Force the header if it's missing from the encrypted payload
+                            displaySrc = decrypted.startsWith("data:image") ? decrypted : "data:image/jpeg;base64," + decrypted;
                         } catch (e) {
-                                displaySrc = "https://via.placeholder.com/400/1a1a1a/ff4444?text=Unlock+Required";
+                            displaySrc = "https://via.placeholder.com/400?text=Decryption+Failed";
                         }
                     } else {
                         displaySrc = uri.startsWith("ipfs://") 
@@ -1643,6 +1644,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
