@@ -1379,6 +1379,31 @@ async function mintWithSocial() {
             });
         }
 
+        async function deleteArtNFT(tokenId) {
+            if (!confirm(`Are you sure you want to permanently delete Art #${tokenId}? This cannot be undone.`)) return;
+            
+            log(`[STUDIO] Requesting burn for Token #${tokenId}...`);
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                
+                // We call the burn function (if your contract has it) or transfer to a null address
+                const artContract = new ethers.Contract(CONFIG.artStudio, [
+                    "function transferFrom(address from, address to, uint256 tokenId) public"
+                ], signer);
+        
+                // Sending to 0x000...000 "deletes" it from your gallery
+                const tx = await artContract.transferFrom(userWallet, "0x0000000000000000000000000000000000000000", tokenId);
+                
+                log(`[DELETE] Transaction sent: ${tx.hash.slice(0,18)}...`);
+                await tx.wait();
+                log("[SUCCESS] Art permanently removed.");
+                loadGallery(); // Refresh view
+            } catch (e) {
+                log(`[DELETE ERROR] ${e.message}`);
+            }
+        }
+
         async function loadGallery() {
         const container = document.getElementById('galleryGrid');
             if (!userWallet) return container.innerHTML = "Connect wallet to view gallery.";
@@ -1398,27 +1423,59 @@ async function mintWithSocial() {
                     const tokenId = await contract.tokenOfOwnerByIndex(userWallet, i);
                     const uri = await contract.tokenURI(tokenId);
 
+                    // Inside your loadGallery() loop in index.html
                     let displayUri = uri;
-                    if (uri.startsWith("ipfs://")) {
-                        displayUri = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
-                    }else if (uri.startsWith("ipfs://")) {
+                    // If the URI is broken or "undefined", show a placeholder instead of a blank space
+                    if (!uri || uri.includes("undefined") || uri.length < 10) {
+                        displayUri = "https://via.placeholder.com/400/1a1a1a/00f2ff?text=Broken+Inference+Data";
+                    } else if (uri.startsWith("ipfs://")) {
                         displayUri = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
                     }
                     
                     container.innerHTML += `
-                        <div class="gallery-card">
-                            <img src="${displayUri}" style="width:100%">
-                            <div class="card-meta">
-                                <span>ID: #${tokenId}</span>
-                                <button onclick="listInAuction(${tokenId})" class="btn-zk-sm">SELL</button>
+                    <div class="gallery-card" style="background:var(--sidebar); padding:15px; border-radius:12px; border:1px solid var(--border); transition:0.3s;">
+                        <img src="${displayUri}" style="width:100%; border-radius:8px; margin-bottom:12px;" onerror="this.src='https://via.placeholder.com/400?text=Image+Load+Error'">
+                        <div class="card-meta" style="display:flex; flex-direction:column; gap:8px;">
+                            <span style="color:var(--accent); font-size:0.8rem; font-weight:bold;">ART TOKEN #${tokenId}</span>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                                <button onclick="listInAuction(${tokenId})" class="btn-zk-sm" style="background:var(--green); color:white;">
+                                    <i class="fas fa-gavel"></i> SELL
+                                </button>
+                                <button onclick="deleteArtNFT(${tokenId})" class="btn-zk-sm" style="background:var(--red); color:white;">
+                                    <i class="fas fa-trash"></i> DELETE
+                                </button>
                             </div>
-                        </div>`;
+                        </div>
+                    </div>`;
                 }
             } catch (e) {
                 console.log("Gallery sync pending...");
             }
         }
+async function listInAuction(tokenId) {
+    log(`[AUCTION] Preparing Token #${tokenId} for market...`);
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        
+        const artContract = new ethers.Contract(CONFIG.artStudio, [
+            "function approve(address to, uint256 tokenId) public"
+        ], signer);
 
+        // 1. APPROVE the Auction House (Update address if needed)
+        const auctionHouse = "0xYourAuctionHouseAddressGoesHere"; 
+        log("[AUCTION] Step 1: Approving Auction House...");
+        const tx = await artContract.approve(auctionHouse, tokenId);
+        await tx.wait();
+
+        log("[SUCCESS] Token approved! You can now set your price in the Auction House tab.");
+        // Redirect to Auction House UI
+        showSection('auction-house'); 
+    } catch (e) {
+        log(`[SELL ERROR] ${e.message}`);
+    }
+}
+        
 function showView(id) {
     // 1. Hide all views
     document.querySelectorAll('main > div').forEach(v => v.style.display = 'none');
@@ -1525,6 +1582,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
