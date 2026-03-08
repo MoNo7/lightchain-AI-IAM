@@ -1130,7 +1130,6 @@ async function generateAIVMArt() {
         const identityContract = new ethers.Contract(CONFIG.contract, [
             "function requestInferenceV2(bytes32 promptId, string calldata prompt) public payable",
             "function verified(address) view returns (bool)"
-            "function verified(address) view returns (bool)"
         ], provider);
         // check if user is verified first to avoid silent revert
         const isUserVerified = await identityContract.verified(userWallet);
@@ -1410,6 +1409,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
