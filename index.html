@@ -1148,11 +1148,20 @@ async function generateAIVMArt() {
             return log("Error: You must be a Verified Identity to anchor PoI.");
         }
 
-        // 2. Send the actual Art Request to the Art Studio Contract
+
+        // 1. Initialize the Art Contract
         const artContract = new ethers.Contract(CONFIG.artStudio, [
-          //  "function requestInferenceV2(bytes32 promptId, string calldata prompt) public payable",
-            "function generateArt(string calldata prompt) public payable" // Correct name
+            "function generateArt(string calldata prompt) public payable"
         ], signer);
+        
+        // 2. Capture the transaction (Crucial: tx must be defined here!)
+        const tx = await artContract.generateArt(finalPrompt, { 
+            value: ethers.parseEther("0.25") 
+        });
+        // 2. Send the actual Art Request to the Art Studio Contract
+//        const artContract = new ethers.Contract(CONFIG.artStudio, [
+          //  "function requestInferenceV2(bytes32 promptId, string calldata prompt) public payable",
+  //      ], signer);
 
  //       const tx = await artContract.requestInferenceV2(promptId, finalPrompt, {
   //          value: ethers.parseEther("0.25")
@@ -1477,34 +1486,3 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
