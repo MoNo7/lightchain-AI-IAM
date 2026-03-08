@@ -1184,37 +1184,33 @@ async function generateAIVMArt() {
         const img = new Image();
         img.crossOrigin = "anonymous"; 
 
-        img.onload = () => {
-            // 1. GET THE UI CANVAS (For High-Res Preview)
+            img.onload = () => {
+                   // 1. Render High-Res for UI
             const mainCanvas = document.getElementById('generatedCanvas');
             const mainCtx = mainCanvas.getContext('2d');
             mainCanvas.width = 1024;
             mainCanvas.height = 1024;
             mainCtx.drawImage(img, 0, 0, 1024, 1024);
-    
-            // Display the high-res version in the UI
-            const highResData = mainCanvas.toDataURL('image/png');
-            document.getElementById('aivmOutputImage').src = highResData;
+            
+            document.getElementById('aivmOutputImage').src = mainCanvas.toDataURL('image/png');
             document.getElementById('aivmOutputImage').style.display = 'block';
-    
-            // 2. CREATE THE "BLOCKCHAIN-SAFE" VERSION (The NFT)
-            // We use a separate, smaller canvas for the RPC payload
+        
+            // 2. Render Low-Res for Blockchain (The Fix for RPC Errors)
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
             tempCanvas.width = 256;
             tempCanvas.height = 256;
             tempCtx.drawImage(img, 0, 0, 256, 256);
             
-            // This is the variable saveArtToGallery() will use
+            // This variable is now small enough to pass through the RPC
             currentArtData = tempCanvas.toDataURL('image/jpeg', 0.5); 
-    
-            // 3. CLEANUP UI
-            isGenerating = false; // Reset the lock
-            loader.style.display = 'none';
+        
+            isGenerating = false;
+            document.getElementById('renderLoader').style.display = 'none';
             document.getElementById('saveArtBtn').style.display = 'block';
-            document.getElementById('deleteArtBtn').style.display = 'block';
             log("[AIVM] Render Stabilized. High-res preview active.");
         };
+                
         img.onerror = () => {
             isGenerating = false;
             loader.style.display = 'none';
@@ -1286,10 +1282,9 @@ async function saveArtToGallery() {
         ], signer);
 
         log("[MINT] Sending Art Data to Lightchain...");
-        // BYPASS IPFS: Send currentArtData directly
         const tx = await artContract.mintArtNFT(currentArtData, {
-            value: ethers.parseEther("0.25"),
-            gasLimit: 1500000 // Higher gas for direct data
+            value: ethers.parseEther("0.25"), // MATCH THE CONTRACT FEE
+            gasLimit: 2000000 
         });
 
         await tx.wait();
@@ -1578,6 +1573,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
