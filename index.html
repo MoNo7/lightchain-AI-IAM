@@ -1249,7 +1249,8 @@ async function saveArtToGallery() {
         ], signer);
 
         const tx = await artContract.mintArtNFT(currentArtData, {
-            value: ethers.parseEther("0.25") // Optional fee for the AI model providers
+            value: ethers.parseEther("0.25"),
+            gasLimit: 1000000
         });
 
         log(`[MINT] NFT Transaction sent: ${tx.hash.slice(0,18)}...`);
@@ -1486,4 +1487,5 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
