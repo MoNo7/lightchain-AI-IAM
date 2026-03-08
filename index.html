@@ -1202,6 +1202,13 @@ async function generateAIVMArt() {
             
             // This variable is now small enough to pass through the RPC
             currentArtData = tempCanvas.toDataURL('image/jpeg', 0.5); 
+
+            const cidElement = document.getElementById('renderCID');
+            if (currentArtData) {
+                // Since we are bypassing IPFS and minting direct, we show the data type
+                cidElement.innerText = "On-Chain (Base64)"; 
+                cidElement.style.color = "var(--green)";
+            }
         
             isGenerating = false;
             document.getElementById('renderLoader').style.display = 'none';
@@ -1572,6 +1579,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
