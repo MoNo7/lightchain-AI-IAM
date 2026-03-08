@@ -1338,26 +1338,32 @@ async function mintWithSocial() {
         }
 
         async function loadGallery() {
-            const grid = document.getElementById('galleryGrid');
+        const container = document.getElementById('galleryGrid');
+            if (!userWallet) return container.innerHTML = "Connect wallet to view gallery.";
+        
             try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
-                const contract = new ethers.Contract(CONFIG.contract, [
-                    "function imageData(address) view returns (string)",
-                    "function nicknames(address) view returns (string)"
+                const contract = new ethers.Contract(CONFIG.artStudio, [
+                    "function balanceOf(address owner) view returns (uint256)",
+                    "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
+                    "function tokenURI(uint256 tokenId) view returns (string)"
                 ], provider);
-
-                // For this testnet version, we pull the user's latest mint
-                const img = await contract.imageData(userWallet);
-                const name = await contract.nicknames(userWallet);
-
-                if (img && img.startsWith('data:image')) {
-                    grid.innerHTML = `
-                        <div class="card" style="margin:0; padding:10px; border-color:var(--accent);">
-                            <img src="${img}" style="width:100%; border-radius:8px;">
-                            <div style="margin-top:10px; font-weight:bold; color:var(--accent);">${name}</div>
-                            <div style="font-size:0.7rem; color:var(--text-dim);">PoI Verified On-Chain</div>
-                        </div>
-                    `;
+        
+                const balance = await contract.balanceOf(userWallet);
+                container.innerHTML = ""; 
+        
+                for (let i = 0; i < balance; i++) {
+                    const tokenId = await contract.tokenOfOwnerByIndex(userWallet, i);
+                    const uri = await contract.tokenURI(tokenId);
+                    
+                    container.innerHTML += `
+                        <div class="gallery-card">
+                            <img src="${uri}" style="width:100%">
+                            <div class="card-meta">
+                                <span>ID: #${tokenId}</span>
+                                <button onclick="listInAuction(${tokenId})" class="btn-zk-sm">SELL</button>
+                            </div>
+                        </div>`;
                 }
             } catch (e) {
                 console.log("Gallery sync pending...");
@@ -1470,6 +1476,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
