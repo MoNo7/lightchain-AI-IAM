@@ -1150,11 +1150,12 @@ async function generateAIVMArt() {
 
         // 2. Send the actual Art Request to the Art Studio Contract
         const artContract = new ethers.Contract(CONFIG.artStudio, [
-            "function requestInferenceV2(bytes32 promptId, string calldata prompt) public payable"
+          //  "function requestInferenceV2(bytes32 promptId, string calldata prompt) public payable",
+            "function generateArt(string calldata prompt) public payable" // Correct name
         ], signer);
 
         const tx = await artContract.requestInferenceV2(promptId, finalPrompt, {
-            value: ethers.parseEther("0.005")
+            value: ethers.parseEther("0.25")
         });
 
         
@@ -1476,6 +1477,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
