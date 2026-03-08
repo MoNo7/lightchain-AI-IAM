@@ -1187,33 +1187,6 @@ async function generateAIVMArt() {
         }
 
 
-        // 1. Initialize the Art Contract
-        const artContract = new ethers.Contract(CONFIG.artStudio, [
-             "function mintArtNFT(string memory _tokenURI, string memory _model, string memory _hint) public payable returns (uint256)"
-        ], signer);
-        
-        // 2. Capture the transaction (Crucial: tx must be defined here!)
-        const tx = await artContract.mintArtNFT(encryptedData, model, hint, {
-            value: ethers.parseEther("0.25"),
-            gasLimit: 10000000
-        });
-        // 2. Send the actual Art Request to the Art Studio Contract
-//        const artContract = new ethers.Contract(CONFIG.artStudio, [
-          //  "function requestInferenceV2(bytes32 promptId, string calldata prompt) public payable",
-  //      ], signer);
-
- //       const tx = await artContract.requestInferenceV2(promptId, finalPrompt, {
-  //          value: ethers.parseEther("0.25")
-//        });
-
-        
-        // Optional: Small fee if required by your specific testnet deployment
-//        const tx = await contract.requestInferenceV2(promptId, finalPrompt, { 
-  //          value: ethers.parseEther("0.005") 
-//        });
-        log(`[PROTOCOL] PoI Tx Sent: ${tx.hash.slice(0,18)}...`);
-        await tx.wait();
-
         // --- STEP 2: STABILIZED RENDER ---
         const seed = Math.floor(Math.random() * 1000000);
         const encodedPrompt = encodeURIComponent(finalPrompt);
@@ -1244,8 +1217,8 @@ async function generateAIVMArt() {
        //     ctx.fillText(`AIVM AUTH: ${modelName}`, 40, 950);
             
             // Bottom Right: Your Brand Signature
-            ctx.font = "italic 25px Arial";
-            ctx.fillText("LCAI-MiMo © 2026", 750, 985);
+            mainCtx.font = "italic 25px Arial";
+            mainCtx.fillText("LCAI-MiMo © 2026", 750, 985);
 
                 
             document.getElementById('aivmOutputImage').src = mainCanvas.toDataURL('image/png');
@@ -1347,7 +1320,7 @@ async function saveArtToGallery() {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const artContract = new ethers.Contract(CONFIG.artStudio, [
-            "function mintArtNFT(string memory tokenURI) public payable returns (uint256)"
+            "function mintArtNFT(string memory _tokenURI, string memory _model, string memory _hint) public payable returns (uint256)"
         ], signer);
 
         log("[MINT] Sending Art Data (Heavy Payload) to Lightchain...");
@@ -1670,6 +1643,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
