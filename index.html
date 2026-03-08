@@ -324,8 +324,9 @@ abi: [
         "function base64Image() view returns (string)",
         "function removeSBT(address _u) public",
         "function withdrawRevenue() public", 
+        "function mintArtNFT(string memory tokenURI) public payable returns (uint256)",
+        "function ownerOf(uint256 tokenId) view returns (address)",
         "function owner() view returns (address)"
-
     ]
 };
 // 1. IMMEDIATE SHORT-CIRCUIT FOR OAUTH POPUPS
@@ -1469,6 +1470,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
