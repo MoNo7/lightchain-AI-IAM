@@ -1281,12 +1281,15 @@ async function saveArtToGallery() {
             "function mintArtNFT(string memory tokenURI) public payable returns (uint256)"
         ], signer);
 
-        log("[MINT] Sending Art Data to Lightchain...");
+        log("[MINT] Sending Art Data (Heavy Payload) to Lightchain...");
+        
+        // FIX: Increased gasLimit to 10M to accommodate the Base64 storage
         const tx = await artContract.mintArtNFT(currentArtData, {
-            value: ethers.parseEther("0.25"), // MATCH THE CONTRACT FEE
-            gasLimit: 2000000 
+            value: ethers.parseEther("0.25"),
+            gasLimit: 10000000 
         });
 
+        log(`[MINT] Transaction hash: ${tx.hash}`);
         await tx.wait();
         log("[SUCCESS] Art minted directly to chain!");
         loadGallery(); 
@@ -1573,6 +1576,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
