@@ -1185,25 +1185,35 @@ async function generateAIVMArt() {
         img.crossOrigin = "anonymous"; 
 
         img.onload = () => {
-        // 1. KEEP THE HIGH-RES VERSION FOR THE UI
-            // We store the full-quality Base64 in a variable for display only
-            const highResData = canvas.toDataURL('image/png'); 
+            // 1. GET THE UI CANVAS (For High-Res Preview)
+            const mainCanvas = document.getElementById('generatedCanvas');
+            const mainCtx = mainCanvas.getContext('2d');
+            mainCanvas.width = 1024;
+            mainCanvas.height = 1024;
+            mainCtx.drawImage(img, 0, 0, 1024, 1024);
+    
+            // Display the high-res version in the UI
+            const highResData = mainCanvas.toDataURL('image/png');
             document.getElementById('aivmOutputImage').src = highResData;
             document.getElementById('aivmOutputImage').style.display = 'block';
-        
+    
             // 2. CREATE THE "BLOCKCHAIN-SAFE" VERSION (The NFT)
-            // Create a temporary hidden canvas to shrink the data for the RPC
+            // We use a separate, smaller canvas for the RPC payload
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
             tempCanvas.width = 256;
             tempCanvas.height = 256;
             tempCtx.drawImage(img, 0, 0, 256, 256);
             
-            // This variable 'currentArtData' is what the 'Save' function will use
-            // Using JPEG at 0.5 quality makes the string small enough for the Lightchain RPC
+            // This is the variable saveArtToGallery() will use
             currentArtData = tempCanvas.toDataURL('image/jpeg', 0.5); 
-            
-            log("[AIVM] High-res preview loaded. Compressed NFT metadata ready.");
+    
+            // 3. CLEANUP UI
+            isGenerating = false; // Reset the lock
+            loader.style.display = 'none';
+            document.getElementById('saveArtBtn').style.display = 'block';
+            document.getElementById('deleteArtBtn').style.display = 'block';
+            log("[AIVM] Render Stabilized. High-res preview active.");
         };
         img.onerror = () => {
             isGenerating = false;
@@ -1568,6 +1578,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
