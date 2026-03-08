@@ -412,6 +412,7 @@ const urlParams = new URLSearchParams(window.location.search);
                 showView('zkView'); 
             } else {
                 showView('galleryView');
+                loadGallery();
             }
         }
 async function autoConnectWallet() {
@@ -1574,3 +1575,4 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
