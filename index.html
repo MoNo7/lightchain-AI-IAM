@@ -1282,7 +1282,8 @@ async function saveArtToGallery() {
 
         log("[MINT] Sending CID to Lightchain...");
         const tx = await artContract.mintArtNFT(ipfsUri, {
-            value: ethers.parseEther("0.25")
+            value: ethers.parseEther("0.25"),
+            gasLimit: 1000000
         });
 
         await tx.wait();
@@ -1524,6 +1525,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
