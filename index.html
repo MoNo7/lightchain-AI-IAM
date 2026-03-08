@@ -312,7 +312,7 @@ USDC_TOKEN : "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
 WETH_TOKEN : "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
 contract: "0x87188af8d112AAaF52Fe203568de0d3F36714987", // ZK KYC
 identity: "0x9A07d6a0eF4a8037318a0731E41bd4061f27B172",
-artStudio: "0xE8E44519030B71D1160732Fb899A57416EaBb52b",
+artStudio: "0xe80d9542Ef60B680a621970d209d04DB24767614",
 auctionHouse: "0x85C91ce310599Bf7BBc59726C2391911c46a6cCD",    
 RPC: "https://light-testnet-rpc.lightchain.ai",
 abi: [
@@ -1471,30 +1471,29 @@ async function mintWithSocial() {
         }
 
         async function deleteArtNFT(tokenId) {
-            if (!confirm(`Are you sure you want to BURN Token #${tokenId}? This action is irreversible and the art will be lost forever.`)) return;
+        const confirmBurn = confirm(`Burning Token #${tokenId} costs 1 LCAI fee. The art will be permanently deleted. Proceed?`);
+            if (!confirmBurn) return;
         
             try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
+                
+                // Update ABI to include our new burnArt function
                 const contract = new ethers.Contract(CONFIG.artStudio, [
-                    "function safeTransferFrom(address from, address to, uint256 tokenId)"
+                    "function burnArt(uint256 tokenId) public payable"
                 ], signer);
         
-                log(`[BURN] Initiating destruction of Token #${tokenId}...`);
+                log(`[BURN] Sending 1 LCAI Fee and burning Token #${tokenId}...`);
                 
-                // Sending to the zero address effectively "burns" the NFT
-                const tx = await contract.safeTransferFrom(
-                    userWallet, 
-                    "0x0000000000000000000000000000000000000000", 
-                    tokenId
-                );
+                const tx = await contract.burnArt(tokenId, {
+                    value: ethers.parseEther("1.0") // The 1 LCAI Fee
+                });
         
                 await tx.wait();
-                log(`[SUCCESS] Token #${tokenId} has been burned.`);
-                loadGallery(); // Refresh the view
+                log(`[SUCCESS] Token #${tokenId} incinerated. 1 LCAI sent to Treasury.`);
+                loadGallery(); 
             } catch (e) {
                 log(`[BURN ERROR] ${e.message}`);
-                console.error(e);
             }
         }
 
@@ -1733,6 +1732,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
