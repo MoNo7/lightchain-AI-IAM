@@ -923,26 +923,71 @@ async function registerLocal() {
             log(`[MARKET] Success: ${name} listed for ${price} LCAI.`);
         }
 
-        function renderAuctions() {
+        async function renderAuctions() {
             const grid = document.getElementById('auctionGrid');
-            const empty = document.getElementById('auctionEmpty');
-
-        grid.innerHTML = activeAuctions.map(a => {
-                const isExpired = now > a.endTime;
-                const statusText = isExpired ? "EXPIRED - NO BIDS" : "ACTIVE AUCTION";
-                const btnText = isExpired ? "RECLAIM NFT" : "PLACE BID";
-                const btnColor = isExpired ? "var(--text-dim)" : "var(--accent)";
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            
+            // We need to talk to BOTH the Auction House and the Art Studio
+            const auctionContract = new ethers.Contract(CONFIG.auctionHouse, [
+                "function auctions(address, uint256) view returns (address, uint256, uint256, address, uint256, bool)"
+            ], provider);
+            const artContract = new ethers.Contract(CONFIG.artStudio, [
+                "function tokenURI(uint256) view returns (string)",
+                "function totalSupply() view returns (uint256)"
+            ], provider);
         
-                return `
-                    <div class="card" style="opacity: ${isExpired ? '0.6' : '1'}">
-                        <img src="${a.image}" style="width:100%;">
-                        <div style="color:var(--accent)">${statusText}</div>
-                        <button class="btn-zk" onclick="${isExpired ? `reclaimNFT(${a.id})` : "log('Bid coming soon')"}">
-                            ${btnText}
-                        </button>
-                    </div>
-                `;
-            }).join('');
+            grid.innerHTML = ""; // Clear loader
+            const totalNFTs = await artContract.totalSupply();
+        
+            for (let i = 0; i < totalNFTs; i++) {
+                const data = await auctionContract.auctions(CONFIG.artStudio, i);
+                const isActive = data[5]; // The 'active' boolean in your struct
+        
+                if (isActive) {
+                    const uri = await artContract.tokenURI(i);
+                    const price = ethers.formatEther(data[1]);
+                    const endTime = Number(data[4]) * 1000;
+                    const timeLeft = Math.max(0, Math.floor((endTime - Date.now()) / 60000));
+                    
+                    // Decrypt if necessary
+                    let displayImg = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
+                    if (!displayImg.startsWith("data:image")) displayImg = "data:image/jpeg;base64," + displayImg;
+        
+                    grid.innerHTML += `
+                        <div class="card">
+                            <img src="${displayImg}" style="width:100%; border-radius:8px;">
+                            <div style="margin-top:10px;">
+                                <span style="color:var(--accent)">${price} LCAI</span>
+                                <p style="font-size:0.7rem; color:var(--text-dim)">Ends in: ${timeLeft} mins</p>
+                                <button class="btn-zk" onclick="placeBid(${i}, '${price}')">PLACE BID</button>
+                            </div>
+                        </div>`;
+                }
+            }
+            if (grid.innerHTML === "") grid.innerHTML = "<p>No active auctions found on-chain.</p>";
+        }
+
+        async function placeBid(tokenId, currentPrice) {
+            const bidAmount = prompt(`Current price is ${currentPrice} LCAI. Enter your bid:`, (parseFloat(currentPrice) + 0.1).toString());
+            if (!bidAmount) return;
+        
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const contract = new ethers.Contract(CONFIG.auctionHouse, [
+                    "function placeBid(address _nftContract, uint256 _tokenId) external payable"
+                ], signer);
+        
+                log(`[BID] Submitting ${bidAmount} LCAI for Token #${tokenId}...`);
+                const tx = await contract.placeBid(CONFIG.artStudio, tokenId, {
+                    value: ethers.parseEther(bidAmount)
+                });
+                await tx.wait();
+                log("[SUCCESS] You are now the highest bidder!");
+                renderAuctions();
+            } catch (e) {
+                log(`[BID ERROR] ${e.message}`);
+            }
         }
 
 
@@ -1672,6 +1717,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
