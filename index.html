@@ -2339,26 +2339,36 @@ async function launchChess() {
 }
         
     async function checkGameOver() {
-    if (game.in_checkmate() || game.in_draw()) {
-        const playerWon = (game.turn() === 'b'); // If it's black's turn and checkmate, white (player) won
-        const resultLabel = playerWon ? "MiMo Wins!" : "AIVM Wins!";
+        if (game.game_over()) {
+                const playerWon = (game.turn() === 'b' && game.in_checkmate());
+                const resultLabel = playerWon ? "VICTORY! Match Won." : "DEFEAT. AIVM Wins.";
+                
+                log(`[AIVM] ${resultLabel} Initiating On-Chain Settlement...`);
+                updateChessStatus(resultLabel);
         
-        log(`[ARCADE] Game Over: ${resultLabel}. Settling Wager...`);
+                try {
+                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    const signer = await provider.getSigner();
+                    const referee = new ethers.Contract(CONFIG.refereeAddress, REFEREE_ABI, signer);
         
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const referee = new ethers.Contract("0x479e6847C98EA94bB559b85959a6F0aDDfdD6856", REFEREE_ABI, signer);
-
-        try {
-            // resolve the match on-chain
-            const tx = await referee.completeMatch(userWallet, playerWon);
-            await tx.wait();
-            log("[SUCCESS] Blockchain Settlement Complete.");
-        } catch (e) {
-            log("[ERROR] Settlement failed. Check Owner permissions.");
+                    // Trigger the actual LCAI payout
+                    const tx = await referee.completeMatch(userWallet, playerWon);
+                    await tx.wait();
+        
+                    log("✨ [BLOCKCHAIN] Settlement Confirmed. Payout Sent.");
+                    
+                    // Clear local storage so next game starts fresh
+                    localStorage.removeItem('lcai_chess_fen');
+                    
+                    // Return to arcade after 3 seconds
+                    setTimeout(() => showView('arcadeView'), 3000);
+                } catch (e) {
+                    log(`[SETTLEMENT ERROR] ${e.message}`);
+                    alert("Settlement failed. Please try the 'Resign' or 'Sync' button to force a close.");
+                }
         }
     }
-}
+        
     function onDragStart (source, piece, position, orientation) {
         // Do not pick up pieces if the game is over
         if (game.game_over()) return false;
@@ -2517,6 +2527,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
