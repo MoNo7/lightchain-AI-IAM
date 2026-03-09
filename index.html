@@ -160,6 +160,7 @@
             <div class="nav-item" onclick="showView('zkView')"><i class="fas fa-fingerprint"></i> zk Identity</div>
             <div id="artNavItem" class="nav-item locked-feature" onclick="handleArtClick()"><i class="fas fa-lock" id="artLockIcon"></i><span id="artLabel">AIVM Art Studio</span></div>
             <div id="galleryNavItem" class="nav-item locked-feature" onclick="handleGalleryClick()"><i id="galleryLockIcon" class="fas fa-lock"></i><span id="galleryLabel">Gallery</span></div>            
+            <div id="arcadeNavItem" class="nav-item locked-feature" onclick="handleArcadeClick()"><i id="arcadeLockIcon" class="fas fa-lock"></i><span id="arcadeLabel">AIVM Arcade</span></div>
         </div>
         <div class="nav-section">
             <span class="nav-label">Marketplace</span>
@@ -338,6 +339,34 @@
                     </div>
                 </div>
             </div>
+
+            <div id="arcadeView" class="card view-section" style="display:none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin:0;"><i class="fas fa-gamepad" style="color:var(--accent);"></i> AIVM Arcade</h3>
+                        <p style="color: var(--text-dim); font-size: 0.8rem; margin: 5px 0 0 0;">Verified SBT Holder Exclusive Area</p>
+                    </div>
+                    <div class="pill" style="border-color:var(--green); color:var(--green);">LEVEL 1 ACCESS</div>
+                </div>
+            
+                <div id="gameGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                    <div class="card" style="border: 1px solid var(--border); text-align: center; padding: 30px;">
+                        <i class="fas fa-terminal" style="font-size: 2rem; color: var(--accent); margin-bottom: 15px;"></i>
+                        <h4>LCAI Logic Runner</h4>
+                        <p style="font-size: 0.75rem; color: var(--text-dim);">Coming Soon: Solve AIVM logic puzzles to earn LCAI rewards.</p>
+                        <button class="btn-zk" style="opacity: 0.5; cursor: not-allowed;">LOCKED</button>
+                    </div>
+                    
+                    <div class="card" style="border: 1px dashed var(--accent); text-align: center; padding: 30px; background: rgba(0,242,255,0.05);">
+                        <i class="fas fa-rocket" style="font-size: 2rem; color: var(--green); margin-bottom: 15px;"></i>
+                        <h4>Mars Rover Sim</h4>
+                        <p style="font-size: 0.75rem; color: var(--text-dim);">Use your AIVM Art prompts to skin your rover and explore the testnet crater.</p>
+                        <button class="btn-zk" style="background:var(--green); color:#000;">LAUNCH</button>
+                    </div>
+                </div>
+            </div>
+
+            
             <div id="galleryView" class="card view-section" style="display:none;">
                 <h3>AIVM Community Gallery</h3>
                 <div id="galleryGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
@@ -514,6 +543,16 @@ window.onload = async () => {
                 // If it's already unlocked, just show the view
                 showView('renderView');
                 if (lockIcon) lockIcon.className = "fas fa-palette"; 
+            }
+        }
+
+        function handleArcadeClick() {
+            const item = document.getElementById('arcadeNavItem');
+            if (item && item.classList.contains('locked-feature')) {
+                log("Access Denied: The Arcade is reserved for Verified SBT Holders.");
+                showView('zkView');
+            } else {
+                showView('arcadeView');
             }
         }
 
@@ -1290,6 +1329,20 @@ if (placeholder) placeholder.style.display = 'none';
                 if (galleryLockIcon) galleryLockIcon.className = "fas fa-images";
             }
 
+            // 3. Unlock Arcade
+            const arcadeItem = document.getElementById('arcadeNavItem');
+            const arcadeLockIcon = document.getElementById('arcadeLockIcon');
+            if (arcadeItem) {
+                arcadeItem.classList.remove('locked-feature');
+                arcadeItem.style.opacity = "1";
+                arcadeItem.style.filter = "grayscale(0)";
+                arcadeItem.style.pointerEvents = "auto";
+                if (arcadeLockIcon) arcadeLockIcon.className = "fas fa-gamepad";
+            }
+            
+            log("[AUTH] Arcade Access Granted to SBT Holder.");
+
+            
             // Switch lock icon to the palette icon
             log("Art Studio & Gallery Unlocked!");
         }
@@ -1867,6 +1920,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
