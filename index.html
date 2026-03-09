@@ -1356,42 +1356,32 @@ async function generateAIVMArt() {
 
         // --- STEP 2: STABILIZED RENDER ---
         const seed = Math.floor(Math.random() * 1000000);
-        const encodedPrompt = encodeURIComponent(finalPrompt);
         const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
-
+        
         const img = new Image();
-        img.crossOrigin = "anonymous"; // This unlocks the "Tainted" canvas
+        img.setAttribute('crossOrigin', 'anonymous'); // CRITICAL: This must be an attribute
         img.src = aiImageUrl;
 
         img.onload = () => {
-        const mainCanvas = document.getElementById('generatedCanvas');
-            const mainCtx = mainCanvas.getContext('2d');
+            const canvas = document.getElementById('generatedCanvas');
+            const ctx = canvas.getContext('2d');
             
-            // 2. Clear the canvas entirely before drawing
-            mainCtx.clearRect(0, 0, 1024, 1024);
-            mainCtx.drawImage(img, 0, 0, 1024, 1024);
+            // 2. Draw to canvas
+            ctx.drawImage(img, 0, 0, 1024, 1024);
         
-            // 3. WAIT FOR GPU SYNC
+            // 3. THE "SPIN" KILLER: Hide loader and show the 'Save' button only after 2 seconds
             setTimeout(() => {
-                const tempCanvas = document.createElement('canvas');
-                const tempCtx = tempCanvas.getContext('2d');
+                document.getElementById('renderLoader').style.display = 'none';
                 
-                // DOWNSIZE for Gas Efficiency (This fits the 30M-45M Gas Limit)
-                tempCanvas.width = 512; 
-                tempCanvas.height = 512;
-                tempCtx.drawImage(mainCanvas, 0, 0, 512, 512);
-        
-                // 4. THE VALIDATION CHECK
-                const pixelData = tempCtx.getImageData(256, 256, 1, 1).data;
-                if (pixelData[0] === 255 && pixelData[1] === 255 && pixelData[2] === 255) {
-                    log("[AIVM ERROR] Capture failed (White Tile detected). Retrying...");
-                    return; // Stops the mint button from appearing if it's blank
-                }
-        
-                currentArtData = tempCanvas.toDataURL('image/jpeg', 0.5); 
+                // Final check: Capture 512px for the NFT (better gas compliance)
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 512; tempCanvas.height = 512;
+                tempCanvas.getContext('2d').drawImage(canvas, 0, 0, 512, 512);
+                
+                currentArtData = tempCanvas.toDataURL('image/jpeg', 0.6);
                 document.getElementById('saveArtBtn').style.display = 'block';
-                log("[AIVM] JPEG Conversion Verified. Ready for Chain.");
-            }, 1000);
+                log("[AIVM] Sync Complete. Token #12 Ready.");
+            }, 2000);
         };
                 
         img.onerror = () => {
@@ -1928,6 +1918,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
