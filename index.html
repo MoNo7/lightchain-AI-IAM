@@ -639,7 +639,7 @@ window.onload = async () => {
     setInterval(refreshModelDashboard, 3000);
     fetchPrices();
     refreshModelDashboard();
-    if (typeof initBoard === "function") initBoard();
+    initBoard();
     checkAndResumeChess();
     setInterval(() => {
         if (document.getElementById('marketView').style.display === 'block') {
@@ -675,6 +675,21 @@ async function checkAndResumeChess() {
             
         showView('chessView');
     }
+}
+
+function initBoard() {
+    const config = {
+        draggable: true,
+        position: 'start',
+        onDragStart: onDragStart,
+        onDrop: onDrop,
+        onSnapEnd: onSnapEnd,
+        pieceTheme: 'https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/img/chesspieces/wikipedia/{piece}.png'
+    };
+    
+    // Initialize the global 'board' variable
+    board = Chessboard('myBoard', config);
+    updateChessStatus("READY");
 }
     
         let userWallet;
@@ -2403,6 +2418,7 @@ async function checkGameOver() {
     </script>
 </body>
 </html>
+
 
 
 
