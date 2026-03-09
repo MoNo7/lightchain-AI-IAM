@@ -1390,11 +1390,17 @@ async function saveArtToGallery() {
     if (!currentArtData || currentArtData.length < 2000) {
         return log("Error: No image data found. Did the AI fail to render?");
     }
+    
     const model = document.getElementById('modelSelector').value;
     const promptText = document.getElementById('artPrompt').value;
     const hint = promptText.slice(0, 32);
     
     if (!currentArtData) return log("Error: No art to save.");
+
+    // ENSURE THE HEADER IS ATTACHED BEFORE ENCRYPTION
+    const fullDataWithHeader = currentArtData.startsWith("data:image") ? 
+                               currentArtData : 
+                               "data:image/jpeg;base64," + currentArtData;
     try {
         // 1. ENCRYPT BEFORE MINTING
         const encryptedData = await encryptArt(currentArtData);
@@ -1787,6 +1793,7 @@ function showView(id) {
     </script>
 </body>
 </html>
+
 
 
 
