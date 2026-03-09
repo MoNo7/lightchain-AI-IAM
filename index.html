@@ -1344,11 +1344,6 @@ async function generateAIVMArt() {
             log("[AIVM] Success: Image Buffer Ready.");
         }, 1500);
     };
-} catch (e) {
-        isGenerating = false;
-        log(`[Fatal Error] ${e.message}`);
-        loader.style.display = 'none';
-}
 
 let currentArtData = null; // Stores the Base64 of the generated image
 
@@ -1866,6 +1861,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
