@@ -640,7 +640,6 @@ window.onload = async () => {
     fetchPrices();
     refreshModelDashboard();
     initBoard();
-    checkAndResumeChess();
     setInterval(() => {
         if (document.getElementById('marketView').style.display === 'block') {
             renderAuctions();
@@ -2231,6 +2230,8 @@ async function launchChess() {
     try {
         // 1. Check if the user already has a match in progress
         const match = await referee.matches(userWallet);
+
+        if (!board) { initBoard(); }
         
         if (match.active) {
             log("[RESUME] Found active match. Restoring board state...");
@@ -2383,20 +2384,26 @@ async function checkGameOver() {
     }
 }
     
-    function resignMatch() {
-        if (confirm("Resign? Wager will be forfeited.")) {
-            log("[ARCADE] Match Resigned. Wager lost.");
-            showView('arcadeView');
-        }
-    }
-        
-        function resignMatch() {
-            if (confirm("Are you sure? Your wager will be forfeited to the AIVM Treasury.")) {
-                log("[ARCADE] Match Resigned. Wager lost.");
-                showView('arcadeView');
-            }
-        }
+async function resignMatch() {
+    if (!confirm("Resign? This will forfeit your wager to the AIVM Treasury.")) return;
 
+    log("[ARCADE] Communicating resignation to Lightchain...");
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const referee = new ethers.Contract(CONFIG.refereeAddress, REFEREE_ABI, signer);
+
+        // Call the contract to settle the match as a LOSS
+        const tx = await referee.completeMatch(userWallet, false); 
+        await tx.wait();
+
+        log("💀 Match Resigned. Wager settled.");
+        game.reset(); // Reset local state
+        showView('arcadeView');
+    } catch (e) {
+        log("[ERROR] Resignation failed: " + e.message);
+    }
+}
         function openWalletWarriors() {
     if (!isRegistered) {
         log("[ACCESS DENIED] Mint a Battle Passport (SBT) in zk-Identity first.");
@@ -2418,6 +2425,7 @@ async function checkGameOver() {
     </script>
 </body>
 </html>
+
 
 
 
