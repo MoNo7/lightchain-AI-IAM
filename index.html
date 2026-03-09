@@ -1380,7 +1380,7 @@ async function generateAIVMArt() {
     tempCtx.drawImage(mainCanvas, 0, 0, 512, 512);
     
     // Quality 0.5 is the "Sweet Spot" for Lightchain Testnet gas limits
-    currentArtData = tempCanvas.toDataURL('image/jpeg', 0.5); 
+    currentArtData = tempCanvas.toDataURL('image/jpeg', 0.5);
 
     // 4. Update UI
     document.getElementById('aivmOutputImage').src = mainCanvas.toDataURL('image/png');
@@ -1462,8 +1462,7 @@ async function saveArtToGallery() {
     const model = document.getElementById('modelSelector').value;
     const promptText = document.getElementById('artPrompt').value;
 //    const hint = promptText.slice(0, 32);
-    const metadataHint = `Model: ${model} | Prompt: ${promptText.slice(0, 50)}... | Auth: AIVM-MiMo`;
-    
+   const cleanMetadata = `Model: ${model} | Prompt: ${promptText.slice(0, 55)}... | Auth: MiMo`;
     if (!currentArtData) return log("Error: No art to save.");
 
     // ENSURE THE HEADER IS ATTACHED BEFORE ENCRYPTION
@@ -1482,15 +1481,10 @@ async function saveArtToGallery() {
 
         log("[MINT] Sending Art Data (Heavy Payload) to Lightchain...");
         
-        const tx = await artContract.mintArtNFT(
-            encryptedData, 
-            model, 
-            metadataHint, 
-            { 
-                value: ethers.parseEther("1.0"), 
-                gasLimit: 15000000 
-            }
-        );
+const tx = await artContract.mintArtNFT(encryptedData, model, cleanMetadata, {
+            value: ethers.parseEther("1.0"),
+            gasLimit: 15000000 
+        });
 
         log(`[MINT] Transaction hash: ${tx.hash}`);
         await tx.wait();
@@ -1924,6 +1918,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
