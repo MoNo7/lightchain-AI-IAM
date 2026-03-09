@@ -2203,36 +2203,38 @@ async function listInAuction(tokenId) {
         let wagerAmount = 0;
 
 async function launchChess() {
-    const wager = prompt("Enter LCAI wager:", "1.0");
-    if (!wager || isNaN(wager)) return;
-
-    log(`[LCAI] Initializing Escrow for ${wager} LCAI...`);
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const referee = new ethers.Contract(CONFIG.refereeAddress, REFEREE_ABI, provider);
     
     try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const referee = new ethers.Contract(CONFIG.refereeAddress, REFEREE_ABI, provider);
-
+        // 1. Check if the user already has a match in progress
         const match = await referee.matches(userWallet);
-
+        
         if (match.active) {
-            log("[RESUME] Existing match detected. Skipping escrow...");
+            log("[RESUME] Found active match. Restoring board state...");
+            // Load the FEN saved on-chain instead of starting a new match
             game.load(match.currentFEN);
             board.position(match.currentFEN);
             showView('chessView');
-            return; // Exit here so we don't trigger the "Match already in progress" error
+            return; // EXIT HERE to prevent the "Match already in progress" error
         }
-        
-        // Call the 'startMatch' function from your .sol code
-        const tx = await referee.startMatch("start", { value: ethers.parseEther(wager) });
+
+        // 2. Only if no active match exists, ask for wager and start new match
+        const wager = prompt("Enter LCAI wager for this match:", "1.0");
+        if (!wager || isNaN(wager)) return;
+
+        const signer = await provider.getSigner();
+        const refereeWithSigner = new ethers.Contract(CONFIG.refereeAddress, REFEREE_ABI, signer);
+
+        log(`[LCAI] Initializing Escrow for ${wager} LCAI...`);
+        const tx = await refereeWithSigner.startMatch("start", { value: ethers.parseEther(wager) });
         await tx.wait();
         
         log("✅ Escrow Confirmed. AIVM Match Active.");
-        
-        // Existing UI logic to show the board
         showView('chessView');
         initBoard(); 
     } catch (e) {
+        // This is where line 663 currently catches the "Match already in progress" error
         log(`[ESCROW ERROR] ${e.message}`);
     }
 }
@@ -2394,6 +2396,7 @@ async function checkGameOver() {
     </script>
 </body>
 </html>
+
 
 
 
