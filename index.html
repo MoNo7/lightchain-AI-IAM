@@ -1299,60 +1299,40 @@ async function withdrawRevenue() {
         let isGenerating = false;
 
 async function generateAIVMArt() {
-    const prompt = document.getElementById('artPrompt').value;
-    const model = document.getElementById('modelSelector').value;
-    
-    if(!prompt) return log("Error: Prompt required.");
-    
-    // UI Reset
-    document.getElementById('renderLoader').style.display = 'block';
-    document.getElementById('saveArtBtn').style.display = 'none';
-
-    // 1. REVERT: Stable URL construction
-    const seed = Math.floor(Math.random() * 1000000);
-    const aiImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
-    
-    const img = new Image();
-    img.crossOrigin = "anonymous"; 
-    img.src = aiImageUrl;
-
-    img.onload = () => {
 const canvas = document.getElementById('generatedCanvas');
     const ctx = canvas.getContext('2d');
     canvas.width = 1024; 
     canvas.height = 1024;
 
-    // 1. DRAW TO SCREEN FIRST (Fixes the White Tile)
+    // 1. FORCE CLEAR THE UI (Removes the "Awaiting" text)
+    const inferenceBox = document.querySelector('.inference-window');
+    if (inferenceBox) {
+        inferenceBox.innerHTML = ''; 
+    }
+    document.getElementById('renderLoader').style.display = 'none';
+
+    // 2. DRAW THE ART
     ctx.clearRect(0, 0, 1024, 1024);
     ctx.drawImage(img, 0, 0, 1024, 1024);
 
-    // 2. KILL THE HANG (Fixes "Awaiting your prompt")
-    // This targets the specific div that is stuck on screen
-    const inferenceBox = document.querySelector('.inference-window');
-    if (inferenceBox) {
-        inferenceBox.innerHTML = ''; // Clears the "Awaiting" text
-    }
-    
-    // Update the main UI image display
-    const outputImg = document.getElementById('aivmOutputImage');
-    outputImg.src = canvas.toDataURL('image/png');
-    outputImg.style.display = 'block';
-    document.getElementById('renderLoader').style.display = 'none';
-
-    // 3. CAPTURE FOR NFT (Wait 1 sec to ensure pixels are stable)
+    // 3. THE FIX: Wait for the Browser to "Paint" the pixels
+    // We increase this to 2 seconds to ensure no more white tiles
     setTimeout(() => {
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = 512; 
         tempCanvas.height = 512;
         const tempCtx = tempCanvas.getContext('2d');
         
-        // Final pixel draw for the NFT data
+        // Transfer the pixels from the main canvas to the NFT buffer
         tempCtx.drawImage(canvas, 0, 0, 512, 512);
         
+        // Capture the JPEG data
         currentArtData = tempCanvas.toDataURL('image/jpeg', 0.5);
+        
+        // Only show the save button once the data is confirmed
         document.getElementById('saveArtBtn').style.display = 'block';
-        log("[AIVM] Render Success. Ready to Mint Token #13.");
-    }, 1000);
+        log("[AIVM] Art Captured. Token #14 is Ready.");
+    }, 2000);
     };
 }
         
@@ -1872,6 +1852,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
