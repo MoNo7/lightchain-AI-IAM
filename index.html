@@ -1299,40 +1299,60 @@ async function withdrawRevenue() {
         let isGenerating = false;
 
 async function generateAIVMArt() {
-const canvas = document.getElementById('generatedCanvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 1024; 
-    canvas.height = 1024;
-
-    // 1. FORCE CLEAR THE UI (Removes the "Awaiting" text)
+    const promptInput = document.getElementById('artPrompt').value;
+    const model = document.getElementById('modelSelector').value;
+    
+    if(!promptInput) return log("Error: Please enter a prompt.");
+    
+    // 1. Variable Definition First (Prevents the "Immediate Stop")
+    const encodedPrompt = encodeURIComponent(promptInput);
+    const seed = Math.floor(Math.random() * 1000000);
+    const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
+    
+    // UI State
+    document.getElementById('renderLoader').style.display = 'block';
+    document.getElementById('saveArtBtn').style.display = 'none';
     const inferenceBox = document.querySelector('.inference-window');
-    if (inferenceBox) {
-        inferenceBox.innerHTML = ''; 
-    }
-    document.getElementById('renderLoader').style.display = 'none';
 
-    // 2. DRAW THE ART
-    ctx.clearRect(0, 0, 1024, 1024);
-    ctx.drawImage(img, 0, 0, 1024, 1024);
+    log(`[AIVM] Engine Call: ${model}`);
 
-    // 3. THE FIX: Wait for the Browser to "Paint" the pixels
-    // We increase this to 2 seconds to ensure no more white tiles
-    setTimeout(() => {
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = 512; 
-        tempCanvas.height = 512;
-        const tempCtx = tempCanvas.getContext('2d');
+    const img = new Image();
+    // 2. The CORS Unlock (Prevents the "White Tile" in Wallet)
+    img.crossOrigin = "anonymous"; 
+    img.src = aiImageUrl;
+
+    img.onload = () => {
+        const canvas = document.getElementById('generatedCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 1024; 
+        canvas.height = 1024;
         
-        // Transfer the pixels from the main canvas to the NFT buffer
-        tempCtx.drawImage(canvas, 0, 0, 512, 512);
-        
-        // Capture the JPEG data
-        currentArtData = tempCanvas.toDataURL('image/jpeg', 0.5);
-        
-        // Only show the save button once the data is confirmed
-        document.getElementById('saveArtBtn').style.display = 'block';
-        log("[AIVM] Art Captured. Token #14 is Ready.");
-    }, 2000);
+        // Clear background and draw art
+        ctx.clearRect(0, 0, 1024, 1024);
+        ctx.drawImage(img, 0, 0, 1024, 1024);
+
+        // Update UI
+        if (inferenceBox) inferenceBox.innerHTML = ''; 
+        document.getElementById('renderLoader').style.display = 'none';
+
+        // 3. The Sync Buffer (Ensures NFT isn't white)
+        setTimeout(() => {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 512; 
+            tempCanvas.height = 512;
+            tempCanvas.getContext('2d').drawImage(canvas, 0, 0, 512, 512);
+            
+            // Capture the real pixels
+            currentArtData = tempCanvas.toDataURL('image/jpeg', 0.5);
+            document.getElementById('saveArtBtn').style.display = 'block';
+            log("[AIVM] Art Buffer Ready. Sync Success.");
+        }, 1500); 
+    };
+
+    img.onerror = () => {
+        log("[AIVM ERROR] Failed to fetch image. Check your internet connection.");
+        document.getElementById('renderLoader').style.display = 'none';
+    };
 }
         
 let currentArtData = null; // Stores the Base64 of the generated image
@@ -1851,6 +1871,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
