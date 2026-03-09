@@ -47,6 +47,39 @@
     color: var(--accent);
 }
 
+        .watermark-wrapper {
+            position: relative;
+        }
+        .watermark-overlay {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            color: rgba(0, 242, 255, 0.4);
+            font-family: monospace;
+            font-size: 0.6rem;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .art-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .ui-watermark {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            color: rgba(0, 242, 255, 0.5);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
 
         /* Utility Classes */
         .social-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
@@ -1534,59 +1567,71 @@ async function mintWithSocial() {
         }
 
         async function loadGallery() {
-        const container = document.getElementById('galleryGrid');
-            if (!userWallet) return container.innerHTML = "Connect wallet to view gallery.";
-        
-            try {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const contract = new ethers.Contract(CONFIG.artStudio, [
-                    "function balanceOf(address owner) view returns (uint256)",
-                    "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
-                    "function tokenURI(uint256 tokenId) view returns (string)"
-                ], provider);
-        
-                const balance = await contract.balanceOf(userWallet);
-                container.innerHTML = ""; 
-        
-                for (let i = 0; i < balance; i++) {
-                    const tokenId = await contract.tokenOfOwnerByIndex(userWallet, i);
-                    const uri = await contract.tokenURI(tokenId);
-                    
-                    let displaySrc = "";
+            const container = document.getElementById('galleryGrid');
+                if (!userWallet) return container.innerHTML = "Connect wallet to view gallery.";
 
-                    if (uri.startsWith("U2Fsd")) {
-                        try {
-                            let decrypted = await decryptArt(uri);
-                            // Force the header if it's missing from the encrypted payload
-                            displaySrc = decrypted.startsWith("data:image") ? decrypted : "data:image/jpeg;base64," + decrypted;
-                        } catch (e) {
-                            displaySrc = "https://via.placeholder.com/400?text=Decryption+Failed";
-                        }
-                    } else {
-                        displaySrc = uri.startsWith("ipfs://") 
-                            ? uri.replace("ipfs://", "https://ipfs.io/ipfs/") 
-                            : uri;
+            // CRITICAL: Clear the container first to prevent double-rendering
+            container.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Syncing with Lightchain...</div>';
+            
+                try {
+                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    const contract = new ethers.Contract(CONFIG.artStudio, [
+                        "function balanceOf(address owner) view returns (uint256)",
+                        "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
+                        "function tokenURI(uint256 tokenId) view returns (string)"
+                    ], provider);
+            
+                    const balance = await contract.balanceOf(userWallet);
+                    container.innerHTML = ""; 
+
+                    if (balance == 0) {
+                        container.innerHTML = '<p style="color:var(--text-dim)">No NFTs found in this wallet.</p>';
+                        return;
                     }
-
-                    // 3. Render with a safety check for broken data
-            const finalImg = (displaySrc && displaySrc.length > 20) ? displaySrc : "https://via.placeholder.com/400/1a1a1a/00f2ff?text=Data+Pending";
-                    
-                container.innerHTML += `
-                    <div class="gallery-card" style="background:var(--panel); border:1px solid var(--border); padding:15px; border-radius:12px;">
-                        <img src="${finalImg}" style="width:100%; border-radius:8px; margin-bottom:10px;">
-                        <div style="display:flex; gap:5px; margin-bottom:10px;">
-                            <button onclick="mintFromGallery(${tokenId})" class="pill" style="background:var(--green); color:black; flex:1;">MINT</button>
-                            <button onclick="showNftDetails(${tokenId})" class="pill" style="flex:1;">INFO</button>
-                            <button onclick="deleteArtNFT(${tokenId})" class="pill" style="background:var(--red); flex:1;">BURN</button>
-                        </div>
-                        <button onclick="listInAuction(${tokenId})" class="btn-zk" style="margin:0;">LIST FOR SALE</button>
-                    </div>`;
+            
+                    for (let i = 0; i < balance; i++) {
+                        const tokenId = await contract.tokenOfOwnerByIndex(userWallet, i);
+                        const uri = await contract.tokenURI(tokenId);
+                        
+                        let displaySrc = "";
+    
+                        if (uri.startsWith("U2Fsd")) {
+                            try {
+                                let decrypted = await decryptArt(uri);
+                                // Force the header if it's missing from the encrypted payload
+                                displaySrc = decrypted.startsWith("data:image") ? decrypted : "data:image/jpeg;base64," + decrypted;
+                            } catch (e) {
+                                displaySrc = "https://via.placeholder.com/400?text=Decryption+Failed";
+                            }
+                        } else {
+                            displaySrc = uri.startsWith("ipfs://") 
+                                ? uri.replace("ipfs://", "https://ipfs.io/ipfs/") 
+                                : uri;
+                        }
+    
+                        // 3. Render with a safety check for broken data
+                const finalImg = (displaySrc && displaySrc.length > 20) ? displaySrc : "https://via.placeholder.com/400/1a1a1a/00f2ff?text=Data+Pending";
+                        
+                    container.innerHTML += `
+                        <div class="gallery-card" style="background:var(--panel); border:1px solid var(--border); padding:15px; border-radius:12px;">
+                         <div class="art-container">
+                            <img src="${finalImg}" style="width:100%; border-radius:8px; margin-bottom:10px;">
+                            <div class="ui-watermark">
+                                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                                    <button onclick="mintFromGallery(${tokenId})" class="pill" style="background:var(--green); color:black; flex:1;">MINT</button>
+                                    <button onclick="showNftDetails(${tokenId})" class="pill" style="flex:1;">INFO</button>
+                                    <button onclick="deleteArtNFT(${tokenId})" class="pill" style="background:var(--red); flex:1;">BURN</button>
+                                </div>
+                            </div>
+                          </div>
+                         <button onclick="listInAuction(${tokenId})" class="btn-zk" style="margin:0;">LIST FOR SALE</button>
+                        </div>`;
+                    }
+                } catch (e) {
+                    console.log("Gallery sync pending...");
+                    console.error(e);
                 }
-            } catch (e) {
-                console.log("Gallery sync pending...");
-                console.error(e);
             }
-        }
         
 async function listInAuction(tokenId) {
     const price = prompt("Starting bid (LCAI):", "0.5");
@@ -1654,7 +1699,6 @@ async function listInAuction(tokenId) {
         
             // 4. Trigger Data Refreshes
             if (viewId === 'marketView') renderAuctions();
-            if (viewId === 'galleryView') loadGallery();
         }
 
         function log(m) {
@@ -1798,5 +1842,6 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
