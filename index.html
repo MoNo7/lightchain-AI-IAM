@@ -2005,15 +2005,17 @@ async function listInAuction(tokenId) {
         let game = new Chess();
         let wagerAmount = 0;
 
-      function launchChess() {
-        const wager = prompt("Enter your LCAI wager for this AIVM match:", "1.0");
-        if (wager === null || isNaN(wager) || parseFloat(wager) <= 0) return;
+function launchChess() {
+    const wager = prompt("Enter your LCAI wager for this AIVM match:", "1.0");
+    if (wager === null || isNaN(wager) || parseFloat(wager) <= 0) return;
+
+    wagerAmount = parseFloat(wager);
+    document.getElementById('activeWagerDisplay').innerText = wagerAmount.toFixed(2) + " LCAI";
     
-        wagerAmount = parseFloat(wager);
-        document.getElementById('activeWagerDisplay').innerText = wagerAmount.toFixed(2) + " LCAI";
-        
-        showView('chessView');
-          // 2. Use a tiny timeout to let the browser render the container width
+    // 1. Show the view FIRST
+    showView('chessView');
+    
+    // 2. Use a tiny timeout to let the browser render the container width
     setTimeout(() => {
         game = new Chess();
         const config = {
@@ -2024,26 +2026,17 @@ async function listInAuction(tokenId) {
             onSnapEnd: onSnapEnd,
             pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
         };
-        log(`[ARCADE] Match Start. Wager: ${wagerAmount} LCAI.`);
-          
-        // Initialize the Game
-        game = new Chess();
         
-        const config = {
-            draggable: true,
-            position: 'start',
-            onDragStart: onDragStart,
-            onDrop: onDrop,
-            onSnapEnd: onSnapEnd,
-            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
-        };
-        
-        // Create the board
+        // 3. Initialize board only AFTER the div is visible
         board = Chessboard('myBoard', config);
+        
+        // 4. Force a resize calculation
         board.resize();
+        
         updateChessStatus("YOUR MOVE (WHITE)");
-        }, 100);
-    }
+        log(`[ARCADE] Match Initialized. Board Rendered.`);
+    }, 100);
+}
     
     function onDragStart (source, piece, position, orientation) {
         // Do not pick up pieces if the game is over
@@ -2122,5 +2115,6 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
