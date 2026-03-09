@@ -1554,7 +1554,7 @@ async function mintWithSocial() {
                     art.uri, 
                     "MiMo-V3", 
                     "Gallery-Refetch", 
-                    { value: ethers.parseEther("0.25"), gasLimit: 5000000 }
+                    { value: ethers.parseEther("1"), gasLimit: 10000000 }
                 );
         
                 await tx.wait();
@@ -1918,6 +1918,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
