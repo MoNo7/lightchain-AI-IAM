@@ -1308,7 +1308,7 @@ async function generateAIVMArt() {
     const encodedPrompt = encodeURIComponent(promptInput);
     const seed = Math.floor(Math.random() * 1000000);
     const timestamp = Date.now();
-    const aiImageUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true&t=${Date.now()}`;
+    const aiImageUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true&t=${timestamp}`;
     document.getElementById('renderLoader').style.display = 'block';
     document.getElementById('saveArtBtn').style.display = 'none';
     
@@ -1357,12 +1357,11 @@ img.src = aiImageUrl;
     };
 
     img.onerror = () => {
-    log("[AIVM ERROR] Engine Busy. Retrying in 3 seconds...");
-        // Automatic Retry logic - keeps the user from having to click again
+    log("[AIVM ERROR] Engine cooling down. Retrying in 15 seconds...");
         setTimeout(() => {
             generateAIVMArt(); 
-        }, 3000);
-    }
+        }, 15000);
+    };
 }
         
 //let currentArtData = null; // Stores the Base64 of the generated image
@@ -1882,6 +1881,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
