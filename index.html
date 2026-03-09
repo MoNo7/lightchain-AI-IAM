@@ -927,7 +927,7 @@ async function registerLocal() {
             const grid = document.getElementById('auctionGrid');
             const provider = new ethers.BrowserProvider(window.ethereum);
             
-            // Connect to both contracts
+            // Connect to both the Auction House and Art Studio contracts
             const auctionHouse = new ethers.Contract(CONFIG.auctionHouse, [
                 "function auctions(address, uint256) view returns (address, uint256, uint256, address, uint256, bool)"
             ], provider);
@@ -940,28 +940,29 @@ async function registerLocal() {
             const total = await artStudio.totalSupply();
         
             for (let i = 0; i < total; i++) {
-                // Check the 'auctions' mapping in your AuctionHouse.sol
+                // Fetch the auction data for each Token ID
                 const data = await auctionHouse.auctions(CONFIG.artStudio, i);
-                const isActive = data[5]; // The 'active' boolean in your struct
+                const isActive = data[5]; // This corresponds to the 'active' boolean in your struct
         
                 if (isActive) {
                     const uri = await artStudio.tokenURI(i);
                     const price = ethers.formatEther(data[1]);
                     
-                    // Handle Decryption if it's an AIVM Encrypted NFT
+                    // Decrypt the image if it is an AIVM Encrypted NFT
                     let imgDisplay = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
+                    if (!imgDisplay.startsWith("data:image")) imgDisplay = "data:image/jpeg;base64," + imgDisplay;
         
                     grid.innerHTML += `
                         <div class="card" style="margin-bottom:15px;">
                             <img src="${imgDisplay}" style="width:100%; border-radius:8px;">
-                            <div style="margin-top:10px; display:flex; justify-content:space-between;">
+                            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
                                 <span style="color:var(--accent)">${price} LCAI</span>
                                 <button class="pill" onclick="placeBid(${i}, '${price}')">PLACE BID</button>
                             </div>
                         </div>`;
                 }
             }
-            if(grid.innerHTML === "") grid.innerHTML = "No active auctions found on-chain.";
+            if (grid.innerHTML === "") grid.innerHTML = "No active auctions found on-chain.";
         }
 
         async function placeBid(tokenId, currentPrice) {
@@ -1756,6 +1757,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
