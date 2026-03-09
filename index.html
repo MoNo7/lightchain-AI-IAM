@@ -9,6 +9,7 @@
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --bg: #030406; --sidebar: #0a0c10; --accent: #00f2ff; --text: #c9d1d9; --text-dim: #484f58; --border: #1b1f24; --panel: #0d1117; --green: #39d353; --red: #ff4444; }
@@ -153,16 +154,16 @@
             z-index: 5;
         }
 
-        /* Fix for Chessboard vertical stacking */
         #myBoard {
-            width: 400px; /* Or 100% if the parent has a fixed width */
+            width: 100%; /* Let the parent boardContainer control the size */
+            max-width: 400px;
             margin: 0 auto;
         }
         
+        /* Force internal squares to behave as blocks */
         .chessboard-63f28 {
             width: 100% !important;
-        }
-        
+        } 
         /* Ensure the pieces (images) don't overflow */
         #myBoard img {
             display: block;
@@ -2132,6 +2133,7 @@ function launchChess() {
     </script>
 </body>
 </html>
+
 
 
 
