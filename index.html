@@ -397,6 +397,41 @@
                 </div>
             </div>
 
+            <div id="chessView" class="card view-section" style="display:none; max-width: 800px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3><i class="fas fa-chess-knight" style="color:var(--accent);"></i> LCAI Chess Engine</h3>
+                    <button onclick="showView('arcadeView')" class="pill">EXIT MATCH</button>
+                </div>
+            
+                <div style="display: grid; grid-template-columns: 1fr 250px; gap: 20px;">
+                    <div id="boardContainer" style="background: #000; border: 2px solid var(--border); border-radius: 8px; aspect-ratio: 1/1; position: relative; overflow: hidden;">
+                        <div id="chessStatus" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--accent); font-family: monospace; text-align: center;">
+                            <i class="fas fa-microchip fa-spin" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                            <br>INITIALIZING AIVM ENGINE...
+                        </div>
+                        <div id="mainBoard" style="width: 100%; height: 100%; display: none;"></div>
+                    </div>
+            
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Current Match</div>
+                        <div style="font-size: 1.1rem; color: var(--accent); font-weight: bold; margin-bottom: 15px;">MiMo vs AIVM-v3</div>
+                        
+                        <div style="margin-bottom: 10px;">
+                            <div style="font-size: 0.6rem; color: var(--text-dim);">ACTIVE WAGER</div>
+                            <div id="activeWagerDisplay" style="color: var(--green); font-family: monospace;">0.00 LCAI</div>
+                        </div>
+            
+                        <div style="margin-bottom: 10px;">
+                            <div style="font-size: 0.6rem; color: var(--text-dim);">ENGINE DIFFICULTY</div>
+                            <div style="color: var(--red);">GRANDMASTER</div>
+                        </div>
+            
+                        <button class="btn-zk" style="margin-top: 20px; background: transparent; border: 1px solid var(--border); color: var(--text-dim);">OFFER DRAW</button>
+                        <button class="btn-zk" style="margin-top: 10px; background: var(--red); color: white;" onclick="resignMatch()">RESIGN</button>
+                    </div>
+                </div>
+            </div>
+
             
             <div id="galleryView" class="card view-section" style="display:none;">
                 <h3>AIVM Community Gallery</h3>
@@ -1948,83 +1983,46 @@ async function listInAuction(tokenId) {
                 if (existing) existing.remove();
                 document.body.insertAdjacentHTML('beforeend', modalHtml);
         }
+
+        async function launchChess() {
+            // 1. Get Wager
+            const wager = prompt("Enter your LCAI wager for this AIVM match:", "1.0");
+            
+            if (wager === null) return; // Cancelled
+            if (isNaN(wager) || parseFloat(wager) <= 0) {
+                return log("[ARCADE] Error: Invalid wager amount.");
+            }
+        
+            try {
+                log(`[ARCADE] Initializing Match... Locking ${wager} LCAI stake.`);
+                
+                // 2. UI Update
+                document.getElementById('activeWagerDisplay').innerText = parseFloat(wager).toFixed(2) + " LCAI";
+                
+                // 3. Switch View
+                showView('chessView');
+                
+                // 4. Simulate Engine Warmup
+                setTimeout(() => {
+                    const status = document.getElementById('chessStatus');
+                    if (status) {
+                        status.innerHTML = `<i class="fas fa-check-circle" style="color:var(--green);"></i><br>AIVM READY.<br>YOUR MOVE (WHITE)`;
+                    }
+                    log("[AIVM] Chess Engine Online. Neural weights loaded.");
+                }, 2000);
+        
+            } catch (e) {
+                log(`[ERROR] Match startup failed: ${e.message}`);
+            }
+        }
+        
+        function resignMatch() {
+            if (confirm("Are you sure? Your wager will be forfeited to the AIVM Treasury.")) {
+                log("[ARCADE] Match Resigned. Wager lost.");
+                showView('arcadeView');
+            }
+        }
+        
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
