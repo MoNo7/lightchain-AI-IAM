@@ -1199,10 +1199,15 @@ async function withdrawRevenue() {
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
-        const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, signer);
+//        const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, signer);
+
+        const contract = new ethers.Contract(CONFIG.artStudio, [
+            "function withdraw() public", // Standard withdraw function name
+            "function owner() view returns (address)"
+        ], signer);
 
         log("Requesting treasury release...");
-        const tx = await contract.withdrawRevenue(); // Updated function name
+        const tx = await contract.withdraw(); // Updated function name
         await tx.wait();
         log("Success: Revenue transferred to owner.");
         updateRevenueDisplay();
@@ -1921,6 +1926,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
