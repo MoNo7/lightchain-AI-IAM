@@ -81,6 +81,37 @@
             position: relative;
             z-index: 10; /* Ensures buttons are on top */
         }
+
+        .arcade-card {
+    border: 1px dashed #2a3b4c;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    background-color: #0b131e;
+    transition: all 0.3s ease;
+}
+
+.highlight-card {
+    border-color: #00ffcc;
+    box-shadow: 0 0 15px rgba(0, 255, 204, 0.1);
+}
+
+.highlight-card:hover {
+    box-shadow: 0 0 25px rgba(0, 255, 204, 0.3);
+    transform: translateY(-2px);
+}
+
+.btn-launch {
+    background-color: #00ffcc;
+    color: #000;
+    font-weight: bold;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 15px;
+}
         
         .ui-watermark {
             position: absolute;
@@ -1920,6 +1951,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
