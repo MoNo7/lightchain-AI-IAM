@@ -1387,19 +1387,19 @@ async function generateAIVMArt() {
                 // 1. Create a hidden 512x512 scaling canvas
                 const tempCanvas = document.createElement('canvas');
                 const tempCtx = tempCanvas.getContext('2d');
-                tempCanvas.width = 512; 
-                tempCanvas.height = 512;
+                tempCanvas.width = 400; 
+                tempCanvas.height = 400;
                 
                 // 2. Draw the 1024x1024 art down to 512x512
                 tempCtx.fillStyle = "#FFFFFF";
-                tempCtx.fillRect(0, 0, 512, 512);
-                tempCtx.drawImage(mainCanvas, 0, 0, 512, 512);
+                tempCtx.fillRect(0, 0, 400, 400);
+                tempCtx.drawImage(mainCanvas, 0, 0, 400, 400);
                 
                 // 3. Capture the smaller string (Quality 0.5 is now safe!)
-                currentArtData = tempCanvas.toDataURL('image/jpeg', 0.5); 
+                currentArtData = tempCanvas.toDataURL('image/jpeg', 0.2); 
                 
                 document.getElementById('saveArtBtn').style.display = 'block';
-                log("[AIVM] Render Success. Resized to 512x512 for Gas Efficiency.");
+                log("[AIVM] Render Success. Ultra-Light 400px mode");
             }, 100);
         };
                 
@@ -1937,6 +1937,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
