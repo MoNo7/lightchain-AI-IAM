@@ -2341,10 +2341,10 @@ async function launchChess() {
     async function checkGameOver() {
         if (game.game_over()) {
                 const playerWon = (game.turn() === 'b' && game.in_checkmate());
-                const resultLabel = playerWon ? "VICTORY! Match Won." : "DEFEAT. AIVM Wins.";
+                const status = playerWon ? "VICTORY! Match Won." : "DEFEAT. AIVM Wins.";
                 
-                log(`[AIVM] ${resultLabel} Initiating On-Chain Settlement...`);
-                updateChessStatus(resultLabel);
+                log(`[AIVM] ${status} Initiating On-Chain Settlement...`);
+                updateChessStatus(status);
         
                 try {
                     const provider = new ethers.BrowserProvider(window.ethereum);
@@ -2435,6 +2435,7 @@ async function makeAIVMMove() {
     // Update the board position after the piece snap
     function onSnapEnd () {
         board.position(game.fen());
+        checkGameOver(); // Add this line!
     }
     
     function updateChessStatus(msg) {
@@ -2502,6 +2503,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
