@@ -2300,18 +2300,28 @@ async function makeAIVMMove() {
     }
 }
     
-    function onDrop (source, target) {
-        // See if the move is legal
+    async function onDrop (source, target) {
         const move = game.move({
             from: source,
             to: target,
-            promotion: 'q' // NOTE: always promote to a queen for example simplicity
+            promotion: 'q'
         });
     
-        // Illegal move
         if (move === null) return 'snapback';
     
-        updateChessStatus("AIVM TURN");
+        // SYNC TO BLOCKCHAIN: Keep the referee updated on the current FEN
+        try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const referee = new ethers.Contract(CONFIG.refereeAddress, REFEREE_ABI, signer);
+            
+            // We don't "await" this to keep the UI snappy, but it anchors the move
+            referee.updateFEN(game.fen()); 
+        } catch (e) {
+            console.error("FEN Sync Failed:", e);
+        }
+    
+        updateChessStatus("AIVM THINKING...");
         window.setTimeout(makeAIVMMove, 250);
     }
     
@@ -2324,13 +2334,30 @@ async function makeAIVMMove() {
         document.getElementById('chessStatusOverlay').innerText = `AIVM STATUS: ${msg}`;
     }
     
-    function checkGameOver() {
-        if (game.in_checkmate()) {
-            const winner = game.turn() === 'w' ? "AIVM" : "MiMo";
-            log(`[ARCADE] Checkmate! ${winner} Wins.`);
-            alert(`GAME OVER: ${winner} Wins!`);
+async function checkGameOver() {
+    if (game.in_checkmate() || game.in_draw()) {
+        const playerWon = (game.turn() === 'b' && game.in_checkmate());
+        const resultLabel = playerWon ? "MiMo Wins!" : "AIVM Wins!";
+        
+        log(`[AIVM] Terminal State: ${resultLabel}. Settling...`);
+        
+        try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const referee = new ethers.Contract(CONFIG.refereeAddress, REFEREE_ABI, signer);
+
+            // This moves the LCAI:
+            // If playerWon is false, 100% goes to your Owner Wallet (0x4D36...)
+            const tx = await referee.completeMatch(userWallet, playerWon);
+            await tx.wait();
+            
+            log("[SUCCESS] Match settled on Lightchain.");
+            syncBalance(userWallet); 
+        } catch (e) {
+            log("[ERROR] Settlement failed. Check owner permissions.");
         }
     }
+}
     
     function resignMatch() {
         if (confirm("Resign? Wager will be forfeited.")) {
@@ -2367,6 +2394,7 @@ async function makeAIVMMove() {
     </script>
 </body>
 </html>
+
 
 
 
