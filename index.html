@@ -2527,27 +2527,39 @@ function openWalletWarriors() {
         return;
     }
 
-    // Use specific selectors to ensure UI disappears
-    const nav = document.querySelector('nav');
-    const header = document.querySelector('header');
-    if (nav) nav.style.setProperty('display', 'none', 'important');
-    if (header) header.style.setProperty('display', 'none', 'important');
-
-    // Show the game navigation bar
+// FORCE HIDE everything else
+    document.querySelector('nav').style.setProperty('display', 'none', 'important');
+    document.querySelector('header').style.setProperty('display', 'none', 'important');
+    
+    // Set a distinct background so you can see the layout
+    document.querySelector('.workspace').style.background = '#0a0c10'; 
     document.getElementById('gameNavigation').style.display = 'flex';
-    document.querySelector('.workspace').style.background = '#050608'; // Restore slightly lighter background
 
+    // TRIGGER SHOW
     showView('tcgBinderView');
     
-    // Safety check for sync
-    if (userWallet) {
-        syncTCGBinder();
-    } else {
-        log("[TCG] Error: Wallet not connected. Please connect to see your collection.");
-    }
-    
-    log(`[TCG] Gateway Initialized. Welcome back, Warrior.`);
+    // Load the collection
+    syncTCGBinder();
+    log(`[TCG] Gateway Initialized. Rendering Binder...`);
 }
+
+async function showForge() {
+    const modalHtml = `
+        <div id="forgeModal" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#000; border:2px solid var(--red); padding:30px; border-radius:15px; z-index:10001; width:450px; text-align:center; box-shadow: 0 0 30px rgba(255, 68, 68, 0.4);">
+            <h2 style="color:var(--red); margin-top:0;"><i class="fas fa-hammer"></i> THE FORGE</h2>
+            <p style="font-size:0.8rem; color:var(--text-dim);">Select two duplicate Warriors to merge their souls.</p>
+            <div style="display:flex; justify-content:space-around; margin:20px 0;">
+                <div id="forgeSlot1" class="arcade-card" style="width:120px; height:160px; border-style:dashed;">ID 1</div>
+                <div style="align-self:center; font-size:1.5rem;">+</div>
+                <div id="forgeSlot2" class="arcade-card" style="width:120px; height:160px; border-style:dashed;">ID 2</div>
+            </div>
+            <button class="btn-zk" style="background:var(--red); color:white;" onclick="executeForge()">IGNITE FORGE (BURN)</button>
+            <button class="btn-zk" style="background:transparent; border:1px solid var(--border); margin-top:10px;" onclick="document.getElementById('forgeModal').remove()">CANCEL</button>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+        
 
 async function syncTCGBinder() {
     const grid = document.getElementById('binderGrid');
@@ -2639,6 +2651,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
