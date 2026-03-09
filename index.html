@@ -1300,68 +1300,53 @@ if (placeholder) placeholder.style.display = 'none';
 
 async function generateAIVMArt() {
     const promptInput = document.getElementById('artPrompt').value;
-    const model = document.getElementById('modelSelector').value;
-    
-    if(!promptInput) return log("Error: Please enter a prompt.");
+    if(!promptInput) return log("Error: Prompt required.");
 
-    // 1. Safe Variable Definition
+    // 1. FRESH 2026 ENDPOINT + CACHE BUSTER
     const encodedPrompt = encodeURIComponent(promptInput);
-    const seed = Math.floor(Math.random() * 1000000);
-    const timestamp = Date.now();
-    const aiImageUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true&t=${timestamp}`;
+    const seed = Math.floor(Math.random() * 999999);
+    const aiImageUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true&t=${Date.now()}`;
+
+    // UI Reset
     document.getElementById('renderLoader').style.display = 'block';
-    document.getElementById('saveArtBtn').style.display = 'none';
-    
     const placeholder = document.getElementById('renderStatusText');
-    if (placeholder) placeholder.style.display = 'none'; // Kills "Awaiting your prompt"
+    if (placeholder) placeholder.style.display = 'none';
 
-    log(`[AIVM] Engine Call: ${model}`);
+    log(`[AIVM] Calling Engine...`);
 
-    // 3. Image Load & CORS Unlock
-const img = new Image();
-img.crossOrigin = "anonymous"; 
-img.src = aiImageUrl;
+    const img = new Image();
+    // 2. CRITICAL SECURITY HANDSHAKE
+    img.crossOrigin = "anonymous"; 
+    img.src = aiImageUrl;
 
     img.onload = () => {
+        log("[AIVM] Success: Image received.");
         const canvas = document.getElementById('generatedCanvas');
         const ctx = canvas.getContext('2d');
         canvas.width = 1024; canvas.height = 1024;
-
-        // Draw to hidden canvas
+        
         ctx.clearRect(0, 0, 1024, 1024);
         ctx.drawImage(img, 0, 0, 1024, 1024);
 
-        // Update visible UI image
         const outputImg = document.getElementById('aivmOutputImage');
         outputImg.src = canvas.toDataURL('image/png');
         outputImg.style.display = 'block';
         document.getElementById('renderLoader').style.display = 'none';
 
-        // 4. The Sync Buffer (Wait 1.5s for GPU)
+        // Buffer for NFT capture
         setTimeout(() => {
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = 400; tempCanvas.height = 400;
             tempCanvas.getContext('2d').drawImage(canvas, 0, 0, 400, 400);
-
             currentArtData = tempCanvas.toDataURL('image/jpeg', 0.1);
-
-            // FAILSAFE: If the capture is too small, it's a white tile. Don't let them mint.
-            if (currentArtData.length < 5000) {
-                log("[AIVM ERROR] Capture failed (White Tile). Please Generate again.");
-                return; 
-            }
-
             document.getElementById('saveArtBtn').style.display = 'block';
-            log("[AIVM] Art Buffer Ready. Ready to Mint.");
-        }, 1500);
+        }, 1000);
     };
 
     img.onerror = () => {
-    log("[AIVM ERROR] Engine cooling down. ");
-        setTimeout(() => {
-            log("[AIVM] Cooldown cleared. Retrying...");
-            generateAIVMArt(); 
-         }, 65000);
+        log("[AIVM ERROR] Protocol Rejected. Checking Engine Status...");
+        // If it fails on the first click, it's usually a temporary server-side 503
+        setTimeout(() => { generateAIVMArt(); }, 5000); 
     };
 }
         
@@ -1882,6 +1867,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
