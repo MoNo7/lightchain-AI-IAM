@@ -153,6 +153,21 @@
             z-index: 5;
         }
 
+        /* Fix for Chessboard vertical stacking */
+        #myBoard {
+            width: 400px; /* Or 100% if the parent has a fixed width */
+            margin: 0 auto;
+        }
+        
+        .chessboard-63f28 {
+            width: 100% !important;
+        }
+        
+        /* Ensure the pieces (images) don't overflow */
+        #myBoard img {
+            display: block;
+        }
+
         /* Utility Classes */
         .social-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
         .btn-zk { background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; }
@@ -1998,8 +2013,19 @@ async function listInAuction(tokenId) {
         document.getElementById('activeWagerDisplay').innerText = wagerAmount.toFixed(2) + " LCAI";
         
         showView('chessView');
+          // 2. Use a tiny timeout to let the browser render the container width
+    setTimeout(() => {
+        game = new Chess();
+        const config = {
+            draggable: true,
+            position: 'start',
+            onDragStart: onDragStart,
+            onDrop: onDrop,
+            onSnapEnd: onSnapEnd,
+            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+        };
         log(`[ARCADE] Match Start. Wager: ${wagerAmount} LCAI.`);
-    
+          
         // Initialize the Game
         game = new Chess();
         
@@ -2014,7 +2040,9 @@ async function listInAuction(tokenId) {
         
         // Create the board
         board = Chessboard('myBoard', config);
+        board.resize();
         updateChessStatus("YOUR MOVE (WHITE)");
+        }, 100);
     }
     
     function onDragStart (source, piece, position, orientation) {
@@ -2094,4 +2122,5 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
