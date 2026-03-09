@@ -545,6 +545,39 @@
                     </div>
                 </div>
             </div>
+
+        <div id="tcgBinderView" class="view-section" style="display:none; padding: 20px;">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+                
+                <div id="binderContainer">
+                    <h3 style="color:var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                        <i class="fas fa-book-open"></i> COLLECTION BINDER
+                    </h3>
+                    <div id="binderGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 20px;">
+                        </div>
+                </div>
+        
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div class="card" style="background: #111; border: 1px solid var(--green);">
+                        <h4>DAILY REWARDS</h4>
+                        <button class="btn-zk" onclick="claimDailyWarrior()">COLLECT DAILY PACK</button>
+                    </div>
+                    
+                    <div class="card" style="background: #111; border: 1px solid var(--accent);">
+                        <h4>WARRIOR STORE</h4>
+                        <button class="btn-zk" onclick="buyWarriorPack()">BUY UPGRADE PACK</button>
+                    </div>
+        
+                    <div class="card" style="background: #111; border: 1px solid var(--red);">
+                        <h4>THE FORGE</h4>
+                        <button class="btn-zk" onclick="showForge()">COMBINE CARDS</button>
+                    </div>
+                </div>
+        
+            </div>
+        </div>
+
+            
         </main>
 
         <div id="console">> [SYS] Initializing Lightchain AI Portal...</div>
@@ -571,6 +604,7 @@ identity: "0x9A07d6a0eF4a8037318a0731E41bd4061f27B172",
 artStudio: "0xe80d9542Ef60B680a621970d209d04DB24767614",
 auctionHouse: "0x85C91ce310599Bf7BBc59726C2391911c46a6cCD",
 refereeAddress: "0x479e6847C98EA94bB559b85959a6F0aDDfdD6856",
+warriorCards: "0xYourWarriorCardsContractAddress",    
 RPC: "https://light-testnet-rpc.lightchain.ai",
 abi: [
         "function isAdmin(address) view returns (bool)",
@@ -2485,9 +2519,55 @@ function openWalletWarriors() {
     document.getElementById('gameNavigation').style.display = 'flex';
     document.querySelector('.workspace').style.background = '#000';
 
-    // 3. Switch to the TCG View
-    showView('tcgBinderView'); // Ensure you have this container in your HTML
-    log(`[TCG] Full Immersion Mode Active for: ${userWallet.slice(0,10)}`);
+    // 3. Launch the TCG Binder View
+    showView('tcgBinderView'); 
+    
+    // 4. Load the user's collection from the blockchain
+    syncTCGBinder();
+
+    log(`[TCG] Gateway Initialized. Welcome back, Warrior.`);
+}
+
+async function syncTCGBinder() {
+const grid = document.getElementById('binderGrid');
+    grid.innerHTML = '<p style="color:var(--accent)">Syncing Warrior Soul-Prints...</p>';
+
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        // Pointing to WarriorCards for specific TCG stats
+        const warriorContract = new ethers.Contract(CONFIG.warriorCards, [
+            "function balanceOf(address) view returns (uint256)",
+            "function tokenOfOwnerByIndex(address, uint256) view returns (uint256)",
+            "function getWarriorStats(uint256) view returns (uint16, uint16, uint8, string)"
+        ], provider);
+
+        const balance = await warriorContract.balanceOf(userWallet);
+        if (balance == 0) {
+            grid.innerHTML = '<div class="arcade-card" style="grid-column: 1/-1; opacity:0.5;">No Warriors Found. Claim your Daily Pack.</div>';
+            return;
+        }
+
+        grid.innerHTML = ""; // Clear loader
+        for (let i = 0; i < balance; i++) {
+            const tokenId = await warriorContract.tokenOfOwnerByIndex(userWallet, i);
+            const stats = await warriorContract.getWarriorStats(tokenId); 
+            // stats = [HP, ATK, Rarity, ImageURI]
+
+            grid.innerHTML += `
+                <div class="arcade-card" style="border: 1px solid var(--border); padding: 10px; background: #111;">
+                    <img src="${stats[3]}" style="width:100%; border-radius: 5px; filter: sepia(0.5);">
+                    <div style="font-size: 0.7rem; margin-top: 8px;">
+                        <b style="color:var(--accent);">ID #${tokenId}</b><br>
+                        <span style="color:var(--red);">ATK: ${stats[1]}</span> | 
+                        <span style="color:var(--green);">HP: ${stats[0]}</span>
+                    </div>
+                    <div style="font-size: 0.6rem; color: #888; margin-top: 4px;">RARITY: ${stats[2]}</div>
+                </div>`;
+        }
+        log(`[TCG] Loaded ${balance} Warriors from the Blockchain.`);
+    } catch (e) {
+        log(`[TCG ERROR] Warrior sync failed: ${e.message}`);
+    }
 }
 
 
@@ -2509,6 +2589,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
