@@ -924,37 +924,44 @@ async function registerLocal() {
         }
 
         async function renderAuctions() {
-        const grid = document.getElementById('auctionGrid');
+            const grid = document.getElementById('auctionGrid');
             const provider = new ethers.BrowserProvider(window.ethereum);
             
-            const auctionContract = new ethers.Contract(CONFIG.auctionHouse, [
+            // Connect to both contracts
+            const auctionHouse = new ethers.Contract(CONFIG.auctionHouse, [
                 "function auctions(address, uint256) view returns (address, uint256, uint256, address, uint256, bool)"
             ], provider);
-            const artContract = new ethers.Contract(CONFIG.artStudio, ["function tokenURI(uint256) view returns (string)", "function totalSupply() view returns (uint256)"], provider);
+            const artStudio = new ethers.Contract(CONFIG.artStudio, [
+                "function totalSupply() view returns (uint256)",
+                "function tokenURI(uint256) view returns (string)"
+            ], provider);
         
             grid.innerHTML = ""; 
-            const totalNFTs = await artContract.totalSupply();
+            const total = await artStudio.totalSupply();
         
-            for (let i = 0; i < totalNFTs; i++) {
-                const data = await auctionContract.auctions(CONFIG.artStudio, i);
-                const isActive = data[5]; // This is the 'active' boolean from your struct
+            for (let i = 0; i < total; i++) {
+                // Check the 'auctions' mapping in your AuctionHouse.sol
+                const data = await auctionHouse.auctions(CONFIG.artStudio, i);
+                const isActive = data[5]; // The 'active' boolean in your struct
         
                 if (isActive) {
-                    const uri = await artContract.tokenURI(i);
-                    // Decrypt image if it starts with U2Fsd (AES encrypted)
-                    let displayImg = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
-                    if (!displayImg.startsWith("data:image")) displayImg = "data:image/jpeg;base64," + displayImg;
+                    const uri = await artStudio.tokenURI(i);
+                    const price = ethers.formatEther(data[1]);
+                    
+                    // Handle Decryption if it's an AIVM Encrypted NFT
+                    let imgDisplay = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
         
                     grid.innerHTML += `
-                        <div class="card">
-                            <img src="${displayImg}" style="width:100%; border-radius:8px;">
-                            <div style="margin-top:10px;">
-                                <span style="color:var(--accent)">${ethers.formatEther(data[1])} LCAI</span>
-                                <button class="btn-zk" onclick="placeBid(${i}, '${ethers.formatEther(data[1])}')">BID</button>
+                        <div class="card" style="margin-bottom:15px;">
+                            <img src="${imgDisplay}" style="width:100%; border-radius:8px;">
+                            <div style="margin-top:10px; display:flex; justify-content:space-between;">
+                                <span style="color:var(--accent)">${price} LCAI</span>
+                                <button class="pill" onclick="placeBid(${i}, '${price}')">PLACE BID</button>
                             </div>
                         </div>`;
                 }
             }
+            if(grid.innerHTML === "") grid.innerHTML = "No active auctions found on-chain.";
         }
 
         async function placeBid(tokenId, currentPrice) {
@@ -1749,6 +1756,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
