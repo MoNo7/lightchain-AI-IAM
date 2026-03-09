@@ -1460,7 +1460,8 @@ async function saveArtToGallery() {
     
     const model = document.getElementById('modelSelector').value;
     const promptText = document.getElementById('artPrompt').value;
-    const hint = promptText.slice(0, 32);
+//    const hint = promptText.slice(0, 32);
+    const metadataHint = `Model: ${model} | Prompt: ${promptText.slice(0, 50)}... | Auth: AIVM-MiMo`;
     
     if (!currentArtData) return log("Error: No art to save.");
 
@@ -1481,8 +1482,8 @@ async function saveArtToGallery() {
         log("[MINT] Sending Art Data (Heavy Payload) to Lightchain...");
         
         // FIX: Increased gasLimit to 10M to accommodate the Base64 storage
-        const tx = await artContract.mintArtNFT(encryptedData, model, hint, {
-                value: ethers.parseEther("0.25"),
+        const tx = await artContract.mintArtNFT(encryptedData, model, metadaraHint, {
+                value: ethers.parseEther("1"),
                 gasLimit: 10000000 
             });
 
@@ -1918,6 +1919,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
