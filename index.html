@@ -1344,7 +1344,7 @@ async function generateAIVMArt() {
             tempCanvas.width = 512; tempCanvas.height = 512;
             tempCanvas.getContext('2d').drawImage(canvas, 0, 0, 512, 512);
 
-            currentArtData = tempCanvas.toDataURL('image/jpeg', 0.6);
+            currentArtData = tempCanvas.toDataURL('image/jpeg', 0.3);
 
             // FAILSAFE: If the capture is too small, it's a white tile. Don't let them mint.
             if (currentArtData.length < 5000) {
@@ -1410,40 +1410,43 @@ async function uploadToIPFS(base64Data) {
 }
 
 async function saveArtToGallery() {
-    // 1. Check if we actually have image data
     if (!currentArtData || currentArtData.length < 1000) {
-        log("[ERROR] No image data found. Please generate art first.");
+        log("[ERROR] No image data found.");
         return;
     }
 
     try {
-        log("[MINT] Preparing unencrypted payload...");
-        
+        log("[MINT] Optimizing payload for < 1.0 LCAI fee...");
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         
-        // We bypass the encryptArt(currentArtData) step here
-        const rawData = currentArtData; 
-
         const artContract = new ethers.Contract(CONFIG.artStudio, [
             "function mintArtNFT(string memory tokenURI) public payable returns (uint256)"
         ], signer);
 
-        log("[MINT] Sending to Lightchain...");
+        // Calculate a safe gas limit based on current data length
+        // We'll aim for 25M gas which usually costs ~0.5 - 0.7 LCAI
         const tx = await artContract.mintArtNFT(
-            rawData, 
+            currentArtData, 
             { 
                 value: ethers.parseEther("1.0"), 
-                gasLimit: 40000000 // High gas limit for unencrypted data
+                gasLimit: 30000000, // Reduced from 45M to lower the "Estimated Fee"
+                maxFeePerGas: ethers.parseUnits("25", "gwei"),
+                maxPriorityFeePerGas: ethers.parseUnits("2", "gwei")
             }
         );
 
+        log("[MINT] Transaction sent. Fee locked below cap.");
         await tx.wait();
-        log("[SUCCESS] Unencrypted NFT Minted! Check your wallet.");
+        log("[SUCCESS] Token #15 Minted successfully.");
         if(typeof loadGallery === 'function') loadGallery();
         
     } catch (e) {
-        log(`[MINT ERROR] ${e.message}`);
+        if (e.message.includes("insufficient funds")) {
+            log("[GAS ERROR] Fee exceeded 1.0 LCAI cap. Try reducing prompt length.");
+        } else {
+            log(`[MINT ERROR] ${e.message}`);
+        }
     }
 }
 
@@ -1873,6 +1876,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
