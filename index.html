@@ -1384,20 +1384,22 @@ async function generateAIVMArt() {
             document.getElementById('renderLoader').style.display = 'none';
 
             requestAnimationFrame(() => {
+                // We wait an extra 1000ms here because Token #6 and #7 both failed at 300ms
                 setTimeout(() => {
                     const tempCanvas = document.createElement('canvas');
                     const tempCtx = tempCanvas.getContext('2d');
-                    tempCanvas.width = 400; 
-                    tempCanvas.height = 400;
+                    tempCanvas.width = 400; tempCanvas.height = 400;
                     
                     tempCtx.fillStyle = "#FFFFFF";
                     tempCtx.fillRect(0, 0, 400, 400);
                     tempCtx.drawImage(mainCanvas, 0, 0, 400, 400);
                     
+                    // 4. Update the global data variable
                     currentArtData = tempCanvas.toDataURL('image/jpeg', 0.3); 
+                    
                     document.getElementById('saveArtBtn').style.display = 'block';
-                    log("[AIVM] Pixels Locked. Ready for Token #7.");
-                }, 500); // Bumped to 500ms to be absolutely safe for high-res source files
+                    log("[AIVM] Pixels Verified. Capture for Token #8 is Ready.");
+                }, 1000);
             });
         };
                 
@@ -1935,6 +1937,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
