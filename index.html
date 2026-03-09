@@ -1307,8 +1307,8 @@ async function generateAIVMArt() {
     // 1. Safe Variable Definition
     const encodedPrompt = encodeURIComponent(promptInput);
     const seed = Math.floor(Math.random() * 1000000);
-    const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
-
+    const timestamp = new Date().getTime();
+    const aiImageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true&t=${timestamp}`;
     // 2. UI Reset & Force Clear Placeholder
     document.getElementById('renderLoader').style.display = 'block';
     document.getElementById('saveArtBtn').style.display = 'none';
@@ -1880,6 +1880,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
