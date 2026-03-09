@@ -1180,6 +1180,9 @@ async function withdrawRevenue() {
 let isGenerating = false;
 
 async function generateAIVMArt() {
+    const btn = event.target; // Assuming called from the button
+    btn.disabled = true;
+    setTimeout(() => { btn.disabled = false; }, 10000); // 10s Cooldown
     if (isGenerating) return log("System busy: Awaiting protocol PoI...");
 
     const basePrompt = document.getElementById('artPrompt').value.trim();
@@ -1290,12 +1293,16 @@ async function generateAIVMArt() {
             document.getElementById('renderLoader').style.display = 'none';
             document.getElementById('saveArtBtn').style.display = 'block';
             log("[AIVM] Render Stabilized. High-res preview active.");
+                
         };
                 
         img.onerror = () => {
             isGenerating = false;
             loader.style.display = 'none';
             document.getElementById('renderStatusText').style.display = 'block';
+            document.getElementById('renderStatusText').innerText = "AI Gateway Busy (Error 429). Please wait 30s.";
+            // CRITICAL: Hide the save button so you don't mint a blank white box
+            document.getElementById('saveArtBtn').style.display = 'none';            
             log(`[AIVM Error] Connection Reset. PoI remains anchored.`);
         };
 
@@ -1354,6 +1361,10 @@ async function uploadToIPFS(base64Data) {
 }
 
 async function saveArtToGallery() {
+    // If currentArtData is null or too short, it's a blank canvas
+    if (!currentArtData || currentArtData.length < 2000) {
+        return log("Error: No image data found. Did the AI fail to render?");
+    }
     const model = document.getElementById('modelSelector').value;
     const promptText = document.getElementById('artPrompt').value;
     const hint = promptText.slice(0, 32);
@@ -1732,6 +1743,7 @@ function triggerBlink(element, className) {
     </script>
 </body>
 </html>
+
 
 
 
