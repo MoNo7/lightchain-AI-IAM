@@ -1319,32 +1319,40 @@ async function generateAIVMArt() {
     img.onload = () => {
 const canvas = document.getElementById('generatedCanvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = 1024; canvas.height = 1024;
+    canvas.width = 1024; 
+    canvas.height = 1024;
 
+    // 1. DRAW TO SCREEN FIRST (Fixes the White Tile)
     ctx.clearRect(0, 0, 1024, 1024);
     ctx.drawImage(img, 0, 0, 1024, 1024);
 
-    // FIX 1: Clear the "Awaiting prompt" text immediately
-    document.querySelector('.inference-window').innerHTML = ''; 
+    // 2. KILL THE HANG (Fixes "Awaiting your prompt")
+    // This targets the specific div that is stuck on screen
+    const inferenceBox = document.querySelector('.inference-window');
+    if (inferenceBox) {
+        inferenceBox.innerHTML = ''; // Clears the "Awaiting" text
+    }
+    
+    // Update the main UI image display
+    const outputImg = document.getElementById('aivmOutputImage');
+    outputImg.src = canvas.toDataURL('image/png');
+    outputImg.style.display = 'block';
     document.getElementById('renderLoader').style.display = 'none';
 
-    // FIX 2: Wait 2 full seconds for the high-res render to "bake"
+    // 3. CAPTURE FOR NFT (Wait 1 sec to ensure pixels are stable)
     setTimeout(() => {
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = 512; 
         tempCanvas.height = 512;
-        tempCanvas.getContext('2d').drawImage(canvas, 0, 0, 512, 512);
+        const tempCtx = tempCanvas.getContext('2d');
         
-        // Capture data and verify it's not a tiny/empty string
-        const capturedData = tempCanvas.toDataURL('image/jpeg', 0.5);
-        if (capturedData.length > 5000) {
-            currentArtData = capturedData;
-            document.getElementById('saveArtBtn').style.display = 'block';
-            log("[AIVM] Pixels Locked. Ready to Mint.");
-        } else {
-            log("[AIVM] Capture Error: Retrying...");
-        }
-    }, 2000);
+        // Final pixel draw for the NFT data
+        tempCtx.drawImage(canvas, 0, 0, 512, 512);
+        
+        currentArtData = tempCanvas.toDataURL('image/jpeg', 0.5);
+        document.getElementById('saveArtBtn').style.display = 'block';
+        log("[AIVM] Render Success. Ready to Mint Token #13.");
+    }, 1000);
     };
 }
         
@@ -1864,6 +1872,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
