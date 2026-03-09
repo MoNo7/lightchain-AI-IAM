@@ -1361,7 +1361,7 @@ async function generateAIVMArt() {
 
         const img = new Image();
         img.crossOrigin = "anonymous"; // This unlocks the "Tainted" canvas
-        img.src = imageUrl;
+        img.src = aiImageUrl;
 
         img.onload = () => {
         const mainCanvas = document.getElementById('generatedCanvas');
@@ -1404,7 +1404,7 @@ async function generateAIVMArt() {
             log(`[AIVM Error] Connection Reset. PoI remains anchored.`);
         };
 
-        img.src = aiImageUrl;
+      //  img.src = aiImageUrl;
     } catch (e) {
         isGenerating = false;
         log(`[Fatal Error] ${e.message}`);
@@ -1928,6 +1928,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
