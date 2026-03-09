@@ -1482,11 +1482,15 @@ async function saveArtToGallery() {
 
         log("[MINT] Sending Art Data (Heavy Payload) to Lightchain...");
         
-        // FIX: Increased gasLimit to 10M to accommodate the Base64 storage
-        const tx = await artContract.mintArtNFT(encryptedData, model, metadaraHint, {
-                value: ethers.parseEther("1"),
-                gasLimit: 10000000 
-            });
+        const tx = await artContract.mintArtNFT(
+            encryptedData, 
+            model, 
+            metadataHint, 
+            { 
+                value: ethers.parseEther("1.0"), 
+                gasLimit: 15000000 
+            }
+        );
 
         log(`[MINT] Transaction hash: ${tx.hash}`);
         await tx.wait();
@@ -1920,6 +1924,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
