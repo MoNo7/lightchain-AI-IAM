@@ -716,6 +716,8 @@ async function checkAndResumeChess() {
 }
 
 function initBoard() {
+    const boardElement = document.getElementById('myBoard');
+    if (!boardElement) return console.error("Missing #myBoard div");
     const config = {
         draggable: true,
         position: 'start',
@@ -728,6 +730,8 @@ function initBoard() {
     // Initialize the global 'board' variable
     board = Chessboard('myBoard', config);
     updateChessStatus("READY");
+    // This is a common fix for hidden div issues:
+    window.setTimeout(board.resize, 200);
 }
     
         let userWallet;
@@ -2269,6 +2273,8 @@ async function launchChess() {
     const referee = new ethers.Contract(CONFIG.refereeAddress, REFEREE_ABI, provider);
 
     try {
+        showView('chessView');
+        
         // 1. ALWAYS initialize the UI board first so 'board' isn't null
         if (!board) { 
             initBoard(); 
@@ -2280,9 +2286,11 @@ async function launchChess() {
         if (match.active) {
             log("[RESUME] Found active match. Syncing board...");
             game.load(match.currentFEN);
-            board.position(match.currentFEN); // This won't crash now
-            showView('chessView');
-            return; 
+            board.position(match.currentFEN);
+            
+            document.getElementById('activeWagerDisplay').innerText = 
+                ethers.formatEther(match.wager) + " LCAI";
+            return;
         }
 
         // 3. No match? Start new one
@@ -2492,6 +2500,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
