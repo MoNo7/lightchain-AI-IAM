@@ -1534,6 +1534,37 @@ async function mintWithSocial() {
     }
 }
 
+        async function mintFromGallery(tokenId) {
+            try {
+                const art = window.userGallery.find(a => a.id == tokenId);
+                if (!art) return log("Error: Art data not found in local cache.");
+        
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                
+                // Define the contract with the mintArtNFT interface
+                const artContract = new ethers.Contract(CONFIG.artStudio, [
+                    "function mintArtNFT(string memory _tokenURI, string memory _model, string memory _hint) public payable returns (uint256)"
+                ], signer);
+        
+                log(`[MINT] Re-minting Token #${tokenId} to blockchain...`);
+        
+                // Using a 0.25 LCAI fee as per your saveArtToGallery logic
+                const tx = await artContract.mintArtNFT(
+                    art.uri, 
+                    "MiMo-V3", 
+                    "Gallery-Refetch", 
+                    { value: ethers.parseEther("0.25"), gasLimit: 5000000 }
+                );
+        
+                await tx.wait();
+                log(`[SUCCESS] Mint Complete! Hash: ${tx.hash.slice(0,10)}...`);
+                loadGallery(); // Refresh view
+            } catch (e) {
+                log(`[MINT ERROR] ${e.message}`);
+            }
+        }
+
         async function ownerRemoveSBT() {
             const targetAddr = document.getElementById('removeAddrInput').value.trim();
 
@@ -1887,6 +1918,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
