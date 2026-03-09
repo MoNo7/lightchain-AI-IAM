@@ -1344,7 +1344,7 @@ async function generateAIVMArt() {
             tempCanvas.width = 512; tempCanvas.height = 512;
             tempCanvas.getContext('2d').drawImage(canvas, 0, 0, 512, 512);
 
-            currentArtData = tempCanvas.toDataURL('image/jpeg', 0.3);
+            currentArtData = tempCanvas.toDataURL('image/jpeg', 0.1);
 
             // FAILSAFE: If the capture is too small, it's a white tile. Don't let them mint.
             if (currentArtData.length < 5000) {
@@ -1430,8 +1430,8 @@ async function saveArtToGallery() {
             currentArtData, 
             { 
                 value: ethers.parseEther("1.0"), 
-                gasLimit: 30000000, // Reduced from 45M to lower the "Estimated Fee"
-                maxFeePerGas: ethers.parseUnits("25", "gwei"),
+                gasLimit: 35000000, // Reduced from 45M to lower the "Estimated Fee"
+                maxFeePerGas: ethers.parseUnits("22", "gwei"),
                 maxPriorityFeePerGas: ethers.parseUnits("2", "gwei")
             }
         );
@@ -1876,6 +1876,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
