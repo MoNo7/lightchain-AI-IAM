@@ -546,7 +546,7 @@
                 </div>
             </div>
 
-<div id="tcgBinderView" class="card view-section" style="display:none; margin-top: 80px; padding: 25px; background: #0d1117;">
+<div id="tcgBinderView" class="card view-section" style="display:none; margin-top: 80px; padding: 25px; background: #0d1117; border: 1px solid var(--accent);">
     <div style="display: grid; grid-template-columns: 1.8fr 1fr; gap: 40px; min-height: 70vh;">
         
         <div id="binderContainer" style="border-right: 1px solid var(--border); padding-right: 20px;">
@@ -559,21 +559,22 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div class="card" style="background: #000; border: 1px solid var(--green); margin:0;">
+            
+            <div class="card" style="background: #000; border: 1px solid var(--green); margin:0; padding: 20px;">
                 <h4 style="color:var(--green); margin:0;"><i class="fas fa-calendar-day"></i> DAILY REWARDS</h4>
-                <p style="font-size: 0.7rem; color: var(--text-dim);">Collect a random Warrior every 24h.</p>
+                <p style="font-size: 0.7rem; color: var(--text-dim); margin: 10px 0;">Collect a random Warrior every 24h.</p>
                 <button class="btn-zk" style="background:var(--green); color:black;" onclick="claimDailyWarrior()">COLLECT PACK</button>
             </div>
             
-            <div class="card" style="background: #000; border: 1px solid var(--accent); margin:0;">
+            <div class="card" style="background: #000; border: 1px solid var(--accent); margin:0; padding: 20px;">
                 <h4 style="color:var(--accent); margin:0;"><i class="fas fa-shopping-cart"></i> UPGRADE STORE</h4>
-                <p style="font-size: 0.7rem; color: var(--text-dim);">Buy premium Booster Packs with LCAI.</p>
+                <p style="font-size: 0.7rem; color: var(--text-dim); margin: 10px 0;">Buy premium Booster Packs with LCAI.</p>
                 <button class="btn-zk" onclick="showView('marketView')">OPEN STORE</button>
             </div>
 
-            <div class="card" style="background: #000; border: 1px solid var(--red); margin:0;">
+            <div class="card" style="background: #000; border: 1px solid var(--red); margin:0; padding: 20px;">
                 <h4 style="color:var(--red); margin:0;"><i class="fas fa-hammer"></i> THE FORGE</h4>
-                <p style="font-size: 0.7rem; color: var(--text-dim);">Combine duplicates to evolve stats.</p>
+                <p style="font-size: 0.7rem; color: var(--text-dim); margin: 10px 0;">Combine duplicates to evolve stats.</p>
                 <button class="btn-zk" style="background:var(--red); color:white;" onclick="showForge()">ENTER FORGE</button>
             </div>
         </div>
@@ -2551,7 +2552,9 @@ function openWalletWarriors() {
 async function syncTCGBinder() {
     const grid = document.getElementById('binderGrid');
     const starterArea = document.getElementById('starterPackArea');
-    grid.innerHTML = '<p style="color:var(--accent)">Scanning Soul-Prints...</p>';
+
+    
+    grid.innerHTML = '<p style="color:var(--accent); text-align:center; width:100%;">Syncing Warrior Soul-Prints...</p>';
 
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
@@ -2565,7 +2568,7 @@ async function syncTCGBinder() {
         // 2. Fetch Collection
         const balance = await contract.balanceOf(userWallet);
         if (balance == 0) {
-            grid.innerHTML = '<div style="grid-column: 1/-1; opacity:0.4; text-align:center; padding:40px;">Binder Empty. Claim your starter pack above!</div>';
+            grid.innerHTML = '<div style="grid-column: 1/-1; opacity:0.5; text-align:center; padding:50px;">Binder Empty. Click "Claim Starter Pack" to begin.</div>';
             return;
         }
 
@@ -2636,6 +2639,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
