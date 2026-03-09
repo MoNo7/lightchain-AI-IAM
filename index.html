@@ -1308,7 +1308,7 @@ async function generateAIVMArt() {
     const encodedPrompt = encodeURIComponent(promptInput);
     const seed = Math.floor(Math.random() * 1000000);
     const timestamp = Date.now();
-    const aiImageUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true&t=${timestamp}`;    // 2. UI Reset & Force Clear Placeholder
+    const aiImageUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true&t=${Date.now()}`;
     document.getElementById('renderLoader').style.display = 'block';
     document.getElementById('saveArtBtn').style.display = 'none';
     
@@ -1882,6 +1882,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
