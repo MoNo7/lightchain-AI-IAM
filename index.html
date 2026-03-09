@@ -228,6 +228,39 @@
         
         .blink-add { animation: pulse-green 1.5s ease-out; }
         .blink-sub { animation: pulse-red 1.5s ease-out; }
+
+        /* Game Takeover Navigation */
+        .game-nav {
+            display: none; /* Hidden by default */
+            background: #000;
+            border-bottom: 2px solid var(--accent);
+            height: 60px;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+        }
+        
+        .game-nav .nav-btn {
+            color: var(--accent);
+            font-family: 'monospace';
+            text-transform: uppercase;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            padding: 5px 15px;
+            transition: 0.3s;
+        }
+        
+        .game-nav .nav-btn:hover {
+            background: rgba(0, 242, 255, 0.1);
+            box-shadow: 0 0 10px var(--accent);
+        }
+        
     </style>
 </head>
 <body>
@@ -258,6 +291,12 @@
     </nav>
 
     <div class="workspace">
+        <div id="gameNavigation" class="game-nav">
+            <div class="nav-btn" onclick="startNewWarriorGame()">Start Game</div>
+            <div class="nav-btn" onclick="continueWarriorGame()">Continue</div>
+            <div class="nav-btn" onclick="openGameSettings()">Settings</div>
+            <div class="nav-btn" style="color:var(--red)" onclick="exitGateway()">Exit</div>
+        </div>
         <header>
             <div class="pill-group">
                 <div class="pill">NETWORK: <span style="color:var(--green)">● ONLINE</span></div>
@@ -2404,27 +2443,48 @@ async function resignMatch() {
         log("[ERROR] Resignation failed: " + e.message);
     }
 }
-        function openWalletWarriors() {
+
+
+function openWalletWarriors() {
     if (!isRegistered) {
-        log("[ACCESS DENIED] Mint a Battle Passport (SBT) in zk-Identity first.");
+        log("[ACCESS DENIED] Mint a Battle Passport (SBT) first.");
         showView('zkView');
         return;
     }
-    
-    log(`[TCG] Accessing Passport for: ${userWallet.slice(0,10)}...`);
-    
-    // Switch to a new TCG specific view
-    // showView('tcgBinderView'); 
-    
-    // For now, we trigger a "Loading Stack" simulation
-    log("[AIVM] Synchronizing Card Stack with Lightchain Testnet...");
+
+    // 1. Hide the Sidebar and the System Header
+    document.querySelector('nav').style.display = 'none';
+    document.querySelector('header').style.display = 'none';
+
+    // 2. Show the Game Navigation and set background to full black
+    document.getElementById('gameNavigation').style.display = 'flex';
+    document.querySelector('.workspace').style.background = '#000';
+
+    // 3. Switch to the TCG View
+    showView('tcgBinderView'); // Ensure you have this container in your HTML
+    log(`[TCG] Full Immersion Mode Active for: ${userWallet.slice(0,10)}`);
 }
 
+
+function exitGateway() {
+    // 1. Restore the Sidebar and System Header
+    document.querySelector('nav').style.display = 'flex';
+    document.querySelector('header').style.display = 'flex';
+
+    // 2. Hide the Game Navigation
+    document.getElementById('gameNavigation').style.display = 'none';
+    document.querySelector('.workspace').style.background = '#050608';
+
+    // 3. Return to the Arcade menu
+    showView('arcadeView');
+    log("[TCG] Exited Gateway. Returning to AIVM Arcade.");
+}
         
         
     </script>
 </body>
 </html>
+
 
 
 
