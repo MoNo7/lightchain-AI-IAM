@@ -1004,16 +1004,17 @@ async function renderAuctions() {
     activeAuctions.forEach((auc, i) => {
         grid.innerHTML += `
             <div class="card">
-                <div class="art-container"> <img src="${auc.img}" style="width:100%; border-radius:8px;">
-                    <div class="ui-watermark">AIVM MARKET VERIFIED</div>
-                </div>
-                <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="color:var(--accent); font-weight:bold;">${auc.price} LCAI</span>
-                    <div style="display:flex; gap:5px;">
-                        <button class="pill btn-info-black" onclick="showMarketInfo(${i})">INFO</button>
-                        <button class="pill" onclick="placeBid(${auc.id})">BID</button>
-                    </div>
-                </div>
+                <div class="art-container" style="position:relative;">
+                <img src="${auc.img}" style="width:100%; border-radius:8px;">
+                <div class="ui-watermark" style="position:absolute; bottom:10px; left:10px; font-size:10px; color:rgba(0,242,255,0.5); pointer-events:none;">AIVM MARKET VERIFIED</div>
+            </div>
+            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--accent); font-weight:bold;">${auc.price} LCAI</span>
+                <div style="display:flex; gap:5px;">
+                    <button class="pill btn-info-black" onclick="showMarketInfo(${i})">INFO</button>
+                    <button class="pill" onclick="placeBid(${auc.id})">BID</button>
+            </div>
+        </div>
             </div>`;
     });
 
@@ -1886,6 +1887,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
