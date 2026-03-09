@@ -546,39 +546,38 @@
                 </div>
             </div>
 
-<div id="tcgBinderView" class="view-section" style="display:none; padding: 20px; background: #000;">
-    <div style="display: grid; grid-template-columns: 1.8fr 1fr; gap: 40px; min-height: 80vh;">
+<div id="tcgBinderView" class="card view-section" style="display:none; margin-top: 80px; padding: 25px; background: #0d1117;">
+    <div style="display: grid; grid-template-columns: 1.8fr 1fr; gap: 40px; min-height: 70vh;">
         
         <div id="binderContainer" style="border-right: 1px solid var(--border); padding-right: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="color:var(--accent); margin:0;"><i class="fas fa-book-open"></i> WARRIOR BINDER</h3>
-                <div id="starterPackArea"></div> </div>
-            <div id="binderGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 25px;">
+                <div id="starterPackArea"></div>
+            </div>
+            <div id="binderGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 25px;">
                 </div>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 20px;">
-            
-            <div class="card" style="background: #0a0c10; border: 1px solid var(--green); position: relative;">
-                <div style="font-size: 0.6rem; color: var(--green); margin-bottom: 5px;">24H COOLDOWN</div>
-                <h4 style="margin:5px 0;"><i class="fas fa-calendar-day"></i> DAILY REWARDS</h4>
-                <p style="font-size: 0.7rem; color: var(--text-dim);">Claim 1 randomized Warrior card every 24 hours.</p>
-                <button class="btn-zk" style="background:var(--green); color:black;" onclick="claimDailyWarrior()">COLLECT DAILY PACK</button>
+            <div class="card" style="background: #000; border: 1px solid var(--green); margin:0;">
+                <h4 style="color:var(--green); margin:0;"><i class="fas fa-calendar-day"></i> DAILY REWARDS</h4>
+                <p style="font-size: 0.7rem; color: var(--text-dim);">Collect a random Warrior every 24h.</p>
+                <button class="btn-zk" style="background:var(--green); color:black;" onclick="claimDailyWarrior()">COLLECT PACK</button>
             </div>
             
-            <div class="card" style="background: #0a0c10; border: 1px solid var(--accent);">
-                <h4 style="margin:5px 0;"><i class="fas fa-shopping-cart"></i> UPGRADE STORE</h4>
-                <p style="font-size: 0.7rem; color: var(--text-dim);">Buy premium Booster Packs for high-stat rolls.</p>
+            <div class="card" style="background: #000; border: 1px solid var(--accent); margin:0;">
+                <h4 style="color:var(--accent); margin:0;"><i class="fas fa-shopping-cart"></i> UPGRADE STORE</h4>
+                <p style="font-size: 0.7rem; color: var(--text-dim);">Buy premium Booster Packs with LCAI.</p>
                 <button class="btn-zk" onclick="showView('marketView')">OPEN STORE</button>
             </div>
 
-            <div class="card" style="background: #0a0c10; border: 1px solid var(--red);">
-                <h4 style="margin:5px 0;"><i class="fas fa-hammer"></i> THE FORGE</h4>
-                <p style="font-size: 0.7rem; color: var(--text-dim);">Combine duplicates to evolve rarity and stats.</p>
+            <div class="card" style="background: #000; border: 1px solid var(--red); margin:0;">
+                <h4 style="color:var(--red); margin:0;"><i class="fas fa-hammer"></i> THE FORGE</h4>
+                <p style="font-size: 0.7rem; color: var(--text-dim);">Combine duplicates to evolve stats.</p>
                 <button class="btn-zk" style="background:var(--red); color:white;" onclick="showForge()">ENTER FORGE</button>
             </div>
-
         </div>
+
     </div>
 </div>
 
@@ -2527,20 +2526,25 @@ function openWalletWarriors() {
         return;
     }
 
-    // 1. Hide the Sidebar and the System Header
-    document.querySelector('nav').style.display = 'none';
-    document.querySelector('header').style.display = 'none';
+    // Use specific selectors to ensure UI disappears
+    const nav = document.querySelector('nav');
+    const header = document.querySelector('header');
+    if (nav) nav.style.setProperty('display', 'none', 'important');
+    if (header) header.style.setProperty('display', 'none', 'important');
 
-    // 2. Show the Game Navigation and set background to full black
+    // Show the game navigation bar
     document.getElementById('gameNavigation').style.display = 'flex';
-    document.querySelector('.workspace').style.background = '#000';
+    document.querySelector('.workspace').style.background = '#050608'; // Restore slightly lighter background
 
-    // 3. Launch the TCG Binder View
-    showView('tcgBinderView'); 
+    showView('tcgBinderView');
     
-    // 4. Load the user's collection from the blockchain
-    syncTCGBinder();
-
+    // Safety check for sync
+    if (userWallet) {
+        syncTCGBinder();
+    } else {
+        log("[TCG] Error: Wallet not connected. Please connect to see your collection.");
+    }
+    
     log(`[TCG] Gateway Initialized. Welcome back, Warrior.`);
 }
 
@@ -2632,6 +2636,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
