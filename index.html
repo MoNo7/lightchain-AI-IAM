@@ -1340,8 +1340,8 @@ img.src = aiImageUrl;
         // 4. The Sync Buffer (Wait 1.5s for GPU)
         setTimeout(() => {
             const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = 512; tempCanvas.height = 512;
-            tempCanvas.getContext('2d').drawImage(canvas, 0, 0, 512, 512);
+            tempCanvas.width = 400; tempCanvas.height = 400;
+            tempCanvas.getContext('2d').drawImage(canvas, 0, 0, 400, 400);
 
             currentArtData = tempCanvas.toDataURL('image/jpeg', 0.1);
 
@@ -1881,6 +1881,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
