@@ -1384,9 +1384,22 @@ async function generateAIVMArt() {
             document.getElementById('renderLoader').style.display = 'none';
         
             setTimeout(() => {
-                currentArtData = mainCanvas.toDataURL('image/jpeg', 0.4);        
+                // 1. Create a hidden 512x512 scaling canvas
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = 512; 
+                tempCanvas.height = 512;
+                
+                // 2. Draw the 1024x1024 art down to 512x512
+                tempCtx.fillStyle = "#FFFFFF";
+                tempCtx.fillRect(0, 0, 512, 512);
+                tempCtx.drawImage(mainCanvas, 0, 0, 512, 512);
+                
+                // 3. Capture the smaller string (Quality 0.5 is now safe!)
+                currentArtData = tempCanvas.toDataURL('image/jpeg', 0.5); 
+                
                 document.getElementById('saveArtBtn').style.display = 'block';
-                log("[AIVM] Render Success. JPEG optimized for Lightchain.");
+                log("[AIVM] Render Success. Resized to 512x512 for Gas Efficiency.");
             }, 100);
         };
                 
@@ -1922,6 +1935,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
