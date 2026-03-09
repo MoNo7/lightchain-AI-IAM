@@ -1388,18 +1388,24 @@ async function generateAIVMArt() {
                 setTimeout(() => {
                     const tempCanvas = document.createElement('canvas');
                     const tempCtx = tempCanvas.getContext('2d');
-                    tempCanvas.width = 400; tempCanvas.height = 400;
+                    tempCanvas.width = 512; tempCanvas.height = 512;
                     
                     tempCtx.fillStyle = "#FFFFFF";
-                    tempCtx.fillRect(0, 0, 400, 400);
-                    tempCtx.drawImage(mainCanvas, 0, 0, 400, 400);
-                    
+                    tempCtx.fillRect(0, 0, 512, 512);
+                    tempCtx.drawImage(mainCanvas, 0, 0, 512, 512);
+
+                    const testData = tempCtx.getImageData(100, 100, 1, 1).data;
+                    if (testData[0] === 255 && testData[1] === 255 && testData[2] === 255) {
+                        log("[AIVM ERROR] Canvas still white. Retrying sync...");
+                        return; 
+                    }
+                   
                     // 4. Update the global data variable
-                    currentArtData = tempCanvas.toDataURL('image/jpeg', 0.3); 
+                    currentArtData = tempCanvas.toDataURL('image/jpeg', 0.4); 
                     
                     document.getElementById('saveArtBtn').style.display = 'block';
                     log("[AIVM] Pixels Verified. Capture for Token #8 is Ready.");
-                }, 1200);
+                }, 1500);
             });
         };
                 
@@ -1937,6 +1943,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
