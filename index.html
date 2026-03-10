@@ -607,6 +607,9 @@
     </div>
 
     <script>
+window.hasInitializedData = false;
+let isSigning = false;
+        
 let currentArtData = "";
 const LCAI_TOKEN = "0x9ca8530ca349c966fe9ef903df17a75b8a778927"; // Lightchain AI
 const WETH_TOKEN = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // Wrapped Ethereum
@@ -1126,13 +1129,27 @@ async function checkRegistrationStatus(addr, contract) {
 
         if (isVerified && nick) {
             isRegistered = true;
+
+            
             const authStep = document.getElementById('authStep');
             const mintSection = document.getElementById('mintSection');
             if (authStep) authStep.style.display = 'none';
             if (mintSection) mintSection.style.display = 'none';
 
             
-            log(`[IAM] Identity Found: ${nick}. Transitioning to Passport...`);
+            log(`[IAM] Identity Found: ${nick}.`);
+            // THE GUARD: Only run this once!
+            if (!window.hasInitializedData && !isSigning) {
+                window.hasInitializedData = true; // Lock it immediately
+                
+                getEncryptionKey().then((key) => {
+                    if (key) {
+                        loadGallery();
+                        syncMarketplace();
+                    }
+                });
+            }
+           
             getEncryptionKey();
             startMarketplaceSync();
             // 1. Force hide registration boxes
@@ -1224,6 +1241,79 @@ async function renderPassport(addr, nick, contract) {
     } catch (e) {
         console.error("Passport Render Error:", e);
         log("Error: Failed to fetch on-chain identity assets.");
+    }
+}
+
+async function syncMarketplace() {
+    const grid = document.getElementById('auctionGrid');
+    if (!grid) return;
+
+    // 1. Safety Guards: Prevent the 'null' target crash
+    if (!userWallet || !ethers.isAddress(userWallet)) return;
+    if (!CONFIG.auctionHouse || !ethers.isAddress(CONFIG.auctionHouse)) {
+        console.warn("[MARKET] Invalid AuctionHouse address in CONFIG.");
+        return;
+    }
+
+    grid.innerHTML = '<p style="color:var(--accent)">Scanning Chain for Active Bids...</p>';
+
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const marketContract = new ethers.Contract(CONFIG.auctionHouse, CONFIG.abi, provider);
+        const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
+
+        let html = "";
+        let count = 0;
+
+        // 2. Discovery Loop (Scanning IDs 0-25)
+        // Since totalSupply() is missing, we check the marketplace mapping for each ID
+        for (let i = 0; i < 25; i++) {
+            try {
+                // Check the 'auctions' mapping in your contract
+                // Expected return: [nftContract, startingPrice, highestBid, highestBidder, endTime, active]
+                const data = await marketContract.auctions(CONFIG.artStudio, i);
+
+                if (data.active) {
+                    count++;
+                    const uri = await artContract.tokenURI(i);
+                    
+                    // 3. Decrypt the URI for the Marketplace Display
+                    let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
+                    
+                    const currentPrice = ethers.formatEther(data.highestBid > 0 ? data.highestBid : data.startingPrice);
+
+                    html += `
+                        <div class="card" style="border:1px solid var(--accent); margin-bottom:15px; background:var(--sidebar);">
+                            <div class="art-container" style="position:relative;">
+                                <img src="${imgData}" style="width:100%; border-radius:8px;">
+                                <div class="ui-watermark">AIVM MARKET VERIFIED</div>
+                            </div>
+                            <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-size:1.1rem; color:var(--green); font-weight:bold; font-family:monospace;">${currentPrice} LCAI</div>
+                                    <div style="font-size:0.6rem; color:var(--text-dim);">TOKEN ID: #${i}</div>
+                                </div>
+                                <button class="pill" onclick="placeBid(${i}, '${currentPrice}')" 
+                                        style="background:var(--accent); color:#000; border:none; padding:8px 15px; font-weight:bold; cursor:pointer;">
+                                    PLACE BID
+                                </button>
+                            </div>
+                        </div>`;
+                }
+            } catch (e) {
+                // If the mapping call fails for an ID, skip it
+                continue;
+            }
+        }
+
+        grid.innerHTML = count > 0 ? html : '<div id="auctionEmpty" style="grid-column:1/-1; text-align:center; padding:40px; border:1px dashed var(--border);">No active on-chain auctions.</div>';
+        log(`[MARKET] Sync Complete. ${count} auctions found.`);
+        window.marketplaceSynced = true;
+
+    } catch (err) {
+        console.error("Marketplace Sync Error:", err);
+        grid.innerHTML = '<p style="color:var(--red)">Failed to sync with Auction House.</p>';
+        log("[ERROR] Marketplace communication interrupted.");
     }
 }
 
@@ -2093,30 +2183,20 @@ function updateRevenueDisplay() {
         }
 
 async function loadGallery() {
-          
-            const container = document.getElementById('galleryGrid');
-                if (!userWallet) return container.innerHTML = "Connect wallet to view gallery.";
+const grid = document.getElementById('galleryGrid');
+    if (!grid || !userWallet || !userEncryptionKey) return;
 
-           		 // CRITICAL: Clear the container first to prevent double-rendering
-          		  container.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Syncing with Lightchain AIVM...</div>';
+           		  container.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Syncing with Lightchain AIVM...</div>';
 
                 try {
                     const provider = new ethers.BrowserProvider(window.ethereum);
-                    const artContract = new ethers.Contract(CONFIG.artStudio, [
-                        "function balanceOf(address owner) view returns (uint256)",
-                        "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
-                        "function tokenURI(uint256 tokenId) view returns (string)"
-                    ], provider);
+                    const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
+        
+                    grid.innerHTML = ""; 
+                    let foundAny = false;
 
-                    const balance = await artContract.balanceOf(userWallet);
-                    container.innerHTML = ""; 
-
-                    if (balance == 0) {
-                        container.innerHTML = '<p style="color:var(--text-dim)">No NFTs found in this wallet.</p>';
-                        return;
-                    }
-
-        for (let i = 0; i < balance; i++) {
+        for (let i = 0; i < 25; i++) {
+            try {
             const tokenId = await artContract.tokenOfOwnerByIndex(userWallet, i);
             const uri = await artContract.tokenURI(tokenId);
         
@@ -2124,7 +2204,12 @@ async function loadGallery() {
             let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
         
             // Use imgData in your HTML template below
-            grid.innerHTML += `<img src="${imgData}" ...>`;
+            grid.innerHTML += `
+                        <div class="gallery-card" style="border:1px solid var(--border); padding:10px; border-radius:8px; margin-bottom:10px;">
+                            <img src="${imgData}" style="width:100%; border-radius:4px;">
+                            <div style="margin-top:8px; font-size:0.7rem; color:var(--accent);">TOKEN #${i}</div>
+                        </div>`;
+                
 
             // Decrypt art logic here...
                 if(!window.userGallery) window.userGallery = [];
@@ -2144,7 +2229,13 @@ async function loadGallery() {
                             <button class="btn-zk" onclick="listInAuction(${tokenId})" style="width:100%; margin-top:8px; text-align:center;">LIST FOR SALE</button>
                         </div>`;
           			  container.insertAdjacentHTML('beforeend', card);
-      			  }
+      			  
+        } catch (e) {
+            // Token ID doesn't exist yet, just skip to the next one safely
+            continue; 
+        }
+        }
+                    
 } catch (e) {
         console.error(e);
         log("[ERROR] Failed to scan the Gallery vault.");
@@ -2747,6 +2838,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
