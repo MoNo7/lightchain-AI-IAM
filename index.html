@@ -2093,7 +2093,7 @@ function updateRevenueDisplay() {
         }
 
 async function loadGallery() {
-          let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
+          
             const container = document.getElementById('galleryGrid');
                 if (!userWallet) return container.innerHTML = "Connect wallet to view gallery.";
 
@@ -2119,6 +2119,7 @@ async function loadGallery() {
                     for (let i = 0; i < balance; i++) {
                         const tokenId = await artContract.tokenOfOwnerByIndex(userWallet, i);
                         const uri = await artContract.tokenURI(tokenId);
+                        let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
 
             // Decrypt art logic here...
                 if(!window.userGallery) window.userGallery = [];
@@ -2741,6 +2742,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
