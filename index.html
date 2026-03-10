@@ -2254,6 +2254,7 @@ async function listInAuction(tokenId) {
         let lastBalance = null; // Global tracker
     
         async function syncBalance(addr) {
+            if (!addr || !ethers.isAddress(addr)) return;
             try {
                 const provider = new ethers.JsonRpcProvider("https://light-testnet-rpc.lightchain.ai");
                 const balanceWei = await provider.getBalance(addr);
@@ -2715,6 +2716,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
