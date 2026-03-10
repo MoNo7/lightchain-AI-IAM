@@ -700,7 +700,11 @@ async function getEncryptionKey() {
         const signature = await signer.signMessage("Unlock Lightchain AIVM Private Gallery");
         
         // Hash it so we have a clean 256-bit AES key
-        userEncryptionKey = CryptoJS.SHA256(signature).toString();
+        //userEncryptionKey = CryptoJS.SHA256(signature).toString();
+        userEncryptionKey = ethers.utils.keccak256(signature);
+
+        loadGallery();
+        syncMarketplace();
         return userEncryptionKey;
     } catch (e) {
         log("Encryption signature rejected.");
@@ -2699,6 +2703,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
