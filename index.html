@@ -2052,24 +2052,21 @@ async function mintWithSocial() {
         }
 
 async function loadGallery() {
-        const container = document.getElementById('galleryGrid');
-    if (!container || !userWallet) return;
-
-    // Clear grid to prevent double-display and reset tracking
-    container.innerHTML = ""; 
-    window.userGallery = []; 
+const grid = document.getElementById('galleryGrid');
+    // Clear the "will appear here" text
+    grid.innerHTML = '<p style="color:var(--accent)">Decrypting Vault...</p>';
 
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const artContract = new ethers.Contract(CONFIG.artStudio, [
-            "function balanceOf(address) view returns (uint256)",
-            "function tokenOfOwnerByIndex(address, uint256) view returns (uint256)",
-            "function tokenURI(uint256) view returns (string)"
+            "function totalSupply() view returns (uint256)",
+            "function tokenURI(uint256) view returns (string)",
+            "function ownerOf(uint256) view returns (address)"
         ], provider);
 
-        const balance = await artContract.balanceOf(userWallet);
-        if (balance == 0) {
-            container.innerHTML = '<p style="grid-column:1/-1; text-align:center;">No NFTs found.</p>';
+        const total = await artContract.totalSupply();
+        if (total == 0) {
+            grid.innerHTML = "<p>Gallery is empty.</p>";
             return;
         }
 
@@ -2542,6 +2539,10 @@ if (!isRegistered) {
         return;
     }
 
+    // 1. Hide the Portal UI
+    document.querySelector('nav').style.display = 'none';
+    document.querySelector('header').style.display = 'none';
+
     // Hide the portal's sidebar and top header for "Full Immersion"
     const nav = document.querySelector('nav');
     const header = document.querySelector('header');
@@ -2554,7 +2555,8 @@ if (!isRegistered) {
 
     // CALL THE VIEW
     showView('tcgBinderView');
-    
+    const binder = document.getElementById('tcgBinderView');
+    if (binder) binder.style.display = 'block';
     // Sync the blockchain cards
     syncTCGBinder();
     log(`[TCG] Gateway Initialized. Good luck, Warrior.`);
@@ -2692,6 +2694,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
