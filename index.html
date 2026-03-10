@@ -2599,25 +2599,6 @@ const grid = document.getElementById('binderGrid');
     const starterArea = document.getElementById('starterPackArea');
 
     
-    grid.innerHTML = '<p style="color:var(--accent); text-align:center; width:100%;">Syncing Warrior Soul-Prints...</p>';
-
-    try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const contract = new ethers.Contract(CONFIG.warriorCards, WARRIOR_ABI, provider);
-
-        // 1. Check Starter Pack Status
-        const hasClaimed = await contract.hasClaimedStarter(userWallet);
-        starterArea.innerHTML = hasClaimed ? "" : 
-            `<button class="pill" style="background:var(--accent); color:black;" onclick="claimStarter()">🎁 CLAIM STARTER PACK</button>`;
-
-        // 2. Fetch Collection
-        const balance = await contract.balanceOf(userWallet);
-        if (balance == 0) {
-            grid.innerHTML = '<div style="grid-column: 1/-1; opacity:0.5; text-align:center; padding:50px;">Binder Empty. Click "Claim Starter Pack" to begin.</div>';
-            return;
-        }
-
-        grid.innerHTML = ""; 
         for (let i = 0; i < balance; i++) {
             const tokenId = await contract.tokenOfOwnerByIndex(userWallet, i);
             const s = await contract.warriorStats(tokenId); 
@@ -2665,6 +2646,7 @@ async function executeForge() {
         syncTCGBinder();
     } catch (e) {
         log(`[FORGE ERROR] ${e.message}`);
+        alert("Forge failed. Ensure you own both IDs and they are the same rarity.");
     }
 }
 
@@ -2711,5 +2693,6 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
