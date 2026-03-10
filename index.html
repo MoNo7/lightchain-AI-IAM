@@ -2194,48 +2194,40 @@ const grid = document.getElementById('galleryGrid');
         
                     grid.innerHTML = ""; 
                     let foundAny = false;
+                    window.userGallery = [];
 
         for (let i = 0; i < 25; i++) {
             try {
-            const tokenId = await artContract.tokenOfOwnerByIndex(userWallet, i);
-            const uri = await artContract.tokenURI(tokenId);
-        
+                const owner = await artContract.ownerOf(i);
+                
+                if (owner.toLowerCase() === userWallet.toLowerCase()) {
+                    foundAny = true;
+                    const uri = await artContract.tokenURI(i);
             // DECRYPTION ASSIGNMENT:
             let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
-        
-            // Use imgData in your HTML template below
-            grid.innerHTML += `
-                        <div class="gallery-card" style="border:1px solid var(--border); padding:10px; border-radius:8px; margin-bottom:10px;">
-                            <img src="${imgData}" style="width:100%; border-radius:4px;">
-                            <div style="margin-top:8px; font-size:0.7rem; color:var(--accent);">TOKEN #${i}</div>
-                        </div>`;
-                
 
-            // Decrypt art logic here...
-                if(!window.userGallery) window.userGallery = [];
-                    window.userGallery[i] = { id: tokenId, uri: uri };
-                    // STEP 2: RENDER CARD WITH CENTERED TEXT & UI WATERMARK
-                    const card = `
-                        <div class="gallery-card" style="display:flex; flex-direction:column; align-items:center;">
+            window.userGallery.push({ id: i, uri: uri });
+        
+           html += `
+                        <div class="gallery-card" style="display:flex; flex-direction:column; align-items:center; border:1px solid var(--border); padding:10px; border-radius:12px;">
                             <div class="art-container" style="position:relative; width:100%;">
                                 <img src="${imgData}" style="width:100%; border-radius:8px;">
                                 <div class="ui-watermark">AIVM AUTHENTICATED</div>
                             </div>
-                            <div class="gallery-controls" style="width:100%; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:10px;">
-                                <button class="pill" onclick="mintFromGallery(${tokenId})" style="background:var(--green); color:#000; text-align:center;">MINT</button>
-                                <button class="pill btn-info-black" onclick="showArtInfo(${i})" style="text-align:center;">INFO</button>
-                                <button class="pill" onclick="burnArt(${tokenId})" style="background:var(--red); text-align:center;">BURN</button>
+                            <div style="margin-top:10px; font-size:0.7rem; color:var(--accent);">TOKEN #${i}</div>
+                            <div class="gallery-controls" style="width:100%; display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;">
+                                <button class="pill" onclick="mintFromGallery(${i})" style="background:var(--green); color:#000;">MINT</button>
+                                <button class="pill btn-info-black" onclick="showArtInfo(${window.userGallery.length - 1})">INFO</button>
                             </div>
-                            <button class="btn-zk" onclick="listInAuction(${tokenId})" style="width:100%; margin-top:8px; text-align:center;">LIST FOR SALE</button>
+                            <button class="btn-zk" onclick="listInAuction(${i})" style="width:100%; margin-top:8px;">LIST FOR SALE</button>
                         </div>`;
-          			  container.insertAdjacentHTML('beforeend', card);
       			  
         } catch (e) {
             // Token ID doesn't exist yet, just skip to the next one safely
             continue; 
         }
         }
-                    
+     grid.innerHTML = foundAny ? html : "<p style='color:var(--text-dim); text-align:center; width:100%;'>No Art found in your vault.</p>";               
 } catch (e) {
         console.error(e);
         log("[ERROR] Failed to scan the Gallery vault.");
@@ -2838,6 +2830,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
