@@ -2564,6 +2564,7 @@ async function makeAIVMMove() {
     updateChessStatus(`AIVM THINKING (${currentDifficulty})...`);
 
     try {
+        const authHeaders = await getAuthHeaders();
         const response = await fetch('https://api.lightchain.ai/v1/inference/chess', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2574,13 +2575,22 @@ async function makeAIVMMove() {
                 wallet: userWallet
             })
         });
-        
-        const result = await response.json();
-        game.move(result.move, { sloppy: true });
-        board.position(game.fen());
-        localStorage.setItem('lcai_chess_fen', game.fen());
 
-        checkGameOver();
+        if (response.status === 401) {
+            log("[AIVM] Auth Failed. Re-signing session...");
+            userEncryptionKey = null; // Reset and try again
+            await getEncryptionKey();
+            return makeAIVMMove(); // Retry once
+        }
+        
+    const result = await response.json();
+        if (result.move) {
+            game.move(result.move, { sloppy: true });
+            board.position(game.fen());
+            localStorage.setItem('lcai_chess_fen', game.fen());
+            updateChessStatus("YOUR MOVE");
+            checkGameOver();
+        }
     } catch (e) {
        // log("[AIVM ERROR] Neural link timeout. Using local fallback.");
         // Fallback to random if testnet latency is high
@@ -2807,6 +2817,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
