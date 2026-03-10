@@ -2075,11 +2075,7 @@ async function loadGallery() {
     window.userGallery = [];
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
-        const artContract = new ethers.Contract(CONFIG.artStudio, [
-            "function totalSupply() view returns (uint256)",
-            "function tokenURI(uint256) view returns (string)",
-            "function ownerOf(uint256) view returns (address)"
-        ], provider);
+        const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
 
         const total = await artContract.totalSupply();
         if (total == 0) {
@@ -2715,6 +2711,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
