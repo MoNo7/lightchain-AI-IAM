@@ -1246,40 +1246,26 @@ async function renderPassport(addr, nick, contract) {
 
 async function syncMarketplace() {
     const grid = document.getElementById('auctionGrid');
-    if (!grid) return;
-
-    // 1. Safety Guards: Prevent the 'null' target crash
-    if (!userWallet || !ethers.isAddress(userWallet)) return;
-    if (!CONFIG.auctionHouse || !ethers.isAddress(CONFIG.auctionHouse)) {
-        console.warn("[MARKET] Invalid AuctionHouse address in CONFIG.");
-        return;
-    }
-
-    grid.innerHTML = '<p style="color:var(--accent)">Scanning Chain for Active Bids...</p>';
+    if (!grid || !userWallet) return;
 
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
-        const marketContract = new ethers.Contract(CONFIG.auctionHouse, CONFIG.abi, provider);
-        const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
+        const marketContract = new ethers.Contract(CONFIG.auctionHouse, [
+            "function auctions(address, uint256) view returns (address nftContract, uint256 startingPrice, uint256 highestBid, address highestBidder, uint256 endTime, bool active)"
+        ], provider);
+        const artContract = new ethers.Contract(CONFIG.artStudio, ["function tokenURI(uint256) view returns (string)"], provider);
 
         let html = "";
         let count = 0;
 
-        // 2. Discovery Loop (Scanning IDs 0-25)
-        // Since totalSupply() is missing, we check the marketplace mapping for each ID
-        for (let i = 0; i < 25; i++) {
+        // Scan the last 50 potential IDs
+        for (let i = 0; i < 50; i++) {
             try {
-                // Check the 'auctions' mapping in your contract
-                // Expected return: [nftContract, startingPrice, highestBid, highestBidder, endTime, active]
                 const data = await marketContract.auctions(CONFIG.artStudio, i);
-
                 if (data.active) {
                     count++;
                     const uri = await artContract.tokenURI(i);
-                    
-                    // 3. Decrypt the URI for the Marketplace Display
                     let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
-                    
                     const currentPrice = ethers.formatEther(data.highestBid > 0 ? data.highestBid : data.startingPrice);
 
                     html += `
@@ -1299,12 +1285,12 @@ async function syncMarketplace() {
                                 </button>
                             </div>
                         </div>`;
-                }
-            } catch (e) {
-                // If the mapping call fails for an ID, skip it
-                continue;
-            }
+                 }
+            } catch (e) { continue; }
         }
+        grid.innerHTML = count > 0 ? html : '<div style="grid-column:1/-1; text-align:center;">No active on-chain auctions.</div>';
+    } catch (err) { console.error(err); }
+}
 
         grid.innerHTML = count > 0 ? html : '<div id="auctionEmpty" style="grid-column:1/-1; text-align:center; padding:40px; border:1px dashed var(--border);">No active on-chain auctions.</div>';
         log(`[MARKET] Sync Complete. ${count} auctions found.`);
@@ -2190,58 +2176,50 @@ async function loadGallery() {
 
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
-        
-        // FIX 2: Use an inline ABI that explicitly includes tokenURI and ownerOf
+        // Ensure we use the ArtStudio address from your CONFIG
         const artContract = new ethers.Contract(CONFIG.artStudio, [
             "function ownerOf(uint256 tokenId) view returns (address)",
-            "function tokenURI(uint256 tokenId) view returns (string)"
+            "function tokenURI(uint256 tokenId) view returns (string)",
+            "function totalSupply() view returns (uint256)" // Added for better scaling
         ], provider);
 
-        grid.innerHTML = "";
+        // Try to get actual total, fallback to 100 to ensure we find minted items
+        let maxSearch = 100; 
+        try { maxSearch = await artContract.totalSupply(); } catch(e) { maxSearch = 100; }
+
+        let html = "";
         let foundAny = false;
-        window.userGallery = [];
+        window.userGallery = [
         
         // FIX 1: Declare the html variable!
-        let html = ""; 
-
-        for (let i = 0; i < 25; i++) {
+        let html = "";
+        
+for (let i = 0; i < maxSearch; i++) {
             try {
                 const owner = await artContract.ownerOf(i);
-
                 if (owner.toLowerCase() === userWallet.toLowerCase()) {
                     foundAny = true;
                     const uri = await artContract.tokenURI(i);
-                    
-                    // DECRYPTION ASSIGNMENT:
                     let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
-                    window.userGallery.push({ id: i, uri: uri });
+                    
+                    window.userGallery.push({ id: i, uri: uri, data: imgData });
 
                     html += `
-                    <div class="gallery-card" style="display:flex; flex-direction:column; align-items:center; border:1px solid var(--border); padding:10px; border-radius:12px;">
-                        <div class="art-container" style="position:relative; width:100%;">
-                            <img src="${imgData}" style="width:100%; border-radius:8px;">
-                            <div class="ui-watermark">AIVM AUTHENTICATED</div>
-                        </div>
+                    <div class="gallery-card" style="border:1px solid var(--border); padding:10px; border-radius:12px;">
+                        <img src="${imgData}" style="width:100%; border-radius:8px;">
                         <div style="margin-top:10px; font-size:0.7rem; color:var(--accent);">TOKEN #${i}</div>
-                        <div class="gallery-controls" style="width:100%; display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;">
+                        <div class="gallery-controls" style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;">
                             <button class="pill" onclick="mintFromGallery(${i})" style="background:var(--green); color:#000;">MINT</button>
                             <button class="pill btn-info-black" onclick="showArtInfo(${window.userGallery.length - 1})">INFO</button>
                         </div>
                         <button class="btn-zk" onclick="listInAuction(${i})" style="width:100%; margin-top:8px;">LIST FOR SALE</button>
                     </div>`;
                 }
-            } catch (e) {
-                // Token ID doesn't exist yet, skip to next
-                continue;
-            }
+            } catch (e) { continue; } // Skip unminted IDs
         }
-
-        grid.innerHTML = foundAny ? html : "<p style='color:var(--text-dim); text-align:center; width:100%;'>No Art found in your vault.</p>";
-    } catch (e) {
-        console.error(e);
-        log("[ERROR] Failed to scan the Gallery vault.");
-    }
-}
+        grid.innerHTML = foundAny ? html : "<p style='text-align:center; width:100%;'>No Art found in your vault.</p>";
+    } catch (e) { console.error(e); }
+}        
         
 async function listInAuction(tokenId) {
     const price = prompt("Starting bid (LCAI):", "0.5");
@@ -2839,6 +2817,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
