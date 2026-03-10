@@ -2052,10 +2052,11 @@ async function mintWithSocial() {
         }
 
 async function loadGallery() {
-const grid = document.getElementById('galleryGrid');
-    // Clear the "will appear here" text
+    const grid = document.getElementById('galleryGrid');
     grid.innerHTML = '<p style="color:var(--accent)">Decrypting Vault...</p>';
-
+    
+    // Initialize the global array so it doesn't crash on .push()
+    window.userGallery = [];
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const artContract = new ethers.Contract(CONFIG.artStudio, [
@@ -2070,6 +2071,8 @@ const grid = document.getElementById('galleryGrid');
             return;
         }
 
+        grid.innerHTML = ""; // Clear loader
+        
         for (let i = 0; i < balance; i++) {
             const tokenId = await artContract.tokenOfOwnerByIndex(userWallet, i);
             const uri = await artContract.tokenURI(tokenId);
@@ -2696,6 +2699,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
