@@ -911,7 +911,23 @@ if (!window.ethereum) return;
     }
 }
         
-
+async function getEncryptionKey() {
+    if (userEncryptionKey) return userEncryptionKey;
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const sig = await signer.signMessage("Unlock Lightchain AIVM Encryption Key");
+        userEncryptionKey = ethers.keccak256(ethers.toUtf8Bytes(sig));
+        
+        // Trigger refreshes after successful signature
+        loadGallery();
+        syncMarketplace();
+        return userEncryptionKey;
+    } catch (e) {
+        log("[ERROR] Signature required to unlock vault.");
+        return null;
+    }
+}
         
 async function updateUI(addr) {
     try {
@@ -2167,17 +2183,12 @@ async function loadGallery() {
             "function totalSupply() view returns (uint256)"
         ], provider);
 
-        // Get actual count to avoid unnecessary looping
-        let maxSearch = 0;
-        try { 
-            maxSearch = await artContract.totalSupply(); 
-        } catch(e) { 
-            maxSearch = 25; // Fallback if totalSupply isn't in contract
-        }
+        let maxSearch = 25; 
+        try { maxSearch = await artContract.totalSupply(); } catch(e) {}
 
-        let html = "";
+        let html = ""; // MUST BE INITIALIZED
         let foundAny = false;
-        window.userGallery = []; // Initialize as empty array correctly
+        window.userGallery = []; 
 
         for (let i = 0; i < maxSearch; i++) {
             try {
@@ -2188,28 +2199,21 @@ async function loadGallery() {
                     let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
                     
                     window.userGallery.push({ id: i, uri: uri, data: imgData });
-
                     html += `
-                    <div class="gallery-card" style="border:1px solid var(--border); padding:10px; border-radius:12px; background: var(--panel);">
-                        <img src="${imgData}" style="width:100%; border-radius:8px;">
-                        <div style="margin-top:10px; font-size:0.7rem; color:var(--accent);">TOKEN #${i}</div>
-                        <div class="gallery-controls" style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;">
-                            <button class="pill" onclick="mintFromGallery(${i})" style="background:var(--green); color:#000;">RE-MINT</button>
-                            <button class="pill btn-info-black" onclick="showArtInfo(${window.userGallery.length - 1})">INFO</button>
-                        </div>
-                        <button class="btn-zk" onclick="listInAuction(${i})" style="width:100%; margin-top:8px;">LIST FOR SALE</button>
-                    </div>`;
+                        <div class="gallery-card" style="border:1px solid var(--border); padding:10px; border-radius:12px; background:var(--panel);">
+                            <img src="${imgData}" style="width:100%; border-radius:8px;">
+                            <div style="margin-top:10px; font-size:0.7rem; color:var(--accent);">TOKEN #${i}</div>
+                            <div class="gallery-controls" style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;">
+                                <button class="pill" onclick="mintFromGallery(${i})" style="background:var(--green); color:#000;">MINT</button>
+                                <button class="pill btn-info-black" onclick="showArtInfo(${window.userGallery.length - 1})">INFO</button>
+                            </div>
+                        </div>`;
                 }
-            } catch (e) {
-                continue; // Skip IDs that don't exist
-            }
+            } catch (e) { continue; }
         }
-        grid.innerHTML = foundAny ? html : "<p style='text-align:center; width:100%; color:var(--text-dim);'>No Art found in your vault.</p>";
-    } catch (e) {
-        console.error("Gallery Load Error:", e);
-        log("[ERROR] Gallery sync failed. Check contract address.");
-    }
-}       
+        grid.innerHTML = foundAny ? html : "<p style='text-align:center; width:100%;'>No Art found.</p>";
+    } catch (e) { console.error("Gallery Error:", e); }
+} 
         
 async function listInAuction(tokenId) {
     const price = prompt("Starting bid (LCAI):", "0.5");
@@ -2817,6 +2821,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
