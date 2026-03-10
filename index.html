@@ -687,28 +687,29 @@ const WARRIOR_ABI = [
 })();
 
  let userEncryptionKey = null;
+ let isRequestingSignature = false; // Add this at the top of your script
 
 // Ask MetaMask for a signature to create a unique password
 async function getEncryptionKey() {
+    if (isRequestingSignature) return;
+    
     if (userEncryptionKey) return userEncryptionKey; // Use cached key if already signed
-    try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        log("[PRIVACY] Please sign the message to unlock your encryption key...");
-        
-        // This signature is unique to the user's wallet
-        const signature = await signer.signMessage("Unlock Lightchain AIVM Private Gallery");
-        
-        // Hash it so we have a clean 256-bit AES key
-        //userEncryptionKey = CryptoJS.SHA256(signature).toString();
-        userEncryptionKey = ethers.utils.keccak256(signature);
 
-        loadGallery();
-        syncMarketplace();
+    isRequestingSignature = true; 
+    log("[PRIVACY] Opening secure vault...");
+    
+    try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const message = "Unlock Lightchain AIVM Encryption Key";
+        const signature = await signer.signMessage(message);
+        
+        userEncryptionKey = ethers.utils.keccak256(signature);
+        isRequestingSignature = false; // Reset on success
         return userEncryptionKey;
     } catch (e) {
-        log("Encryption signature rejected.");
-        return null;
+        isRequestingSignature = false; // Reset on error/reject
+        log("[ERROR] Signature rejected or timed out.");
     }
 }
 
@@ -2703,6 +2704,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
