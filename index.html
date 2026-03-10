@@ -695,7 +695,19 @@ let galleryLoaded = false;
 async function getEncryptionKey() {
     // 1. Guard against duplicate requests or if we already have the key
     if (isSigning || userEncryptionKey) return userEncryptionKey;
-    
+
+    if (isVerified && nick) {
+    isRegistered = true;
+    log(`[IAM] Identity Found: ${nick}. Transitioning to Passport...`);
+        if (!userEncryptionKey && !isSigning) {
+            getEncryptionKey(); 
+        }
+        // Same for the marketplace - only sync if it hasn't been loaded yet
+        if (!window.marketplaceSynced) {
+            syncMarketplace();
+            window.marketplaceSynced = true; 
+        }
+    }
     isSigning = true; // Lock it down
 
     try {
@@ -2088,10 +2100,13 @@ async function loadGallery() {
         // CRITICAL: Ensure this is CONFIG.artStudio and NOT CONFIG.artContract
         const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider); 
         
-        // 3. Get the total supply of NFTs
-        const total = await artContract.totalSupply(); 
+// 2. Safely fetch the user's specific balance
+        const balance = await artContract.balanceOf(userWallet); 
         
-        if (total == 0n) { 
+        // Convert BigInt to Number for the loop
+        const numBalance = Number(balance); 
+
+        if (numBalance === 0) { 
             grid.innerHTML = "<p>Gallery is empty.</p>";
             return;
         }
@@ -2099,7 +2114,7 @@ async function loadGallery() {
         grid.innerHTML = ""; // Clear the loading text
         
         // 4. Your loop to render the items goes here...
-        for (let i = 0; i < total; i++) {
+for (let i = 0; i < numBalance; i++) {
             const tokenId = await artStudio.tokenOfOwnerByIndex(userWallet, i);
             const uri = await artStudio.tokenURI(tokenId);
 
@@ -2726,6 +2741,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
