@@ -699,40 +699,25 @@ async function getEncryptionKey() {
     // 1. Guard against duplicate requests or if we already have the key
     if (isSigning || userEncryptionKey) return userEncryptionKey;
 
-    let isVerified = false; // Initialize with a default boolean value (e.g., false or true as appropriate for your logic)
-
-    if (isVerified && nick) {
-    isRegistered = true;
-    log(`[IAM] Identity Found: ${nick}. Transitioning to Passport...`);
-        if (!userEncryptionKey && !isSigning) {
-            getEncryptionKey(); 
-        }
-        // Same for the marketplace - only sync if it hasn't been loaded yet
-        if (!window.marketplaceSynced) {
-            syncMarketplace();
-            window.marketplaceSynced = true; 
-        }
-    }
     isSigning = true; // Lock it down
 
     try {
         log("[PRIVACY] Opening secure vault... Please check MetaMask.");
         const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner(); 
-        
+        const signer = await provider.getSigner();
         const message = "Unlock Lightchain AIVM Encryption Key";
         const signature = await signer.signMessage(message);
-        
+
         // Hash it for the key
-        userEncryptionKey = ethers.keccak256(ethers.toUtf8Bytes(signature)); 
+        userEncryptionKey = ethers.keccak256(ethers.toUtf8Bytes(signature));
         log("[PRIVACY] Vault Decrypted.");
         
         isSigning = false; // Unlock
-        
+
         // 2. ONLY NOW do we load the sensitive data
         loadGallery();
         syncMarketplace();
-        
+
         return userEncryptionKey;
     } catch (err) {
         isSigning = false; // Unlock on failure so they can try again
@@ -741,6 +726,7 @@ async function getEncryptionKey() {
     }
 }
 
+        
 // Scramble the image
 async function encryptArt(base64Data) {
     const key = await getEncryptionKey();
@@ -2821,6 +2807,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
