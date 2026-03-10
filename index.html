@@ -2186,8 +2186,8 @@ async function loadGallery() {
 const grid = document.getElementById('galleryGrid');
     if (!grid || !userWallet || !userEncryptionKey) return;
 
-           		  container.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Syncing with Lightchain AIVM...</div>';
-
+           		grid.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Syncing with Lightchain AIVM...</div>';
+    
                 try {
                     const provider = new ethers.BrowserProvider(window.ethereum);
                     const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
@@ -2838,6 +2838,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
