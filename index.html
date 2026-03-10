@@ -2180,7 +2180,7 @@ async function loadGallery() {
         let foundAny = false;
         window.userGallery = [
         
-for (let i = 0; i < maxSearch; i++) {
+    for(let i = 0; i < maxSearch; i++) {
             try {
                 const owner = await artContract.ownerOf(i);
                 if (owner.toLowerCase() === userWallet.toLowerCase()) {
@@ -2803,6 +2803,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
