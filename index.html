@@ -2144,18 +2144,13 @@ async function listInAuction(tokenId) {
         function showView(viewId) {
             console.log("Switching to view:", viewId);
             
-            // 1. Hide EVERYTHING with the class 'view-section'
-            const sections = document.querySelectorAll('.view-section');
-            sections.forEach(s => {
+        document.querySelectorAll('.view-section').forEach(s => {
                 s.style.setProperty('display', 'none', 'important');
             });
-        
-            // 2. Show only the target view
-             const target = document.getElementById(viewId);
-                if (target) {
-                    target.style.setProperty('display', 'block', 'important');
-                    target.style.opacity = "1";
-                }
+            const target = document.getElementById(viewId);
+            if (target) {
+                target.style.setProperty('display', 'block', 'important');
+            }
         
             // 3. Update Sidebar Highlights
             document.querySelectorAll('.nav-item').forEach(nav => {
@@ -2451,6 +2446,7 @@ async function launchChess() {
     
 async function makeAIVMMove() {
 // Determine skill level based on user's current card collection or manual setting
+    const aiDepth = (userStats.wins > 5) ? 9 : 7 : 5 : 3;
     const difficultyMap = { "APPRENTICE": 1, "GRANDMASTER": 3, "DEITY": 5 };
     const currentDifficulty = "GRANDMASTER"; // You can make this a toggle later
 
@@ -2463,7 +2459,7 @@ async function makeAIVMMove() {
             body: JSON.stringify({
                 fen: game.fen(),
                 model: "DeepSeek-V3",
-                depth: difficultyMap[currentDifficulty], // This tells the AIVM how hard to think
+                depth: aiDepth // 5 is significantly stronger than 3
                 wallet: userWallet
             })
         });
@@ -2694,6 +2690,7 @@ function exitGateway() {
     </script>
 </body>
 </html>
+
 
 
 
