@@ -2137,30 +2137,20 @@ function updateRevenueDisplay() {
 
 async function loadGallery() {
     const grid = document.getElementById('galleryGrid');
-    if (!grid || !userWallet) return;
+    if (!grid || !userWallet || !userEncryptionKey) return;
 
-    // Wait for the key properly
-    const key = await getEncryptionKey();
-    if (!key) return;
-
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Syncing with Lightchain AIVM...</div>';
-
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Scanning Vault...</div>';
+    
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
-        const artContract = new ethers.Contract(CONFIG.artStudio, [
-            "function ownerOf(uint256 tokenId) view returns (address)",
-            "function tokenURI(uint256 tokenId) view returns (string)",
-            "function totalSupply() view returns (uint256)"
-        ], provider);
-
-        let maxSearch = 25; 
-        try { maxSearch = await artContract.totalSupply(); } catch(e) {}
+        const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
 
         let html = ""; 
         let foundAny = false;
         window.userGallery = []; 
 
-for (let i = 0; i < 25; i++) {
+
+        for (let i = 0; i < 25; i++) {
     try {
         const owner = await artContract.ownerOf(i);
         if (owner.toLowerCase() === userWallet.toLowerCase()) {
@@ -2178,9 +2168,11 @@ for (let i = 0; i < 25; i++) {
                         </div>`;
                 }
             } catch (e) { continue; }
-        
+        }
         grid.innerHTML = foundAny ? html : "<p style='text-align:center; width:100%;'>No Art found in your vault.</p>";
-    { console.error("Gallery Error:", e); }
+    } catch (e){
+        { console.error("Gallery Error:", e); }
+    }
 }
 
         
@@ -2749,74 +2741,27 @@ async function claimDailyWarrior() {
 }
 
 
-function exitGateway() {
-    // 1. Restore the Sidebar and System Header
-    document.querySelector('nav').style.display = 'flex';
-    document.querySelector('header').style.display = 'flex';
-
-    // 2. Hide the Game Navigation
-    document.getElementById('gameNavigation').style.display = 'none';
-    document.querySelector('.workspace').style.background = '#050608';
-
-    // 3. Return to the Arcade menu
-    showView('arcadeView');
-    log("[TCG] Exited Gateway. Returning to AIVM Arcade.");
-}
+        function exitGateway() {
+            // 1. Restore the Sidebar and System Header
+            document.querySelector('nav').style.display = 'flex';
+            document.querySelector('header').style.display = 'flex';
+        
+            // 2. Hide the Game Navigation
+            document.getElementById('gameNavigation').style.display = 'none';
+            document.querySelector('.workspace').style.background = '#050608';
+        
+            // 3. Return to the Arcade menu
+            showView('arcadeView');
+            log("[TCG] Exited Gateway. Returning to AIVM Arcade.");
+        }
         function closeGateway() {
-    document.querySelector('nav').style.display = 'block';
-    document.querySelector('header').style.display = 'flex';
-    document.getElementById('gameNavigation').style.display = 'none';
-    showView('dashboardView');
-}
+            document.querySelector('nav').style.display = 'block';
+            document.querySelector('header').style.display = 'flex';
+            document.getElementById('gameNavigation').style.display = 'none';
+            showView('dashboardView');
+        }
         
         
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
