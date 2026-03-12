@@ -697,40 +697,36 @@ let galleryLoaded = false;
 let signaturePromise = null; // Promise lock
 
 async function getEncryptionKey() {
-    // If we already have the key, return it
-    if (userEncryptionKey) return userEncryptionKey;
+// If we already have the key, just load the UI and return
+    if (userEncryptionKey) {
+        loadGallery();
+        syncMarketplace();
+        return userEncryptionKey;
+    }
 
-    // If a signature is already in progress, wait for that same promise
-    if (signaturePromise) return signaturePromise;
+    try {
+        log("[PRIVACY] Requesting signature to unlock vault...");
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        
+        // This triggers the MetaMask popup
+        const sig = await signer.signMessage("Unlock Lightchain AIVM Encryption Key");
+        
+        // Generate the decryption key
+        userEncryptionKey = ethers.keccak256(ethers.toUtf8Bytes(sig));
+        log("[PRIVACY] Vault Decrypted.");
 
-    // Create the promise for the signature
-    signaturePromise = (async () => {
-        try {
-            log("[PRIVACY] Opening secure vault... Please check MetaMask.");
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            const message = "Unlock Lightchain AIVM Encryption Key";
-            const signature = await signer.signMessage(message);
-
-            userEncryptionKey = ethers.keccak256(ethers.toUtf8Bytes(signature));
-            log("[PRIVACY] Vault Decrypted.");
-            
-            // Refresh data once we have the key
-            loadGallery();
-            syncMarketplace();
-            
-            return userEncryptionKey;
-        } catch (err) {
-            log("[ERROR] Signature rejected.");
-            return null;
-        } finally {
-            signaturePromise = null; // Release the lock
-        }
-    })();
-
-    return signaturePromise;
+        // CRITICAL: Force the UI to load now that we have the key
+        await loadGallery();
+        await syncMarketplace();
+        
+        return userEncryptionKey;
+    } catch (e) {
+        console.error("Encryption Key Error:", e);
+        log("[ERROR] Signature required to decrypt gallery. Please reload and sign.");
+        return null;
+    }
 }
-
         
 // Scramble the image
 async function encryptArt(base64Data) {
@@ -1150,27 +1146,23 @@ async function checkRegistrationStatus(addr, contract) {
         if (isVerified && nick) {
             isRegistered = true;
 
+            // 2. ONLY run the Web3 Signature/Gallery load ONCE
+            if (!window.hasInitializedSession) {
+                window.hasInitializedSession = true; 
+                
+                log(`[IAM] Identity Found: ${nick}.`);
+                log("[AUTH] Art Studio & Gallery Unlocked!");
+        
+                // Call the signature function (it handles the gallery/market loading now)
+                getEncryptionKey();
+            }
             
             const authStep = document.getElementById('authStep');
             const mintSection = document.getElementById('mintSection');
             if (authStep) authStep.style.display = 'none';
             if (mintSection) mintSection.style.display = 'none';
 
-            
-            log(`[IAM] Identity Found: ${nick}.`);
-            if (!window.hasInitializedData && !isSigning) {
-                window.hasInitializedData = true; // Lock it immediately
-                
-                getEncryptionKey().then((key) => {
-                    if (key) {
-                        loadGallery();
-                        syncMarketplace(); 
-                    } else {
-                        log("[WARNING] Studio generation disabled. No encryption key.");
-                    }
-                });
-            }
-           
+                       
             // 1. Force hide registration boxes
             ['authStep', 'mintSection'].forEach(id => {
                 const el = document.getElementById(id);
@@ -1799,8 +1791,7 @@ async function generateAIVMArt() {
     try {
         const seed = Math.floor(Math.random() * 100000);
         const model = document.getElementById('modelSelector').value;
-        const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
-
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
         // Create a temporary image to handle cross-origin for the canvas
         const img = new Image();
         img.crossOrigin = "anonymous";
@@ -2756,6 +2747,7 @@ async function claimDailyWarrior() {
     </script>
 </body>
 </html>
+
 
 
 
