@@ -2122,39 +2122,48 @@ async function loadGallery() {
     const grid = document.getElementById('galleryGrid');
     if (!grid || !userWallet || !userEncryptionKey) return;
 
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Scanning Vault...</div>';
-    
+    // Use a flag to prevent multiple triggers
+    if (window.isGallerySyncing) return;
+    window.isGallerySyncing = true;
+
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Syncing Vault...</div>';
+
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
-
-        let html = ""; 
+        
+        let html = "";
         let foundAny = false;
-        window.userGallery = []; 
+        window.userGallery = [];
 
-
-        for (let i = 0; i < 25; i++) {
-    try {
-        const owner = await artContract.ownerOf(i);
-        if (owner.toLowerCase() === userWallet.toLowerCase()) {
-            const uri = await artContract.tokenURI(i);
-            let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
+        // Manual scan 0-20 to avoid RPC spam
+        for (let i = 0; i < 20; i++) {
+            try {
+                const owner = await artContract.ownerOf(i);
+                if (owner.toLowerCase() === userWallet.toLowerCase()) {
+                    foundAny = true;
+                    const uri = await artContract.tokenURI(i);
+                    let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
+                    
                     window.userGallery.push({ id: i, uri: uri, data: imgData });
+
                     html += `
-                        <div class="gallery-card" style="border:1px solid var(--border); padding:10px; border-radius:12px; background:var(--panel);">
+                        <div class="gallery-card" style="border:1px solid var(--border); padding:10px; border-radius:12px;">
                             <img src="${imgData}" style="width:100%; border-radius:8px;">
                             <div style="margin-top:10px; font-size:0.7rem; color:var(--accent);">TOKEN #${i}</div>
                             <div class="gallery-controls" style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;">
-                                <button class="pill" onclick="mintFromGallery(${i})" style="background:var(--green); color:#000;">MINT</button>
+                                <button class="pill" onclick="mintFromGallery(${i})">MINT</button>
                                 <button class="pill btn-info-black" onclick="showArtInfo(${window.userGallery.length - 1})">INFO</button>
                             </div>
                         </div>`;
                 }
             } catch (e) { continue; }
         }
-        grid.innerHTML = foundAny ? html : "<p style='text-align:center; width:100%;'>No Art found in your vault.</p>";
-    } catch (e){
-        { console.error("Gallery Error:", e); }
+        grid.innerHTML = foundAny ? html : "<p>Vault is empty.</p>";
+    } catch (e) {
+        console.error(e);
+    } finally {
+        window.isGallerySyncing = false;
     }
 }
 
@@ -2747,6 +2756,7 @@ async function claimDailyWarrior() {
     </script>
 </body>
 </html>
+
 
 
 
