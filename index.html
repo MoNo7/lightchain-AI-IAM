@@ -608,6 +608,7 @@
 
     <script>
 window.hasInitializedData = false;
+window.sessionStarted = false;
 let isSigning = false;
         
 let currentArtData = "";
@@ -906,8 +907,7 @@ if (!window.ethereum) return;
 
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
-        const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, signer);
-        
+        const contract = new ethers.Contract(CONFIG.identity, CONFIG.abi, signer);        
         checkRegistrationStatus(userWallet, contract);
     }
 }
@@ -2747,6 +2747,7 @@ async function claimDailyWarrior() {
     </script>
 </body>
 </html>
+
 
 
 
