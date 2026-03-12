@@ -2501,23 +2501,24 @@ async function launchChess() {
         // Only pick up pieces for White
         if (piece.search(/^b/) !== -1) return false;
     }
-    
+async function getArcadeKey() {
+    // If the studio is already unlocked, use that key
+    if (userEncryptionKey) return userEncryptionKey;
+    // Otherwise, use a non-signed public hash so it doesn't pop up MetaMask
+    return ethers.keccak256(ethers.toUtf8Bytes(userWallet + "arcade"));
+}
+        
 async function makeAIVMMove() {
     updateChessStatus("AIVM CALCULATING...");
     try {
-        const key = await getEncryptionKey(); // Get the signed key
+        const key = await getArcadeKey(); // Swapped from getEncryptionKey()
         const response = await fetch('https://api.lightchain.ai/v1/inference/chess', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${key}`,
                 'X-LCAI-Wallet': userWallet
             },
-            body: JSON.stringify({
-                fen: game.fen(),
-                model: "DeepSeek-V3", // Logic model, NOT an image model
-                wallet: userWallet
-            })
+            body: JSON.stringify({ fen: game.fen(), wallet: userWallet })
         });
 
         const result = await response.json();
@@ -2747,6 +2748,7 @@ async function claimDailyWarrior() {
     </script>
 </body>
 </html>
+
 
 
 
