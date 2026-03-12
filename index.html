@@ -1135,15 +1135,24 @@ try {
 
 
 async function checkRegistrationStatus(addr, contract) {
+// 1. One-time guard to stop RPC spam
     if (window.hasInitializedData) return;
-    unlockArcadeUI();
     
     try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const idContract = new ethers.Contract(CONFIG.identity, CONFIG.abi, provider);
+        
         const isVerified = await contract.verified(addr);
         const nick = await contract.nicknames(addr);
 
         if (isVerified && nick) {
+            window.hasInitializedData = true; // Lock the initialization
             isRegistered = true;
+
+            log(`[IAM] Identity Verified: ${nick}.`);
+
+            // 2. Hide Registration & Show Passport
+            document.getElementById('zkView').innerHTML = '<div style="text-align:center; padding:50px;">Decrypting ZK Vault...</div>';
 
             // 2. ONLY run the Web3 Signature/Gallery load ONCE
             if (!window.hasInitializedSession) {
@@ -1152,8 +1161,12 @@ async function checkRegistrationStatus(addr, contract) {
                 log(`[IAM] Identity Found: ${nick}.`);
                 log("[AUTH] Art Studio & Gallery Unlocked!");
         
-                // Call the signature function (it handles the gallery/market loading now)
-                getEncryptionKey();
+            getEncryptionKey().then(key => {
+                if(key) {
+                    renderPassport(addr, nick, idContract);
+                    unlockArtStudio(); 
+                }
+            });
             }
             
             const authStep = document.getElementById('authStep');
@@ -2120,21 +2133,20 @@ function updateRevenueDisplay() {
 
 async function loadGallery() {
     const grid = document.getElementById('galleryGrid');
-    if (!grid || !userWallet || !userEncryptionKey) return;
+    if (!grid || !userWallet || !userEncryptionKey || window.isGalleryLoading) return;
 
+    window.isGalleryLoading = true; // LOCK: Prevent multiple RPC calls
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Syncing with Lightchain AIVM...</div>';
+    
     // Use a flag to prevent multiple triggers
     if (window.isGallerySyncing) return;
     window.isGallerySyncing = true;
-
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Syncing Vault...</div>';
-
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
         
         let html = "";
         let foundAny = false;
-        window.userGallery = [];
 
         // Manual scan 0-20 to avoid RPC spam
         for (let i = 0; i < 20; i++) {
@@ -2756,6 +2768,7 @@ async function claimDailyWarrior() {
     </script>
 </body>
 </html>
+
 
 
 
