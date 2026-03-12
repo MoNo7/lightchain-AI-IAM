@@ -773,7 +773,7 @@ window.onload = async () => {
     initBoard();
     setInterval(() => {
         if (document.getElementById('marketView').style.display === 'block') {
-            renderAuctions();
+            syncMarketplace();
             console.log("[SYS] Auto-refresh: Marketplace synced with explorer.");
         }
     }, 30000); // 30 second pulse
@@ -1158,22 +1158,19 @@ async function checkRegistrationStatus(addr, contract) {
 
             
             log(`[IAM] Identity Found: ${nick}.`);
-            // THE GUARD: Only run this once!
             if (!window.hasInitializedData && !isSigning) {
                 window.hasInitializedData = true; // Lock it immediately
                 
                 getEncryptionKey().then((key) => {
                     if (key) {
                         loadGallery();
-                        syncMarketplace();
-                    }else {
+                        syncMarketplace(); 
+                    } else {
                         log("[WARNING] Studio generation disabled. No encryption key.");
                     }
                 });
             }
            
-            getEncryptionKey();
-            startMarketplaceSync();
             // 1. Force hide registration boxes
             ['authStep', 'mintSection'].forEach(id => {
                 const el = document.getElementById(id);
@@ -1270,19 +1267,29 @@ async function syncMarketplace() {
     const grid = document.getElementById('auctionGrid');
     if (!grid || !userWallet) return;
 
-    try {
-        log("[MARKET] Initializing On-Chain Sync...");
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        
-        // Use a dedicated ABI for the Auction House
-        const marketContract = new ethers.Contract(CONFIG.auctionHouse, [
-            "function auctions(address, uint256) view returns (address nftContract, uint256 startingPrice, uint256 highestBid, address highestBidder, uint256 endTime, bool active)"
-        ], provider);
-        
-        const artContract = new ethers.Contract(CONFIG.artStudio, ["function tokenURI(uint256) view returns (string)"], provider);
+    let html = "";
+    let count = 0;
 
-        let html = "";
-        let count = 0;
+    // 1. Render Local Active Auctions (Your "List for Sale" feature)
+    if (typeof activeAuctions !== 'undefined' && activeAuctions.length > 0) {
+        activeAuctions.forEach((auc, i) => {
+            count++;
+            html += `
+                <div class="card" style="border:1px solid var(--accent); margin-bottom:15px;">
+                    <img src="${auc.image}" style="width:100%; border-radius:8px;">
+                    <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:var(--accent); font-weight:bold;">${auc.price} LCAI (LOCAL)</span>
+                        <button class="pill" onclick="placeBid(${auc.id})">BID</button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    // 2. Scan On-Chain Auctions (0-25) safely
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const marketContract = new ethers.Contract(CONFIG.auctionHouse, ["function auctions(address, uint256) view returns (address nftContract, uint256 startingPrice, uint256 highestBid, address highestBidder, uint256 endTime, bool active)"], provider);
+        const artContract = new ethers.Contract(CONFIG.artStudio, ["function tokenURI(uint256) view returns (string)"], provider);
 
         for (let i = 0; i < 25; i++) {
             try {
@@ -1292,9 +1299,9 @@ async function syncMarketplace() {
                     const uri = await artContract.tokenURI(i);
                     let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
                     const price = ethers.formatEther(data.highestBid > 0 ? data.highestBid : data.startingPrice);
-
+                    
                     html += `
-                        <div class="card" style="border:1px solid var(--accent); margin-bottom:15px;">
+                        <div class="card" style="border:1px solid var(--green); margin-bottom:15px;">
                             <img src="${imgData}" style="width:100%; border-radius:8px;">
                             <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
                                 <div style="color:var(--green); font-weight:bold;">${price} LCAI</div>
@@ -1304,10 +1311,9 @@ async function syncMarketplace() {
                 }
             } catch (e) { continue; }
         }
-        grid.innerHTML = count > 0 ? html : '<div style="grid-column:1/-1; text-align:center;">No active on-chain auctions.</div>';
-    } catch (err) {
-        console.warn("Marketplace Sync Error:", err);
-    }
+    } catch (err) { console.warn("Marketplace Sync Error:", err); }
+
+    grid.innerHTML = count > 0 ? html : '<div style="grid-column:1/-1; text-align:center;">No active auctions. Be the first to list!</div>';
 }
 
 
@@ -1440,78 +1446,10 @@ async function registerLocal() {
             };
 
             activeAuctions.push(auctionItem);
-            renderAuctions();
+            syncMarketplace();
             log(`[MARKET] Success: ${name} listed for ${price} LCAI.`);
         }
 
-async function renderAuctions() {
-    const grid = document.getElementById('auctionGrid');
-    grid.innerHTML = ""; // Clear old auctions
-    if (!grid) return;
-
-    activeAuctions.forEach((auc, i) => {
-        grid.innerHTML += `
-            <div class="card">
-                <div class="art-container" style="position:relative;">
-                <img src="${auc.img}" style="width:100%; border-radius:8px;">
-                <div class="ui-watermark" style="position:absolute; bottom:10px; left:10px; font-size:10px; color:rgba(0,242,255,0.5); pointer-events:none;">AIVM MARKET VERIFIED</div>
-            </div>
-            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-                <span style="color:var(--accent); font-weight:bold;">${auc.price} LCAI</span>
-                <div style="display:flex; gap:5px;">
-                    <button class="pill btn-info-black" onclick="showMarketInfo(${i})">INFO</button>
-                    <button class="pill" onclick="placeBid(${auc.id})">BID</button>
-            </div>
-        </div>
-            </div>`;
-    });
-
-    try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const auctionHouse = new ethers.Contract(CONFIG.auctionHouse, [
-            "function auctions(address, uint256) view returns (address nftContract, uint256 startingPrice, uint256 highestBid, address highestBidder, uint256 endTime, bool active)"
-        ], provider);
-        
-        const artContract = new ethers.Contract(CONFIG.artStudio, [
-            "function totalSupply() view returns (uint256)",
-            "function tokenURI(uint256) view returns (string)"
-        ], provider);
-
-        const total = await artContract.totalSupply();
-        let html = "";
-        let count = 0;
-
-        for (let i = 0; i < total; i++) {
-            const data = await auctionHouse.auctions(CONFIG.artStudio, i);
-            
-            if (data.active) { 
-                count++;
-                // FIX: Use 'artContract' (matching the variable above)
-                const uri = await artContract.tokenURI(i); 
-                const currentPrice = ethers.formatEther(data.highestBid > 0 ? data.highestBid : data.startingPrice);
-                
-                let img = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
-                if (!img.startsWith("data:image")) img = "data:image/jpeg;base64," + img;
-
-                html += `
-                    <div class="card" style="border:1px solid var(--accent); margin-bottom:15px;">
-                        <img src="${img}" style="width:100%; border-radius:8px;">
-                        <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-                            <div>
-                                <span style="color:var(--accent); font-weight:bold;">${currentPrice} LCAI</span>
-                                <div style="font-size:0.6rem; color:var(--text-dim);">TOKEN #${i}</div>
-                            </div>
-                            <button class="pill" onclick="placeBid(${i}, '${currentPrice}')" style="background:var(--accent); color:#000;">BID</button>
-                        </div>
-                    </div>`;
-            }
-        }
-        grid.innerHTML = count > 0 ? html : '<div id="auctionEmpty" style="grid-column:1/-1; text-align:center; padding:40px;">No active on-chain auctions.</div>';
-    } catch (e) {
-      //  console.error("Marketplace Sync Error:", e);
-        log("Marketplace Sync Error: Check Console.");
-    }
-}
 
         async function placeBid(tokenId, currentPrice) {
             const bidAmount = prompt(`Current price is ${currentPrice} LCAI. Enter your bid:`, (parseFloat(currentPrice) + 0.1).toString());
@@ -1530,7 +1468,7 @@ async function renderAuctions() {
                 });
                 await tx.wait();
                 log("[SUCCESS] You are now the highest bidder!");
-                renderAuctions();
+                syncMarketplace();
             } catch (e) {
                 log(`[BID ERROR] ${e.message}`);
             }
@@ -1548,7 +1486,7 @@ async function renderAuctions() {
                 const tx = await contract.endAuction(CONFIG.artStudio, tokenId);
                 await tx.wait();
                 log("[SUCCESS] Auction cleared. You can now re-list.");
-                renderAuctions();
+                syncMarketplace();
             } catch (e) { log(`[CANCEL ERROR] ${e.message}`); }
         }
 
@@ -1873,21 +1811,28 @@ async function generateAIVMArt() {
             const ctx = canvas.getContext('2d');
             canvas.width = 1024;
             canvas.height = 1024;
-            
-            // Draw to canvas for the "Save/Mint" capability
             ctx.drawImage(img, 0, 0, 1024, 1024);
+
+            // 2. STUDIO SPECIFIC: Low-Res Capture for Blockchain (512x512)
+            // This restores the fix from 2 days ago to prevent RPC payload crashes
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = 512; 
+            tempCanvas.height = 512;
+            tempCtx.drawImage(img, 0, 0, 512, 512);
+            
             currentArtData = canvas.toDataURL('image/jpeg', 0.8);
             
-            // Update UI
-            if (loader) loader.style.display = "none";
-            if (outputImg) {
-                outputImg.src = currentArtData;
-                outputImg.style.display = "block";
-            }
-            
-            document.getElementById('saveArtBtn').style.display = "block";
-            document.getElementById('deleteArtBtn').style.display = "block";
-            log("[SUCCESS] AIVM Render complete.");
+            // 3. Update UI
+                if (loader) loader.style.display = "none";
+                if (outputImg) {
+                    outputImg.src = canvas.toDataURL('image/png'); // Display high-res to user
+                    outputImg.style.display = "block";
+                }
+                
+                document.getElementById('saveArtBtn').style.display = "block";
+                document.getElementById('deleteArtBtn').style.display = "block";
+                log("[SUCCESS] AIVM Render complete. Ready to mint.");
         };
 
         img.onerror = () => {
@@ -2285,7 +2230,7 @@ async function listInAuction(tokenId) {
             });
         
             // 4. Trigger Data Refreshes
-            if (viewId === 'marketView') renderAuctions();
+            if (viewId === 'marketView') syncMarketplace();
         }
 
         function log(m) {
@@ -2410,22 +2355,20 @@ async function listInAuction(tokenId) {
 
         // Start the Auto-Refresh Loop
         function startMarketplaceSync() {
-            log("[MARKET] Initializing Live On-Chain Sync...");
-            // Initial Render
-            renderAuctions();
+        log("[MARKET] Initializing Live On-Chain Sync...");
+            syncMarketplace(); // Run once immediately
             
-            // Refresh every 30 seconds
             setInterval(() => {
-                // Only refresh if the user is currently looking at the Marketplace view
                 if (document.getElementById('marketView').style.display === 'block') {
-                    renderAuctions();
+                    syncMarketplace(); // Swapped renderAuctions for syncMarketplace
                     console.log("[SYS] Auction House view refreshed.");
                 }
-            }, 30000); 
+            }, 30000);
         }
         
         // Call this inside your window.onload or after connect()
         startMarketplaceSync();
+        
         function showArtInfo(index) {
             const art = window.userGallery[index];
                 if (!art) return log("Error: Art metadata not found.");
@@ -2813,5 +2756,6 @@ async function claimDailyWarrior() {
     </script>
 </body>
 </html>
+
 
 
