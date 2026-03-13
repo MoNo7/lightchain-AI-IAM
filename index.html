@@ -129,6 +129,20 @@
             overflow: hidden; /* Keeps the board inside the Arcade card */
             padding: 10px;
         }
+
+        /* Prevent workspace scrolling in TCG mode */
+        .workspace.tcg-active {
+            overflow: hidden !important;
+        }
+        
+        #warriorTCGView {
+            /* Use flex to handle internal layout */
+            display: flex;
+            flex-direction: column;
+            /* Occupy remaining space exactly */
+            height: 100%; 
+            box-sizing: border-box;
+        }
         
         /* Ensure other views hide the board if it tries to leak */
         .view-section:not(.active) {
@@ -2176,6 +2190,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
