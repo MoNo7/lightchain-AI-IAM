@@ -6,6 +6,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --bg: #030406; --sidebar: #0a0c10; --accent: #00f2ff; --text: #c9d1d9; --text-dim: #484f58; --border: #1b1f24; --panel: #0d1117; --green: #39d353; --red: #ff4444; }
@@ -597,40 +600,53 @@ if (!userWallet) return log("Error: Connect node to initialize engine.");
     document.getElementById('arcadeStatus').innerText = "Engine Online - Ready";
     document.getElementById('arcadeStatus').style.color = "var(--green)";
 
-    // Inject the board area
-    document.getElementById('boardInner').innerHTML = `<div id="myBoard" style="width: 400px"></div>`;
+    // 1. Prepare the container
+    document.getElementById('boardInner').innerHTML = `<div id="myBoard" style="width: 400px; margin: 0 auto;"></div>`;
     
-    // NOTE: Ensure you have <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"> in your head
+    // 2. INITIALIZE THE ACTUAL BOARD (The missing 3/11 step)
+    // This pins the board specifically to 'myBoard' so it doesn't float into the gallery
+    board = Chessboard('myBoard', {
+        draggable: true,
+        dropOffBoard: 'snapback',
+        position: 'start',
+        onDrop: handleMove // This links to your move logic
+    });
+
     log("[ARCADE] AIVM Chess Referee (0x479...D6856) Linked.");
 }
 
-async function makeAIVMMove() {
-const gameKey = await getArcadeKey();
-    log(`[ARCADE] Generating AIVM Move via Session Key...`);
-    
-    try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const referee = new ethers.Contract("0x479b15998f4E63901b089b033d47C62464D6856", 
-            ["function requestMove(bytes32 sessionKey, string fen) public returns (string)"], 
-            await provider.getSigner()
-        );
+    async function makeAIVMMove() {
+        const gameKey = await getArcadeKey();
+        log(`[ARCADE] Generating AIVM Move via Session Key...`);
         
-        log("[ARCADE] Calculating optimal neural path...");
-        // This simulates the 3/11 logic of requesting a move from the AIVM contract
-        setTimeout(() => {
-            log("> AIVM Move Received: e2e4");
-        }, 2000);
-    } catch (e) {
-        log("Arcade Error: Could not reach AIVM Referee.");
+        try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const referee = new ethers.Contract("0x479b15998f4E63901b089b033d47C62464D6856", 
+                ["function requestMove(bytes32 sessionKey, string fen) public returns (string)"], 
+                await provider.getSigner()
+            );
+            
+            log("[ARCADE] Calculating optimal neural path...");
+            // This simulates the 3/11 logic of requesting a move from the AIVM contract
+            setTimeout(() => {
+                log("> AIVM Move Received: e2e4");
+            }, 2000);
+        } catch (e) {
+            log("Arcade Error: Could not reach AIVM Referee.");
+        }
     }
-}
-
+    // Simple move handler to trigger the AI
+    function handleMove(source, target, piece) {
+        log(`[ARCADE] Move detected: ${source}-${target}. Requesting AIVM counter-move...`);
+        makeAIVMMove(); 
+    }
+            
     function resetArcadeBoard() {
- logMsg("Resetting board state...");
-    document.getElementById('arcadeOverlay').style.display = "flex";
-    document.getElementById('boardInner').innerHTML = "";
-    document.getElementById('arcadeStatus').innerText = "Awaiting Initialization";
-}
+     logMsg("Resetting board state...");
+        document.getElementById('arcadeOverlay').style.display = "flex";
+        document.getElementById('boardInner').innerHTML = "";
+        document.getElementById('arcadeStatus').innerText = "Awaiting Initialization";
+    }
         
 async function updateUI(addr) {
     try {
@@ -2007,6 +2023,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
