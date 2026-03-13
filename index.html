@@ -731,6 +731,8 @@ async function getArcadeKey() {
     function enterWarriorGateway() {
         // Hide the main Arcade Hub (Chess/Gateway selection)
         document.getElementById('arcadeHub').style.display = 'none';
+        document.getElementById('console').style.display = 'none';
+        document.getElementById('console').style.display = 'none';
         // Show the TCG Game Takeover
         document.getElementById('warriorTCGView').style.display = 'block';
         logMsg("[ARCADE] Gateway Accessed. Swapping to Wallet Warrior TCG Protocol...");
@@ -2167,6 +2169,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
