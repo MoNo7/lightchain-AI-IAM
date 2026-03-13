@@ -1550,40 +1550,20 @@ function launchChessEngine() {
 async function renderAuctions() {
     const grid = document.getElementById('auctionGrid');
     if (!grid) return;
-
-    activeAuctions.forEach((auc, i) => {
-        grid.innerHTML += `
-            <div class="card">
-                <div class="art-container"> <img src="${auc.img}" style="width:100%; border-radius:8px;">
-                    <div class="ui-watermark">AIVM MARKET VERIFIED</div>
-                </div>
-                <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="color:var(--accent); font-weight:bold;">${auc.price} LCAI</span>
-                    <div style="display:flex; gap:5px;">
-                        <button class="pill btn-info-black" onclick="showMarketInfo(${i})">INFO</button>
-                        <button class="pill" onclick="placeBid(${auc.id})">BID</button>
-                    </div>
-                </div>
-            </div>`;
-    });
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Syncing Marketplace...</div>';
 
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const auctionHouse = new ethers.Contract(CONFIG.auctionHouse, [
             "function auctions(address, uint256) view returns (address nftContract, uint256 startingPrice, uint256 highestBid, address highestBidder, uint256 endTime, bool active)"
         ], provider);
-        
-        //const artContract = new ethers.Contract(CONFIG.artStudio, [
-         //   "function totalSupply() view returns (uint256)",
-        //    "function tokenURI(uint256) view returns (string)"
-        //], provider);
-
         const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
-
+        
         let html = "";
         let count = 0;
 
-   for (let i = 0; i < 25; i++) {
+        // Manual Scan 0-25 (Bypasses missing totalSupply function)
+        for (let i = 0; i < 25; i++) {
             try {
                 const data = await auctionHouse.auctions(CONFIG.artStudio, i);
                 if (data.active) {
@@ -1591,33 +1571,27 @@ async function renderAuctions() {
                     const uri = await artContract.tokenURI(i);
                     const currentPrice = ethers.formatEther(data.highestBid > 0 ? data.highestBid : data.startingPrice);
                     
-                    // Decrypt art exactly like Gallery logic
                     let img = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
                     if (img && !img.startsWith("data:image") && !img.startsWith("http")) {
                         img = "data:image/jpeg;base64," + img;
                     }
 
                     html += `
-                        <div class="card" style="border:1px solid var(--accent); margin-bottom:0; display:flex; flex-direction:column;">
-                            <div class="art-container" style="width:100%; aspect-ratio:1/1; overflow:hidden; border-radius:8px; background:#000;">
+                        <div class="card" style="border:1px solid var(--accent); margin:0; display:flex; flex-direction:column;">
+                            <div class="art-container" style="aspect-ratio:1/1; overflow:hidden; background:#000;">
                                 <img src="${img}" style="width:100%; height:100%; object-fit:cover;">
                                 <div class="ui-watermark">TOKEN #${i}</div>
                             </div>
-                            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-                                <div>
-                                    <span style="color:var(--accent); font-weight:bold;">${currentPrice} LCAI</span>
-                                    <div style="font-size:0.6rem; color:var(--text-dim);">HIGHEST BID</div>
-                                </div>
-                                <button class="pill" onclick="placeBid(${i}, '${currentPrice}')" style="background:var(--accent); color:#000;">BID</button>
+                            <div style="padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                                <span style="color:var(--accent); font-weight:bold;">${currentPrice} LCAI</span>
+                                <button class="pill" onclick="placeBid(${i}, '${currentPrice}')" style="background:var(--accent); color:#000; border:none;">BID</button>
                             </div>
                         </div>`;
                 }
             } catch (e) { continue; }
         }
-        grid.innerHTML = count > 0 ? html : '<div style="grid-column:1/-1; text-align:center; padding:40px; border:1px dashed var(--border);">No active on-chain auctions.</div>';
-    } catch (e) {
-        console.error("Marketplace Sync Error:", e);
-    }
+        grid.innerHTML = count > 0 ? html : '<div style="grid-column:1/-1; text-align:center; padding:40px;">No active auctions found.</div>';
+    } catch (e) { console.error("Market Error:", e); }
 }
 
         async function placeBid(tokenId, currentPrice) {
@@ -2189,69 +2163,47 @@ async function mintWithSocial() {
 async function loadGallery() {
     const container = document.getElementById('galleryGrid');
     if (!userWallet) return;
-
-    container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--accent);">Scanning Vault...</div>';
+    container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Scanning Vault...</div>';
 
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
-        let html = "";
-        let foundCount = 0;
-
-        // 1. One signature to rule them all
         if (!userEncryptionKey) await getEncryptionKey();
 
-        // 2. Parallel ID Scan (This bypasses the indexing errors)
         const scanPromises = [];
         for (let i = 0; i < 25; i++) {
-            scanPromises.push(
-                artContract.ownerOf(i)
-                    .then(owner => ({ id: i, owner }))
-                    .catch(() => null) // This catches the RPC error so it doesn't show in console
-            );
+            scanPromises.push(artContract.ownerOf(i).then(owner => ({ id: i, owner })).catch(() => null));
         }
 
         const results = await Promise.all(scanPromises);
+        let html = "";
+        let foundCount = 0;
 
         for (const res of results) {
             if (res && res.owner.toLowerCase() === userWallet.toLowerCase()) {
-                try {
-                    foundCount++;
-                    const uri = await artContract.tokenURI(res.id);
-                    
-                    // 3. Decrypt data exactly like the working Auction House
-                    let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
-                    
-                    // 4. Force valid Data URI header
-                    if (imgData && !imgData.startsWith("data:image") && !imgData.startsWith("http")) {
-                        imgData = "data:image/jpeg;base64," + imgData;
-                    }
+                foundCount++;
+                const uri = await artContract.tokenURI(res.id);
+                let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
+                
+                if (imgData && !imgData.startsWith("data:image") && !imgData.startsWith("http")) {
+                    imgData = "data:image/jpeg;base64," + imgData;
+                }
 
-                    if(!window.userGallery) window.userGallery = [];
-                    window.userGallery[res.id] = { id: res.id, uri: uri };
-
-                    html += `
-                        <div class="gallery-card" style="background:var(--panel); border:1px solid var(--border); padding:10px; border-radius:12px; display:flex; flex-direction:column; min-height:280px;">
-                            <div class="art-container" style="width:100%; aspect-ratio:1/1; overflow:hidden; border-radius:8px; background:#000;">
-                                <img src="${imgData}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.src='https://via.placeholder.com/300?text=Render+Error'">
-                                <div class="ui-watermark">TOKEN #${res.id}</div>
-                            </div>
-                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;">
-                                <button class="pill" onclick="showArtInfo(${res.id})">INFO</button>
-                                <button class="pill" onclick="listInAuction(${res.id})" style="background:var(--accent); color:#000;">SELL</button>
-                            </div>
-                        </div>`;
-                } catch (e) { continue; }
+                html += `
+                    <div class="gallery-card" style="background:var(--panel); border:1px solid var(--border); padding:10px; border-radius:12px;">
+                        <div class="art-container" style="aspect-ratio:1/1; overflow:hidden; background:#000; border-radius:8px;">
+                            <img src="${imgData}" style="width:100%; height:100%; object-fit:cover;">
+                            <div class="ui-watermark">TOKEN #${res.id}</div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px;">
+                            <button class="pill" onclick="showArtInfo(${res.id})">INFO</button>
+                            <button class="pill" onclick="listInAuction(${res.id})" style="background:var(--accent); color:#000; border:none;">SELL</button>
+                        </div>
+                    </div>`;
             }
         }
-
-        container.innerHTML = foundCount > 0 ? html : '<div style="grid-column:1/-1; text-align:center;">No assets found in Vault.</div>';
-        log(`[GALLERY] Sync Complete. ${foundCount} assets ready.`);
-
-    } catch (e) {
-        log("Gallery Sync Error.");
-        console.error(e);
-    }
+        container.innerHTML = foundCount > 0 ? html : "No assets found in Vault.";
+    } catch (e) { console.error("Gallery Error:", e); }
 }
         
         
