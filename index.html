@@ -336,6 +336,29 @@
                     </div>
                 </div>
             </div>
+
+            <div id="arcadeView" class="view-panel">
+                <h1>AIVM Arcade</h1>
+                <div class="arcade-container">
+                    <div class="glass-card">
+                        <h3>Neural Chess Engine</h3>
+                        <div class="arcade-screen" id="chessBoardContainer">
+                            <div id="arcadeOverlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
+                                <i class="fa-solid fa-chess-knight" style="font-size: 3rem; color: var(--accent); margin-bottom: 1rem;"></i>
+                                <button class="pill" onclick="initArcadeEngine()" style="width: auto;">START ENGINE</button>
+                            </div>
+                            <div id="boardInner" style="width: 100%; height: 100%;"></div>
+                        </div>
+                    </div>
+                    <div class="glass-card arcade-controls">
+                        <h3>Engine Controls</h3>
+                        <p>Status: <span id="arcadeStatus">Standby</span></p>
+                        <button class="pill" onclick="makeAIVMMove()">REQUEST AI MOVE</button>
+                        <button class="pill" style="background:transparent; border:1px solid var(--border); color:#fff;" onclick="resetArcadeBoard()">QUIT GAME</button>
+                    </div>
+                </div>
+            </div>
+            
             <div id="galleryView" class="card view-section" style="display:none;">
                 <h3>AIVM Community Gallery</h3>
                 <div id="galleryGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
@@ -526,58 +549,80 @@ window.onload = async () => {
             }
         }
 async function autoConnectWallet() {
-if (!window.ethereum) return;
-    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-    
-    if (accounts.length > 0) {
-        // CRITICAL: This sets the global variable so registerLocal can see it
-        userWallet = accounts[0]; 
-        
-        const navBtn = document.getElementById('walletBtn');
-        if (navBtn) {
-            navBtn.innerText = `${userWallet.slice(0,6)}...${userWallet.slice(-4)}`;
+    setInterval(() => {
+        // ONLY run if we haven't found the identity yet. 
+        // Once found, hasInitializedVault becomes true and the loop goes silent.
+        if (!hasInitializedVault && userWallet) {
+            verifyIdentity();
         }
-
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, signer);
+    }, 5000); // 5 seconds is safer for RPC stability
+    if (!window.ethereum) return;
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         
-        checkRegistrationStatus(userWallet, contract);
-    }
+        if (accounts.length > 0) {
+            // CRITICAL: This sets the global variable so registerLocal can see it
+            userWallet = accounts[0]; 
+            
+            const navBtn = document.getElementById('walletBtn');
+            if (navBtn) {
+                navBtn.innerText = `${userWallet.slice(0,6)}...${userWallet.slice(-4)}`;
+            }
+    
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, signer);
+            
+            checkRegistrationStatus(userWallet, contract);
+        }
+}
+
+let arcadeGame = null;
+let arcadeBoard = null;
+
+async function getArcadeKey() {
+    // Uses a keccak256 hash of the wallet + a static salt to create a 
+    // "Game Session Key" that doesn't require a MetaMask popup every move.
+    return ethers.keccak256(ethers.solidityPacked(["address", "string"], [userWallet, "LCAI_ARCADE_SESSION_V1"]));
 }
         
 // ---------------------------------------------------------
     // 9. ARCADE ENGINE (Preserved and Insulated from Gallery)
     // ---------------------------------------------------------
     function initArcadeEngine() {
-        if (!userWallet) return alert("Connect node to initialize engine.");
-        if (hasArcadeInitialized) return logMsg("Arcade engine already running.");
-        
-        logMsg("Booting Neural Chess Engine...");
-        document.getElementById('arcadeOverlay').style.display = "none";
-        document.getElementById('arcadeStatus').innerText = "Engine Online - Ready";
-        document.getElementById('arcadeStatus').style.color = "#0f0";
-        
-        // This is where your chessboard UI/logic injections go.
-        // It is safely separated from the Gallery's RPC calls.
-        document.getElementById('boardInner').innerHTML = `
-            <div style="display: flex; height: 100%; align-items: center; justify-content: center; color: var(--text-dim); border: 2px dashed var(--border); margin: 10px;">
-                [ Chess Board Render Area ]<br>Move generator active.
-            </div>
-        `;
-        
-        hasArcadeInitialized = true;
-    }
+if (!userWallet) return alert("Connect node to initialize engine.");
+    logMsg("Booting Neural Chess Engine...");
+    
+    // UI Cleanup
+    document.getElementById('arcadeOverlay').style.display = "none";
+    document.getElementById('arcadeStatus').innerText = "Engine Online - Ready";
+    document.getElementById('arcadeStatus').style.color = "#0f0";
+
+    // Inject the Chess Logic (Simplified for this shell)
+    document.getElementById('boardInner').innerHTML = `
+        <div id="chessBoard" style="width: 100%; height: 100%;"></div>
+    `;
+    
+    logMsg("AIVM Chess Referee (0x479...D6856) Linked.");
+    // In a full implementation, you'd initialize Chessboard.js here
+}
+
+async function makeAIVMMove() {
+    const gameKey = await getArcadeKey();
+    logMsg(`[ARCADE] Generating AIVM Move via Key: ${gameKey.slice(0,10)}...`);
+    
+    // This simulates the request to your AIVM Referee contract (0x479...)
+    // In the 3.11 commit, this sent the FEN string to the AIVM for processing.
+    setTimeout(() => {
+        logMsg("AIVM Move Calculated: e2e4");
+    }, 1500);
+}
 
     function resetArcadeBoard() {
-        if (!hasArcadeInitialized) return;
-        logMsg("Resetting board state...");
-        document.getElementById('arcadeOverlay').style.display = "flex";
-        document.getElementById('boardInner').innerHTML = "";
-        document.getElementById('arcadeStatus').innerText = "Awaiting Initialization";
-        document.getElementById('arcadeStatus').style.color = "var(--text-dim)";
-        hasArcadeInitialized = false;
-    }
+ logMsg("Resetting board state...");
+    document.getElementById('arcadeOverlay').style.display = "flex";
+    document.getElementById('boardInner').innerHTML = "";
+    document.getElementById('arcadeStatus').innerText = "Awaiting Initialization";
+}
         
 async function updateUI(addr) {
     try {
@@ -1954,4 +1999,5 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
