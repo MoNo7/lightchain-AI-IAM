@@ -8,111 +8,62 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
     <style>
-        :root {
-            --bg: #0a0a0c;
-            --surface: #121216;
-            --accent: #00f2ff;
-            --text: #e0e0e6;
-            --text-dim: #9494a0;
-            --border: #2a2a32;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; overflow-x: hidden; }
-        
-        /* Layout */
-        .admin-shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
-        .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 2rem 1rem; }
-        .main-content { padding: 2rem; max-width: 1200px; margin: 0 auto; width: 100%; }
-
-        /* Navigation */
-        .nav-section { margin-bottom: 2rem; }
-        .nav-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1rem; padding-left: 1rem; }
-        .nav-item { display: flex; align-items: center; padding: 0.8rem 1rem; color: var(--text-dim); text-decoration: none; border-radius: 8px; cursor: pointer; transition: 0.2s; margin-bottom: 0.5rem; }
-        .nav-item i { margin-right: 1rem; font-size: 1.1rem; }
-        .nav-item:hover, .nav-item.active { background: #ffffff08; color: var(--accent); }
-
-        /* Views */
-        .view-panel { display: none; }
-        .view-panel.active { display: block; animation: fadeIn 0.4s ease; }
-
-        /* Components */
-        .glass-card { background: #ffffff05; border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; backdrop-filter: blur(10px); }
-        .pill { background: var(--accent); color: #000; border: none; padding: 0.6rem 1.2rem; border-radius: 20px; cursor: pointer; font-weight: 600; }
-        .input-group { margin-bottom: 1rem; }
-        input { width: 100%; background: #000; border: 1px solid var(--border); padding: 0.8rem; color: #fff; border-radius: 8px; outline: none; }
-        
-        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
-        .gallery-card { background: var(--surface); border: 1px solid var(--border); padding: 0.5rem; border-radius: 12px; }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        :root { --bg: #0a0a0c; --surface: #121216; --accent: #00f2ff; --text: #e0e0e6; --border: #2a2a32; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
+        .admin-shell { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); padding: 20px; }
+        .main-content { flex: 1; padding: 40px; }
+        .nav-item { padding: 12px; cursor: pointer; border-radius: 8px; margin-bottom: 5px; color: #9494a0; }
+        .nav-item.active { background: #ffffff08; color: var(--accent); }
+        .glass-card { background: #ffffff05; border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+        .pill { background: var(--accent); color: #000; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; }
+        input { width: 100%; background: #000; border: 1px solid var(--border); padding: 12px; color: #fff; border-radius: 8px; margin-bottom: 15px; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .gallery-card { background: var(--surface); border: 1px solid var(--border); padding: 10px; border-radius: 12px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="admin-shell">
     <aside class="sidebar">
-        <h2 style="margin-bottom: 2rem; padding-left: 1rem; color: var(--accent);">LCAI // IAM</h2>
-        
-        <div class="nav-section">
-            <div class="nav-label">Core Lab</div>
-            <div class="nav-item active" onclick="showView('zkView')"><i class="fa-solid fa-id-card"></i>Identity</div>
-            <div class="nav-item" onclick="showView('studioView')"><i class="fa-solid fa-wand-sparkles"></i>AIVM Studio</div>
-            <div class="nav-item" onclick="showView('galleryView')"><i class="fa-solid fa-vault"></i>Vault Gallery</div>
-        </div>
-
-        <div class="nav-section">
-            <div class="nav-label">Arcade</div>
-            <div class="nav-item" onclick="showView('arcadeView')"><i class="fa-solid fa-gamepad"></i>AIVM Arcade</div>
-        </div>
-
-        <div style="margin-top: auto; padding: 1rem;">
-            <button class="pill" style="width: 100%" id="connectBtn" onclick="connect()">CONNECT</button>
-            <div id="walletDisplay" style="font-size: 0.7rem; margin-top: 10px; color: var(--text-dim);"></div>
+        <h2 style="color: var(--accent);">LCAI // IAM</h2>
+        <div class="nav-item active" onclick="showView('zkView')">Identity</div>
+        <div class="nav-item" onclick="showView('studioView')">AIVM Studio</div>
+        <div class="nav-item" onclick="showView('galleryView')">Vault Gallery</div>
+        <div style="margin-top: auto;">
+            <button class="pill" style="width: 100%" onclick="connect()">CONNECT WALLET</button>
+            <div id="walletDisplay" style="font-size: 0.7rem; margin-top: 10px; opacity: 0.5;"></div>
         </div>
     </aside>
 
     <main class="main-content">
-        <div id="zkView" class="view-panel active">
-            <h1>Identity Passport</h1>
-            <p style="color:var(--text-dim); margin-bottom: 2rem;">ZK-Verified MiMo Decentralized Identity</p>
-            <div id="passportContainer">
-                <div class="glass-card" style="text-align:center;">
-                    <p>Connect wallet to verify your on-chain identity.</p>
-                </div>
-            </div>
+        <div id="zkView" class="view-panel">
+            <h1>ZK Identity</h1>
+            <div id="passportContainer"><div class="glass-card">Connect to verify identity.</div></div>
         </div>
 
-        <div id="studioView" class="view-panel">
+        <div id="studioView" class="view-panel" style="display:none;">
             <h1>AIVM Studio</h1>
             <div class="glass-card">
-                <div class="input-group">
-                    <input type="text" id="artPrompt" placeholder="Inference Prompt (e.g. Racoons in a race)...">
-                </div>
-                <button class="pill" onclick="generateAIVMArt()">GENERATE IMAGE</button>
+                <input type="text" id="artPrompt" placeholder="Prompt (e.g. Racoons in a race)">
+                <button class="pill" onclick="generateAIVMArt()">GENERATE</button>
             </div>
             <div id="renderArea" style="text-align: center;">
-                <img id="aivmOutputImage" style="max-width: 100%; border-radius: 12px; box-shadow: 0 0 30px #000;">
-                <div id="renderLoader" style="display:none; padding: 2rem;">Processing Neural Weights...</div>
-                <button id="saveArtBtn" class="pill" style="display:none; margin-top: 1rem;" onclick="saveToVault()">MINT TO VAULT</button>
+                <img id="aivmOutputImage" style="max-width: 100%; border-radius: 12px; display:none;">
+                <div id="renderLoader" style="display:none;">Neural weights loading...</div>
+                <button id="saveArtBtn" class="pill" style="display:none; margin-top: 15px;" onclick="saveArt()">MINT TO VAULT</button>
             </div>
         </div>
 
-        <div id="galleryView" class="view-panel">
+        <div id="galleryView" class="view-panel" style="display:none;">
             <h1>Vault Gallery</h1>
             <div id="galleryGrid" class="gallery-grid"></div>
-        </div>
-
-        <div id="arcadeView" class="view-panel">
-            <h1>AIVM Arcade</h1>
-            <div class="glass-card">
-                <h3>Chess vs LCAI-AIVM</h3>
-                <p>AI Move generation powered by Lightchain RPC.</p>
-                </div>
         </div>
     </main>
 </div>
 
 <script>
+    // FIXED: Pointers restored to Raccoon-era contracts
     const CONFIG = {
         identity: "0x9A07d6a0eF4a8037318a0731E41bd4061f27B172",
         artStudio: "0xe80d9542Ef60B680a621970d209d04DB24767614",
@@ -126,8 +77,8 @@
     };
 
     let userWallet = "";
-    let userEncryptionKey = "";
     let currentArtData = "";
+    window.hasInitialized = false;
 
     async function connect() {
         if (window.ethereum) {
@@ -135,146 +86,103 @@
             const accounts = await provider.send("eth_requestAccounts", []);
             userWallet = accounts[0];
             document.getElementById('walletDisplay').innerText = userWallet;
-            document.getElementById('connectBtn').innerText = "DISCONNECT";
             
-            // Start the registration check loop safely
+            // FIXED: RPC Flood Guard added to the interval
             setInterval(() => {
-                checkRegistrationStatus(userWallet);
+                if(!window.hasInitialized) checkIdentity();
             }, 3000);
         }
     }
 
-    async function checkRegistrationStatus(addr) {
-        // RPC FLOOD GUARD: Stop if session already initialized
-        if (window.hasInitializedData) return;
-
+    async function checkIdentity() {
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
-            const idContract = new ethers.Contract(CONFIG.identity, CONFIG.abi, provider);
-            
-            const isVerified = await idContract.verified(addr);
-            const nick = await idContract.nicknames(addr);
+            const contract = new ethers.Contract(CONFIG.identity, CONFIG.abi, provider);
+            const isVerified = await contract.verified(userWallet);
+            const nick = await contract.nicknames(userWallet);
 
             if (isVerified && nick) {
-                window.hasInitializedData = true; // LOCK
-                renderPassport(addr, nick);
-                
-                // Fetch key ONCE to enable Gallery/Studio
-                getEncryptionKey().then(key => {
-                    if(key) {
-                        userEncryptionKey = key;
-                        loadGallery();
-                    }
-                });
+                window.hasInitialized = true; // Lock the session to stop RPC errors
+                renderPassport(userWallet, nick);
+                loadGallery();
             }
-        } catch (e) { console.warn("Identity sync..."); }
-    }
-
-    async function getEncryptionKey() {
-        if (!userWallet) return;
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const msg = `Lightchain IAM Auth: ${userWallet}`;
-        const sig = await signer.signMessage(msg);
-        return ethers.keccak256(sig);
+        } catch (e) { console.warn("Syncing..."); }
     }
 
     function renderPassport(addr, nick) {
-        const container = document.getElementById('passportContainer');
-        const qr = qrcode(0, 'L');
-        qr.addData(addr);
-        qr.make();
-        
-        container.innerHTML = `
+        const qr = qrcode(0, 'L'); qr.addData(addr); qr.make();
+        document.getElementById('passportContainer').innerHTML = `
             <div class="glass-card" style="text-align:center;">
-                <div style="font-size: 2rem; color: var(--accent); font-weight:bold;">${nick}</div>
-                <div style="font-size: 0.8rem; opacity:0.6; margin-bottom: 20px;">MiMo Verified IAM Node</div>
-                <div style="background:white; display:inline-block; padding:10px; border-radius:10px;">
-                    ${qr.createImgTag(5)}
-                </div>
-                <div style="margin-top:20px; font-family: monospace; font-size:0.7rem;">${addr}</div>
-            </div>
-        `;
+                <h2>${nick}</h2>
+                <div style="background:white; display:inline-block; padding:10px; border-radius:10px;">${qr.createImgTag(4)}</div>
+                <p style="font-family:monospace; margin-top:15px;">${addr}</p>
+            </div>`;
     }
 
     async function generateAIVMArt() {
         const prompt = document.getElementById('artPrompt').value;
-        if(!prompt) return alert("Enter a prompt.");
-
         document.getElementById('renderLoader').style.display = "block";
-        document.getElementById('aivmOutputImage').src = "";
         
-        // RESTORE: Updated Pollinations Endpoint
+        // FIXED: Deprecated /p/ endpoint updated to image subdomain
         const seed = Math.floor(Math.random() * 999999);
         const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
         
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.src = url;
-        
         img.onload = () => {
-            // RESTORE RACCOON-ERA COMPRESSION (512px @ 0.6)
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCanvas.width = 512;
-            tempCanvas.height = 512;
-            tempCtx.drawImage(img, 0, 0, 512, 512);
-            
-            // This Base64 payload is what saved the raccoons
-            currentArtData = tempCanvas.toDataURL('image/jpeg', 0.6);
+            // RESTORED: Raccoon-era 512px Compression (This made the raccoons work)
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, 512, 512);
+            currentArtData = canvas.toDataURL('image/jpeg', 0.6);
             
             document.getElementById('aivmOutputImage').src = img.src;
+            document.getElementById('aivmOutputImage').style.display = "block";
             document.getElementById('renderLoader').style.display = "none";
-            document.getElementById('saveArtBtn').style.display = "block";
+            document.getElementById('saveArtBtn').style.display = "inline-block";
         };
     }
 
-    async function saveToVault() {
+    async function saveArt() {
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const contract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, signer);
-            
-            // High gas limit for Base64 storage
-            const tx = await contract.mintArtNFT(currentArtData, "LCAI_GEN", "{}", { gasLimit: 8000000 });
+            const tx = await contract.mintArtNFT(currentArtData, "LCAI_RACCOON", "{}", { gasLimit: 8000000 });
             await tx.wait();
-            alert("Art Saved to ZK Vault!");
+            alert("Minted successfully!");
             loadGallery();
-        } catch (e) { alert("RPC Error: Check Balance/Gas."); }
+        } catch (e) { console.error(e); alert("Minting failed. Check gas/balance."); }
     }
 
     async function loadGallery() {
         const grid = document.getElementById('galleryGrid');
-        if (window.isGallerySyncing) return;
-        window.isGallerySyncing = true;
-        grid.innerHTML = "Deciphering Vault...";
-
+        grid.innerHTML = "Scanning Vault...";
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const contract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
             let html = "";
-            
-            // RACCOON ERA FALLBACK: Manual Scan IDs 0-25
             for(let i=0; i<25; i++) {
                 try {
                     const owner = await contract.ownerOf(i);
                     if(owner.toLowerCase() === userWallet.toLowerCase()) {
                         const uri = await contract.tokenURI(i);
-                        html += `<div class="gallery-card"><img src="${uri}" style="width:100%; border-radius:8px;"><p style="font-size:0.6rem; text-align:center;">NFT #${i}</p></div>`;
+                        html += `<div class="gallery-card"><img src="${uri}" style="width:100%; border-radius:8px;"><p>NFT #${i}</p></div>`;
                     }
                 } catch(e) { continue; }
             }
-            grid.innerHTML = html || "Vault Empty.";
-        } finally { window.isGallerySyncing = false; }
+            grid.innerHTML = html || "No items found.";
+        } catch(e) { console.error(grid.innerHTML = "Error loading gallery."); }
     }
 
     function showView(viewId) {
-        document.querySelectorAll('.view-panel').forEach(v => v.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
-        document.getElementById(viewId).classList.add('active');
+        document.querySelectorAll('.view-panel').forEach(v => v.style.display = 'none');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(viewId).style.display = 'block';
         event.currentTarget.classList.add('active');
     }
 </script>
-
 </body>
 </html>
