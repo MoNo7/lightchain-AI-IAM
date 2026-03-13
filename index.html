@@ -1962,30 +1962,49 @@ for (let i = 0; i < 25; i++) {
             
             let imgData = uri;
 
-            // 1. Decrypt if it's ZK-Encrypted
-            if (uri.startsWith("U2Fsd")) {
-                imgData = await decryptArt(uri);
-            } 
-            // 2. UNWRAP ON-CHAIN JSON METADATA (This is likely what Token #1 is)
-            else if (uri.startsWith("data:application/json;base64,")) {
-                const jsonStr = atob(uri.split(',')[1]);
-                const metadata = JSON.parse(jsonStr);
-                imgData = metadata.image; // Extract the actual image property
-            }
+            try {
+                // 1. Handle Encrypted Payloads
+                if (uri.startsWith("U2Fsd")) {
+                    let decrypted = await decryptArt(uri);
+                    
+                    // Did it decrypt into a JSON string?
+                    if (decrypted.trim().startsWith('{')) {
+                        const metadata = JSON.parse(decrypted);
+                        imgData = metadata.image;
+                    } else {
+                        imgData = decrypted; // It's a raw image string
+                    }
+                } 
+                // 2. Handle Standard Base64 JSON Metadata
+                else if (uri.startsWith("data:application/json;base64,")) {
+                    const jsonStr = atob(uri.split(',')[1]);
+                    const metadata = JSON.parse(jsonStr);
+                    imgData = metadata.image;
+                }
+                // 3. Handle Raw JSON strings (Unencrypted)
+                else if (uri.trim().startsWith('{')) {
+                    const metadata = JSON.parse(uri);
+                    imgData = metadata.image;
+                }
 
-            // 3. Fix IPFS Links (Browsers need a gateway)
-            if (imgData && imgData.startsWith("ipfs://")) {
-                imgData = imgData.replace("ipfs://", "https://ipfs.io/ipfs/");
-            }
+                // Format standardizations
+                if (imgData && imgData.startsWith("ipfs://")) {
+                    imgData = imgData.replace("ipfs://", "https://ipfs.io/ipfs/");
+                }
+                if (imgData && !imgData.startsWith("data:image") && !imgData.startsWith("http")) {
+                    imgData = "data:image/jpeg;base64," + imgData;
+                }
 
-            // 4. Fix raw base64 (if the header was stripped)
-            if (imgData && !imgData.startsWith("data:image") && !imgData.startsWith("http")) {
-                imgData = "data:image/jpeg;base64," + imgData;
+            } catch (parseError) {
+                console.warn(`[GALLERY] JSON Parse Error on Token #${i}:`, parseError);
+                // Fallback so the loop doesn't break
+                imgData = "https://via.placeholder.com/400?text=Metadata+Error"; 
             }
 
             if(!window.userGallery) window.userGallery = [];
             window.userGallery[i] = { id: i, uri: uri };
 
+            // Render Card
             html += `
                 <div class="gallery-card" style="background:var(--panel); border:1px solid var(--border); padding:10px; border-radius:12px; display:flex; flex-direction:column;">
                     <div class="art-container" style="width:100%; aspect-ratio:1/1; overflow:hidden; border-radius:8px; background:#000;">
