@@ -342,13 +342,13 @@
                 <div class="arcade-container">
                     <div class="glass-card">
                         <h3>Neural Chess Engine</h3>
-                        <div class="arcade-screen" id="chessBoardContainer">
-                            <div id="arcadeOverlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
-                                <i class="fa-solid fa-chess-knight" style="font-size: 3rem; color: var(--accent); margin-bottom: 1rem;"></i>
-                                <button class="pill" onclick="initArcadeEngine()" style="width: auto;">START ENGINE</button>
-                            </div>
-                            <div id="boardInner" style="width: 100%; height: 100%;"></div>
-                        </div>
+<div class="arcade-screen" id="chessBoardContainer" style="position: relative; height: 450px; background: #111; display: flex; align-items: center; justify-content: center;">
+    <div id="arcadeOverlay" style="position: absolute; z-index: 10; text-align: center;">
+        <i class="fa-solid fa-chess-knight" style="font-size: 5rem; color: var(--accent); margin-bottom: 2rem; display: block;"></i>
+        <button class="pill" onclick="initArcadeEngine()" style="width: 200px;">START ENGINE</button>
+    </div>
+    <div id="boardInner" style="width: 400px; height: 400px;"></div>
+</div>
                     </div>
                     <div class="glass-card arcade-controls">
                         <h3>Engine Controls</h3>
@@ -2007,6 +2007,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
