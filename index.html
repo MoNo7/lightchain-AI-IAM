@@ -1942,7 +1942,7 @@ async function loadGallery() {
     const container = document.getElementById('galleryGrid');
     if (!userWallet) return;
 
-    container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Decoding 5 Vault Assets...</div>';
+    container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--accent);">Unlocking 5 Vault Assets...</div>';
 
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
@@ -1950,77 +1950,43 @@ async function loadGallery() {
         let html = "";
         let foundCount = 0;
 
-        // Ensure we have the signature/key first
         if (!userEncryptionKey) await getEncryptionKey();
 
-for (let i = 0; i < 25; i++) {
-    try {
-        const owner = await artContract.ownerOf(i);
-        if (owner.toLowerCase() === userWallet.toLowerCase()) {
-            foundCount++;
-            const uri = await artContract.tokenURI(i);
-            
-            let imgData = uri;
-
+        // MANUAL SCAN: This loop is what correctly finds your 5 assets
+        for (let i = 0; i < 25; i++) {
             try {
-                // 1. Handle Encrypted Payloads
-                if (uri.startsWith("U2Fsd")) {
-                    let decrypted = await decryptArt(uri);
+                const owner = await artContract.ownerOf(i);
+                if (owner.toLowerCase() === userWallet.toLowerCase()) {
+                    foundCount++;
+                    const uri = await artContract.tokenURI(i);
                     
-                    // Did it decrypt into a JSON string?
-                    if (decrypted.trim().startsWith('{')) {
-                        const metadata = JSON.parse(decrypted);
-                        imgData = metadata.image;
-                    } else {
-                        imgData = decrypted; // It's a raw image string
+                    // --- THE FIX: We are actually defining imgData now ---
+                    let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
+                    
+                    // Add the header if it's raw base64
+                    if (imgData && !imgData.startsWith("data:image") && !imgData.startsWith("http")) {
+                        imgData = "data:image/jpeg;base64," + imgData;
                     }
-                } 
-                // 2. Handle Standard Base64 JSON Metadata
-                else if (uri.startsWith("data:application/json;base64,")) {
-                    const jsonStr = atob(uri.split(',')[1]);
-                    const metadata = JSON.parse(jsonStr);
-                    imgData = metadata.image;
-                }
-                // 3. Handle Raw JSON strings (Unencrypted)
-                else if (uri.trim().startsWith('{')) {
-                    const metadata = JSON.parse(uri);
-                    imgData = metadata.image;
-                }
 
-                // Format standardizations
-                if (imgData && imgData.startsWith("ipfs://")) {
-                    imgData = imgData.replace("ipfs://", "https://ipfs.io/ipfs/");
+                    if(!window.userGallery) window.userGallery = [];
+                    window.userGallery[i] = { id: i, uri: uri };
+
+                    html += `
+                        <div class="gallery-card" style="background:var(--panel); border:1px solid var(--border); padding:10px; border-radius:12px; display:flex; flex-direction:column; min-height:280px;">
+                            <div class="art-container" style="width:100%; aspect-ratio:1/1; overflow:hidden; border-radius:8px; background:#000;">
+                                <img src="${imgData}" style="width:100%; height:100%; object-fit:cover; display:block;">
+                                <div class="ui-watermark">TOKEN #${i}</div>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px;">
+                                <button class="pill" onclick="showArtInfo(${i})">INFO</button>
+                                <button class="pill" onclick="listInAuction(${i})" style="background:var(--accent); color:#000;">SELL</button>
+                            </div>
+                        </div>`;
                 }
-                if (imgData && !imgData.startsWith("data:image") && !imgData.startsWith("http")) {
-                    imgData = "data:image/jpeg;base64," + imgData;
-                }
-
-            } catch (parseError) {
-                console.warn(`[GALLERY] JSON Parse Error on Token #${i}:`, parseError);
-                // Fallback so the loop doesn't break
-                imgData = "https://via.placeholder.com/400?text=Metadata+Error"; 
-            }
-
-            if(!window.userGallery) window.userGallery = [];
-            window.userGallery[i] = { id: i, uri: uri };
-
-            // Render Card
-            html += `
-                <div class="gallery-card" style="background:var(--panel); border:1px solid var(--border); padding:10px; border-radius:12px; display:flex; flex-direction:column;">
-                    <div class="art-container" style="width:100%; aspect-ratio:1/1; overflow:hidden; border-radius:8px; background:#000;">
-                        <img src="${imgData}" style="width:100%; height:100%; object-fit:cover; display:block;">
-                        <div class="ui-watermark">TOKEN #${i}</div>
-                    </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px;">
-                        <button class="pill" onclick="showArtInfo(${i})">INFO</button>
-                        <button class="pill" onclick="listInAuction(${i})" style="background:var(--accent); color:#000;">SELL</button>
-                    </div>
-                </div>`;
+            } catch (e) { continue; }
         }
-    } catch (e) { continue; }
-}
-        container.innerHTML = foundCount > 0 ? html : "No assets found.";
-        log(`[GALLERY] Success: ${foundCount} assets visible.`);
+        container.innerHTML = foundCount > 0 ? html : "Vault is empty.";
+        log(`[GALLERY] Success: ${foundCount} assets rendered.`);
     } catch (e) {
         log("Gallery Sync Error.");
         console.error(e);
