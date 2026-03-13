@@ -605,6 +605,27 @@ let board = null;
 let arcadeGame = null;
 let arcadeBoard = null;
 
+// Ask MetaMask for a signature to create a unique password
+async function getEncryptionKey() {
+    if (userEncryptionKey) return userEncryptionKey; // Use cached key if already signed
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        log("[PRIVACY] Please sign the message to unlock your encryption key...");
+        
+        // This signature is unique to the user's wallet
+        const signature = await signer.signMessage("Unlock Lightchain AIVM Private Gallery");
+        
+        // Hash it so we have a clean 256-bit AES key
+        userEncryptionKey = CryptoJS.SHA256(signature).toString();
+        return userEncryptionKey;
+    } catch (e) {
+        log("Encryption signature rejected.");
+        return null;
+    }
+}
+
+
 async function getArcadeKey() {
     // Uses a keccak256 hash of the wallet + a static salt to create a 
     // "Game Session Key" that doesn't require a MetaMask popup every move.
@@ -2071,6 +2092,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
