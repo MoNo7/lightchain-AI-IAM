@@ -378,15 +378,16 @@
     <div id="arcadeHub" class="arcade-main-grid" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px;">
         
         <div class="glass-card">
-            <h3 style="color: var(--accent); margin-bottom: 15px;"><i class="fa-solid fa-chess"></i> Grandmaster Engine</h3>
+            <h3 style="color: var(--accent); margin-bottom: 15px;"><i class="fa-solid fa-chess"></i> Chess Engine</h3>
             <div id="chessBoardContainer" style="background: #000; border-radius: 8px; padding: 10px; display: flex; justify-content: center; position: relative;">
                 <div id="arcadeOverlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                     <i class="fa-solid fa-chess-knight" style="font-size: 4rem; color: var(--accent); margin-bottom: 1.5rem;"></i>
                     <button class="pill" onclick="initArcadeEngine()" style="width: 180px;">START CHESS</button>
                 </div>
+                <button id="playChessBtn" class="pill" style="width:100%; padding:12px; font-weight:bold; cursor:pointer; transition:all 0.3s ease;">
+                    CONNECTING...
+                </button>
                 <div id="boardInner" style="width: 400px; height: 400px;"></div>
-            </div>
-            <button class="pill" onclick="makeAIVMMove()" style="width: 100%; margin-top: 15px;">REQUEST AI MOVE</button>
         </div>
 
         <div class="glass-card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border: 1px solid var(--accent); background: linear-gradient(45deg, #0d1117, #1a1f26);">
@@ -425,6 +426,52 @@
                 <p style="font-size: 0.7rem; color: var(--text-dim);">Global AIVM Rankings</p>
                 <button class="pill" style="width: 100%;">VIEW RANK</button>
             </div>
+        </div>
+    </div>
+</div>
+
+    <div id="chessView" style="display:none; flex-direction:column; flex:1; padding:20px; overflow-y:auto;">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; border-bottom:1px solid var(--border); padding-bottom:15px;">
+        <h2 style="color:var(--accent); display:flex; align-items:center; gap:10px; margin:0;">
+            <i class="fa-solid fa-chess"></i> Grandmaster Engine vs LCAI
+        </h2>
+        <button class="pill" onclick="exitChess()" style="background:var(--panel); color:var(--text); border:1px solid var(--border);">
+            <i class="fa-solid fa-arrow-left"></i> EXIT GAME
+        </button>
+    </div>
+    
+    <div style="display:flex; gap:30px; flex-wrap:wrap; justify-content:center; align-items:flex-start;">
+        
+        <div style="width: 450px; max-width: 100%; background:var(--panel); padding:15px; border-radius:12px; border:1px solid var(--border);">
+            <div id="aivmBoard" style="width: 100%;"></div>
+        </div>
+        
+        <div style="flex:1; min-width:300px; max-width:500px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px; display:flex; flex-direction:column;">
+            
+            <h3 style="margin-top:0; color:#fff; margin-bottom:15px;">Match Status</h3>
+            <div id="chessStatus" style="font-size:1.4rem; color:var(--accent); font-weight:bold; margin-bottom:10px;">
+                White to move
+            </div>
+            
+            <div style="font-family:monospace; font-size:0.75rem; color:var(--text-dim); background:#000; padding:10px; border-radius:6px; word-break:break-all; margin-bottom:20px; border:1px solid #222;">
+                <span style="color:#666;">FEN:</span> <span id="chessFen">rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1</span>
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <button class="pill" onclick="startNewChessGame()" style="background:var(--accent); color:#000; flex:1; font-weight:bold;">
+                    <i class="fa-solid fa-rotate-right"></i> NEW GAME
+                </button>
+                <button class="pill" onclick="undoChessMove()" style="flex:1; border:1px solid var(--border);">
+                    <i class="fa-solid fa-rotate-left"></i> UNDO
+                </button>
+            </div>
+
+            <h4 style="margin:0 0 10px 0; color:var(--text-dim); font-size:0.85rem; text-transform:uppercase; letter-spacing:1px;">AIVM Engine Log</h4>
+            <div id="aivmLog" style="background:#000; padding:15px; border-radius:8px; flex:1; min-height:150px; overflow-y:auto; font-family:monospace; font-size:0.85rem; color:var(--text); border:1px solid #222; box-shadow:inset 0 0 10px rgba(0,0,0,0.5);">
+                <span style="color:var(--text-dim);">[SYS]</span> Grandmaster Engine Initialized.<br>
+            </div>
+            
         </div>
     </div>
 </div>
@@ -521,8 +568,12 @@ let game = null;
 let board = null;
 let arcadeGame = null;
 let arcadeBoard = null;
-let hasInitializedVault = false; 
-
+let hasInitializedVault = false;
+let chessGame = new Chess();
+let chessBoard = null;
+let aivmIsThinking = false;
+let userWallet;
+let isRegistered = false;
 
 // Ask MetaMask for a signature to create a unique password
 async function getEncryptionKey() {
@@ -592,8 +643,7 @@ window.onload = async () => {
 };
 
     
-        let userWallet;
-        let isRegistered = false;
+
 
         const inferenceModels = [
             { name: "Neural-Llama-3-70B", hash: "0xE035b7192a5d816b0f420a9e755efc6a2c1ea51d", baseLoad: 12.4 },
@@ -722,11 +772,64 @@ async function getArcadeKey() {
             }
         });
     }
+
+
+    function launchGrandmasterEngine() {
+    if (!isRegistered) {
+        logMsg("Access Denied: You must register a Vault ID to play.");
+        return;
+    }
+    
+    document.getElementById('arcadeHub').style.display = 'none';
+    const chessView = document.getElementById('chessView');
+    chessView.style.display = 'flex';
+    
+    // Only initialize the board once
+    if (!chessBoard) {
+        const config = {
+            draggable: true,
+            position: 'start',
+            onDragStart: onDragStart,
+            onDrop: onDrop,
+            onSnapEnd: onSnapEnd,
+            // Uses Wikipedia piece assets via Chessboard.js fallback
+            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+        };
+        chessBoard = Chessboard('aivmBoard', config);
+    }
+    
+    updateChessStatus();
+    logAIVM("<span style='color:var(--accent);'>[AIVM]</span> Ready for your move.");
+}
+
+
+        
     // 1. Only allow the user to move White pieces on their turn
     function onDragStart (source, piece, position, orientation) {
         if (game.game_over()) return false;
         // Only pick up pieces for White
         if (piece.search(/^b/) !== -1) return false;
+        if (chessGame.game_over() || piece.search(/^b/) !== -1 || aivmIsThinking) {
+        return false;
+    }
+    }
+
+    // 3. Handle piece drop and validate rules
+    function onDrop(source, target) {
+        // See if the move is legal
+        let move = chessGame.move({
+            from: source,
+            to: target,
+            promotion: 'q' // Always promote to queen for simplicity
+        });
+    
+        // If illegal move, snap back
+        if (move === null) return 'snapback';
+    
+        updateChessStatus();
+        
+        // Trigger the AIVM response
+        window.setTimeout(triggerAIVMMove, 250);
     }
 
     // 2. Validate the user's move
@@ -749,6 +852,30 @@ async function getArcadeKey() {
     // 3. Update the board visual after the logic move
     function onSnapEnd () {
         board.position(game.fen());
+    }
+
+    function onSnapEnd() {
+        chessBoard.position(chessGame.fen());
+    }
+
+    // 5. Update UI text and FEN
+    function updateChessStatus() {
+        let status = '';
+        let moveColor = chessGame.turn() === 'b' ? 'Black (AIVM)' : 'White (You)';
+    
+        if (chessGame.in_checkmate()) {
+            status = `Game over, ${moveColor} is in checkmate.`;
+        } else if (chessGame.in_draw()) {
+            status = 'Game over, drawn position.';
+        } else {
+            status = `${moveColor} to move`;
+            if (chessGame.in_check()) {
+                status += ` (Check)`;
+            }
+        }
+    
+        document.getElementById('chessStatus').innerText = status;
+        document.getElementById('chessFen').innerText = chessGame.fen();
     }
 
     // --- ARCADE GATEWAY CONTROL ---
@@ -820,6 +947,71 @@ async function getArcadeKey() {
                 logMsg(`[ERROR] AIVM Connection Failed: ${e.message}`);
             }
         }
+
+
+    // 6. The AIVM Engine Call
+    async function triggerAIVMMove() {
+        if (chessGame.game_over()) return;
+    
+        aivmIsThinking = true;
+        logAIVM("<span style='color:#888;'>[SYS]</span> Computing optimal inference...");
+    
+        try {
+            const currentFen = chessGame.fen();
+            
+            // ==========================================
+            // 🚀 LCAI AIVM INTEGRATION POINT
+            // ==========================================
+            const response = await fetch('https://chat2.lightchain.ai/api/v1/chess/move', {
+                 method: 'POST',
+                 body: JSON.stringify({ fen: currentFen, model: "Neural-Llama-3-70B" })
+             });
+             const data = await response.json();
+             const bestMove = data.move; // e.g., "e7e5"
+
+            chessGame.move(bestMove);
+            chessBoard.position(chessGame.fen());
+            logAIVM(`<span style='color:var(--accent);'>[AIVM]</span> Plays: ${bestMove}`);
+            
+            updateChessStatus();
+        } catch (err) {
+            logAIVM(`<span style='color:red;'>[ERR]</span> Engine failure: ${err.message}`);
+        } finally {
+            aivmIsThinking = false;
+        }
+    }
+    
+    // 7. Utility Controls
+    function startNewChessGame() {
+        if (aivmIsThinking) return;
+        chessGame.reset();
+        chessBoard.start();
+        updateChessStatus();
+        logAIVM("<span style='color:#888;'>[SYS]</span> Board reset. You are White.");
+    }
+    
+    function undoChessMove() {
+        if (aivmIsThinking || chessGame.history().length === 0) return;
+        chessGame.undo(); // Undo AIVM move
+        chessGame.undo(); // Undo User move
+        chessBoard.position(chessGame.fen());
+        updateChessStatus();
+        logAIVM("<span style='color:#888;'>[SYS]</span> Move retracted.");
+    }
+    
+    function exitChess() {
+        document.getElementById('chessView').style.display = 'none';
+        document.getElementById('arcadeHub').style.display = 'grid'; // Or 'block' based on your CSS
+    }
+    
+    function logAIVM(msg) {
+        const logDiv = document.getElementById('aivmLog');
+        if(logDiv) {
+            logDiv.innerHTML += msg + "<br>";
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+    }
+        
     // Simple move handler to trigger the AI
     function handleMove(source, target, piece) {
         const move = game.move({
@@ -875,7 +1067,6 @@ async function startOAuth(provider) {
         const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
         // window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
 
-        // SURGICAL FIX: Open in a popup instead of redirecting the main page
         window.open(authUrl, "GitHub Auth", "width=600,height=700");
     }
 }
@@ -1108,6 +1299,7 @@ async function checkRegistrationStatus(addr, contract) {
             // Unlock Art Studio & Gallery
         // 2. Force View to zkView and Render Passport
             unlockArtStudio();
+            updateChessButton();
             
             // 2. VIEW SWITCH: Ensure zkView is the active main container
             showView('zkView');
@@ -1304,6 +1496,52 @@ async function registerLocal() {
   
             log(`[MARKET] Success: ${name} listed for ${price} LCAI.`);
         }
+
+
+function updateChessButton() {
+    const chessBtn = document.getElementById('playChessBtn');
+    if (!chessBtn) return;
+    
+    if (isRegistered) {
+        // User owns a minted token
+        chessBtn.innerText = "PLAY CHESS";
+        chessBtn.onclick = launchGrandmasterEngine;
+        chessBtn.style.background = "var(--accent)";
+        chessBtn.style.color = "#000";
+        chessBtn.style.border = "none";
+    } else {
+        // User does not own a minted token
+        chessBtn.innerText = "REGISTER TO PLAY";
+        chessBtn.onclick = () => showView('registryView');
+        chessBtn.style.background = "transparent";
+        chessBtn.style.color = "var(--text)";
+        chessBtn.style.border = "1px solid var(--border)";
+    }
+}
+
+// Triggers the actual game transition
+function launchChessEngine() {
+    if (!isRegistered) {
+        logMsg("Access Denied: You must register a Vault ID to play.");
+        return;
+    }
+    
+    // Hide the main Arcade Hub
+    const arcadeHub = document.getElementById('arcadeHub');
+    if (arcadeHub) arcadeHub.style.display = 'none';
+    
+    // Show the Chess View (assuming you have a container with this ID ready)
+    const chessView = document.getElementById('chessView');
+    if (chessView) {
+        chessView.style.display = 'block';
+        logMsg("[ARCADE] Chess Engine initialized. AIVM is ready.");
+        
+        // If you have a board initialization function, call it here.
+        // e.g., initChessBoard();
+    } else {
+        logMsg("[ARCADE] Chess interface is under construction.");
+    }
+}        
 
 async function renderAuctions() {
     const grid = document.getElementById('auctionGrid');
