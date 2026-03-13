@@ -900,6 +900,21 @@ function checkGitHubCallback() {
 
         
 async function connect() {
+
+    let selectedProvider;
+
+    // 1. Logic to bypass Coinbase hijacking
+    if (window.ethereum && window.ethereum.providers) {
+        // Find the specific provider that identifies as MetaMask
+        selectedProvider = window.ethereum.providers.find(p => p.isMetaMask);
+    } else if (window.ethereum && window.ethereum.isMetaMask) {
+        selectedProvider = window.ethereum;
+    }
+
+    if (!selectedProvider) {
+        return alert("MetaMask not found! Please disable Coinbase Wallet or set MetaMask as default.");
+    }
+    
     // Force the ID to reveal if you are the owner defined in CONFIG
 if (userWallet && userWallet.toLowerCase() === CONFIG.owner.toLowerCase()) {
     const adminMenu = document.getElementById('adminItems');
@@ -2102,6 +2117,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
