@@ -2308,8 +2308,18 @@ async function listInAuction(tokenId) {
             // 3. Highlight nav
             document.querySelectorAll('.nav-item').forEach(nav => {
                 nav.classList.remove('active');
-                if (nav.getAttribute('onclick')?.includes(viewId)) nav.classList.add('active');
+                const clickHandler = nav.getAttribute('onclick') || "";
+                if (clickHandler.includes(viewId)) {
+                    nav.classList.add('active');
+                }
+               // if (nav.getAttribute('onclick')?.includes(viewId)) nav.classList.add('active');
             });
+            if (viewId === 'marketView') {
+                const grid = document.getElementById('auctionGrid');
+                if (grid) grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px;">Syncing with Auction House...</div>';
+                renderAuctions(); 
+            }
+           
         }
 
         function log(m) {
