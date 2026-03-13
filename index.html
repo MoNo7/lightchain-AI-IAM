@@ -1352,6 +1352,7 @@ async function renderAuctions() {
                         </div>
                     </div>`;
             }
+                } catch (e) { continue; }
         }
         grid.innerHTML = count > 0 ? html : '<div id="auctionEmpty" style="grid-column:1/-1; text-align:center; padding:40px;">No active on-chain auctions.</div>';
     } catch (e) {
@@ -2205,6 +2206,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
