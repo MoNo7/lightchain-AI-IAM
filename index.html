@@ -1927,66 +1927,60 @@ async function mintWithSocial() {
             }
         }
 
-      async function loadGallery() {
-        const container = document.getElementById('galleryGrid');
-        if (!userWallet) return;
-    
-        container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Scanning ZK Vault...</div>';
-    
-        try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
-            let html = "";
-            let foundCount = 0;
-    
-            // Force one single signature at the start to prevent double-prompting
-            if (!userEncryptionKey) {
-                await getEncryptionKey();
-            }
-    
-            // Scan IDs 0-25 (Matches the item seen in the Auction House)
-            for (let i = 0; i < 25; i++) {
-                try {
-                    // Check ownership
-                    const owner = await artContract.ownerOf(i);
+async function loadGallery() {
+    const container = document.getElementById('galleryGrid');
+    if (!userWallet) return;
+
+    container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Decoding 5 Vault Assets...</div>';
+
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
+        let html = "";
+        let foundCount = 0;
+
+        if (!userEncryptionKey) await getEncryptionKey();
+
+        for (let i = 0; i < 25; i++) {
+            try {
+                const owner = await artContract.ownerOf(i);
+                if (owner.toLowerCase() === userWallet.toLowerCase()) {
+                    foundCount++;
+                    const uri = await artContract.tokenURI(i);
                     
-                    if (owner.toLowerCase() === userWallet.toLowerCase()) {
-                        foundCount++;
-                        const uri = await artContract.tokenURI(i);
-                        
-                        // Decrypt art (using the key we unlocked above)
-                        let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
-                        
-                        if (imgData && !imgData.startsWith("data:image") && !imgData.startsWith("http")) {
-                            imgData = "data:image/jpeg;base64," + imgData;
-                        }
-    
-                        html += `
-                            <div class="gallery-card">
-                                <div class="art-container">
-                                    <img src="${imgData}" style="width:100%; border-radius:8px; aspect-ratio:1/1; object-fit:cover;">
-                                    <div class="ui-watermark">TOKEN #${i}</div>
-                                </div>
-                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px;">
-                                    <button class="pill" onclick="showArtInfo(${i})">INFO</button>
-                                    <button class="pill" onclick="listInAuction(${i})" style="background:var(--accent); color:#000;">SELL</button>
-                                </div>
-                            </div>`;
+                    // 1. DECRYPT
+                    let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
+                    
+                    // 2. VALIDATE DATA HEADER
+                    if (imgData && !imgData.startsWith("data:image") && !imgData.startsWith("http")) {
+                        imgData = "data:image/jpeg;base64," + imgData;
                     }
-                } catch (e) {
-                    // This ID is unminted or empty, skip immediately
-                    continue;
+
+                    // 3. GENERATE HTML (Ensure display:block and visible dimensions)
+                    html += `
+                        <div class="gallery-card" style="background:var(--panel); border:1px solid var(--border); padding:10px; border-radius:12px; display:flex; flex-direction:column;">
+                            <div class="art-container" style="width:100%; aspect-ratio:1/1; overflow:hidden; border-radius:8px; background:#000;">
+                                <img src="${imgData}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.src='https://via.placeholder.com/200?text=Render+Error'">
+                                <div class="ui-watermark">TOKEN #${i}</div>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px;">
+                                <button class="pill" onclick="showArtInfo(${i})">INFO</button>
+                                <button class="pill" onclick="listInAuction(${i})" style="background:var(--accent); color:#000;">SELL</button>
+                            </div>
+                        </div>`;
                 }
-            }
-    
-            container.innerHTML = foundCount > 0 ? html : '<div style="grid-column:1/-1; text-align:center;">Vault empty. (No assets found for this wallet).</div>';
-            log(`[GALLERY] Scan complete. Found ${foundCount} assets.`);
-    
-        } catch (e) {
-            console.error(e);
-            log("Gallery Sync Error. Check console.");
+            } catch (e) { continue; }
         }
+        
+        // Final render
+        container.innerHTML = foundCount > 0 ? html : "No assets found.";
+        log(`[GALLERY] Render complete for ${foundCount} assets.`);
+
+    } catch (e) {
+        log("Gallery Display Error.");
+        console.error(e);
     }
+}
         
         
 async function listInAuction(tokenId) {
@@ -2211,6 +2205,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
