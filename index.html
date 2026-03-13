@@ -1973,8 +1973,9 @@ async function mintWithSocial() {
                             </div>
                             <button class="btn-zk" onclick="listInAuction(${i})" style="width:100%; margin-top:8px; text-align:center;">LIST FOR SALE</button>
                         </div>`;
-            }
-            } catch (e) { continue; }
+                           }
+                        } catch (e) { continue; }
+                    }
 //container.innerHTML = found ? html : '<p>No assets found in vault.</p>';
 container.innerHTML = foundCount > 0 ? html : '<p style="grid-column:1/-1; text-align:center;">No assets found in this vault.</p>';
         log(`[GALLERY] Scan complete. Found ${foundCount} assets.`);
@@ -2205,6 +2206,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
