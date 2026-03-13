@@ -1529,6 +1529,11 @@ async function generateAIVMArt() {
 
     isGenerating = true; 
     const finalPrompt = (basePrompt + styleSuffix).replace(/\s+/g, ' ');
+    localStorage.setItem('last_render_time', Date.now());
+    
+    // 2. USE THE STABILIZED ENDPOINT
+    const seed = Math.floor(Math.random() * 1000000);
+    const aiImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(basePrompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
 
     // UI Feedback
     document.getElementById('renderStatusText').style.display = 'none';
@@ -1573,8 +1578,6 @@ async function generateAIVMArt() {
         // --- STEP 2: STABILIZED RENDER ---
         const seed = Math.floor(Math.random() * 1000000);
         const encodedPrompt = encodeURIComponent(finalPrompt);
-        const aiImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
-
         const img = new Image();
         img.crossOrigin = "anonymous"; 
 
@@ -2117,6 +2120,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
