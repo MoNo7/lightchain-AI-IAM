@@ -1643,7 +1643,7 @@ async function mintWithSocial() {
                     found = true;
                     const uri = await contract.tokenURI(i);
                         const tokenId = await artContract.tokenOfOwnerByIndex(userWallet, i);
-                        const uri = await artContract.tokenURI(tokenId);
+                     //   const uri = await artContract.tokenURI(tokenId);
                 }
                 let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
                         
@@ -1902,6 +1902,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
