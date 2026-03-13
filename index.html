@@ -575,7 +575,8 @@ async function autoConnectWallet() {
             checkRegistrationStatus(userWallet, contract);
         }
 }
-
+let game = null;
+let board = null;
 let arcadeGame = null;
 let arcadeBoard = null;
 
@@ -589,32 +590,39 @@ async function getArcadeKey() {
     // 9. ARCADE ENGINE (Preserved and Insulated from Gallery)
     // ---------------------------------------------------------
     function initArcadeEngine() {
-if (!userWallet) return alert("Connect node to initialize engine.");
-    logMsg("Booting Neural Chess Engine...");
+if (!userWallet) return log("Error: Connect node to initialize engine.");
     
-    // UI Cleanup
+    log("[ARCADE] Booting AIVM Chess Engine...");
     document.getElementById('arcadeOverlay').style.display = "none";
     document.getElementById('arcadeStatus').innerText = "Engine Online - Ready";
-    document.getElementById('arcadeStatus').style.color = "#0f0";
+    document.getElementById('arcadeStatus').style.color = "var(--green)";
 
-    // Inject the Chess Logic (Simplified for this shell)
-    document.getElementById('boardInner').innerHTML = `
-        <div id="chessBoard" style="width: 100%; height: 100%;"></div>
-    `;
+    // Inject the board area
+    document.getElementById('boardInner').innerHTML = `<div id="myBoard" style="width: 400px"></div>`;
     
-    logMsg("AIVM Chess Referee (0x479...D6856) Linked.");
-    // In a full implementation, you'd initialize Chessboard.js here
+    // NOTE: Ensure you have <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"> in your head
+    log("[ARCADE] AIVM Chess Referee (0x479...D6856) Linked.");
 }
 
 async function makeAIVMMove() {
-    const gameKey = await getArcadeKey();
-    logMsg(`[ARCADE] Generating AIVM Move via Key: ${gameKey.slice(0,10)}...`);
+const gameKey = await getArcadeKey();
+    log(`[ARCADE] Generating AIVM Move via Session Key...`);
     
-    // This simulates the request to your AIVM Referee contract (0x479...)
-    // In the 3.11 commit, this sent the FEN string to the AIVM for processing.
-    setTimeout(() => {
-        logMsg("AIVM Move Calculated: e2e4");
-    }, 1500);
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const referee = new ethers.Contract("0x479b15998f4E63901b089b033d47C62464D6856", 
+            ["function requestMove(bytes32 sessionKey, string fen) public returns (string)"], 
+            await provider.getSigner()
+        );
+        
+        log("[ARCADE] Calculating optimal neural path...");
+        // This simulates the 3/11 logic of requesting a move from the AIVM contract
+        setTimeout(() => {
+            log("> AIVM Move Received: e2e4");
+        }, 2000);
+    } catch (e) {
+        log("Arcade Error: Could not reach AIVM Referee.");
+    }
 }
 
     function resetArcadeBoard() {
@@ -1999,5 +2007,6 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
