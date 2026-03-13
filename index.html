@@ -611,27 +611,23 @@ async function getArcadeKey() {
     // 9. ARCADE ENGINE (Preserved and Insulated from Gallery)
     // ---------------------------------------------------------
     function initArcadeEngine() {
-if (!userWallet) return log("Error: Connect node to initialize engine.");
+        if (!userWallet) return log("Error: Connect node to initialize engine.");
+            
+            document.getElementById('arcadeOverlay').style.display = "none";
+            document.getElementById('boardInner').innerHTML = `<div id="myBoard" style="width: 350px; margin: 0 auto;"></div>`;
+            
+            // RESTORE: Piece images from CDN + Strict Sizing
+            board = Chessboard('myBoard', {
+                draggable: true,
+                dropOffBoard: 'snapback',
+                position: 'start',
+                // POINT TO CDN IMAGES:
+                pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+                onDrop: handleMove
+            });
     
-    log("[ARCADE] Booting AIVM Chess Engine...");
-    document.getElementById('arcadeOverlay').style.display = "none";
-    document.getElementById('arcadeStatus').innerText = "Engine Online - Ready";
-    document.getElementById('arcadeStatus').style.color = "var(--green)";
-
-    // 1. Prepare the container
-    document.getElementById('boardInner').innerHTML = `<div id="myBoard" style="width: 400px; margin: 0 auto;"></div>`;
-    
-    // 2. INITIALIZE THE ACTUAL BOARD (The missing 3/11 step)
-    // This pins the board specifically to 'myBoard' so it doesn't float into the gallery
-    board = Chessboard('myBoard', {
-        draggable: true,
-        dropOffBoard: 'snapback',
-        position: 'start',
-        onDrop: handleMove // This links to your move logic
-    });
-
-    log("[ARCADE] AIVM Chess Referee (0x479...D6856) Linked.");
-}
+        log("[ARCADE] AIVM Chess Engine Online.");
+    }
 
     async function makeAIVMMove() {
         const gameKey = await getArcadeKey();
@@ -1745,54 +1741,31 @@ async function mintWithSocial() {
 
         async function loadGallery() {
             const container = document.getElementById('galleryGrid');
-                if (!userWallet) return container.innerHTML = "Connect wallet to view gallery.";
-
-            // CRITICAL: Clear the container first to prevent double-rendering
-            container.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Syncing with Lightchain AIVM...</div>';
+                if (!userWallet) return;
+            
+                container.innerHTML = '<div style="grid-column:1/-1; text-align:center;">Scanning ZK Vault...</div>';
             
                 try {
                     const provider = new ethers.BrowserProvider(window.ethereum);
-                    const artContract = new ethers.Contract(CONFIG.artStudio, [
-                        "function balanceOf(address owner) view returns (uint256)",
-                        "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
-                        "function tokenURI(uint256 tokenId) view returns (string)"
-                    ], provider);
+                    const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
+                    let html = "";
+                    let found = false;
             
-                    const balance = await artContract.balanceOf(userWallet);
-                    container.innerHTML = ""; 
-
-                    if (balance == 0) {
-                        container.innerHTML = '<p style="color:var(--text-dim)">No NFTs found in this wallet.</p>';
-                        return;
-                    }
+                    // Manual scan 0-25 (Raccoon-era configuration)
+                    for (let i = 0; i < 25; i++) {
+                        try {
+                            const owner = await artContract.ownerOf(i);
+                            if (owner.toLowerCase() === userWallet.toLowerCase()) {
+                                found = true;
+                                const uri = await artContract.tokenURI(i);
+                                let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
+                                
+                                // Force header for raw Base64
+                                if (imgData && !imgData.startsWith("data:image")) {
+                                    imgData = "data:image/jpeg;base64," + imgData;
+                                }
             
-                    for (let i = 0; i < balance; i++) {
-                        const tokenId = await artContract.tokenOfOwnerByIndex(userWallet, i);
-                        const uri = await artContract.tokenURI(tokenId);
-                        
-        //                let displaySrc = "";
-    //**
-   //                     if (uri.startsWith("U2Fsd")) {
-     //                       try {
-   ///                             let decrypted = await decryptArt(uri);
-                                // Force the header if it's missing from the encrypted payload
-  //                              displaySrc = decrypted.startsWith("data:image") ? decrypted : "data:image/jpeg;base64," + decrypted;
-   //                         } catch (e) {
-     //                           displaySrc = "https://via.placeholder.com/400?text=Decryption+Failed";
-    //                        }
-   //                     } else {
-   //                         displaySrc = uri.startsWith("ipfs://") 
-     //                           ? uri.replace("ipfs://", "https://ipfs.io/ipfs/") 
-    //                            : uri;
-    //                    }
-    
-                        // 3. Render with a safety check for broken data
-          //              const finalImg = (displaySrc && displaySrc.length > 20) ? displaySrc : "https://via.placeholder.com/400/1a1a1a/00f2ff?text=Data+Pending";
-      // Decrypt art logic here...
-                if(!window.userGallery) window.userGallery = [];
-                    window.userGallery[i] = { id: tokenId, uri: uri };
-                    // STEP 2: RENDER CARD WITH CENTERED TEXT & UI WATERMARK
-                    const card = `
+                                html += `
                         <div class="gallery-card" style="display:flex; flex-direction:column; align-items:center;">
                             <div class="art-container" style="position:relative; width:100%;">
                                 <img src="${imgData}" style="width:100%; border-radius:8px;">
@@ -1805,13 +1778,12 @@ async function mintWithSocial() {
                             </div>
                             <button class="btn-zk" onclick="listInAuction(${tokenId})" style="width:100%; margin-top:8px; text-align:center;">LIST FOR SALE</button>
                         </div>`;
-            container.insertAdjacentHTML('beforeend', card);
-        }
-                } catch (e) {
-                    console.log("Gallery sync pending...");
-               
-                }
             }
+            } catch (e) { continue; }
+        }
+container.innerHTML = found ? html : '<p>No assets found in vault.</p>';
+    } catch (e) { console.error("Gallery Sync Error"); }
+}
         
 async function listInAuction(tokenId) {
     const price = prompt("Starting bid (LCAI):", "0.5");
@@ -1853,32 +1825,26 @@ async function listInAuction(tokenId) {
     }
 }
         
-        function showView(viewId) {
-            console.log("Switching to view:", viewId);
-            
-            // 1. Hide EVERYTHING with the class 'view-section'
-            const sections = document.querySelectorAll('.view-section');
-            sections.forEach(s => {
-                s.style.setProperty('display', 'none', 'important');
+       function showView(viewId) {
+            // 1. Hide EVERYTHING that acts as a view
+            const allPanels = document.querySelectorAll('.view-section, .view-panel');
+            allPanels.forEach(p => {
+                p.style.display = 'none';
+                p.classList.remove('active');
             });
         
-            // 2. Show only the target view
-             const target = document.getElementById(viewId);
-                if (target) {
-                    target.style.setProperty('display', 'block', 'important');
-                }
+            // 2. Show target
+            const target = document.getElementById(viewId);
+            if (target) {
+                target.style.display = 'block';
+                target.classList.add('active');
+            }
         
-            // 3. Update Sidebar Highlights
+            // 3. Highlight nav
             document.querySelectorAll('.nav-item').forEach(nav => {
                 nav.classList.remove('active');
-                const clickHandler = nav.getAttribute('onclick') || "";
-                if (clickHandler.includes(viewId)) {
-                    nav.classList.add('active');
-                }
+                if (nav.getAttribute('onclick')?.includes(viewId)) nav.classList.add('active');
             });
-        
-            // 4. Trigger Data Refreshes
-            if (viewId === 'marketView') renderAuctions();
         }
 
         function log(m) {
@@ -2041,6 +2007,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
