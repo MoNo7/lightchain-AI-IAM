@@ -1950,13 +1950,17 @@ async function loadGallery() {
         let html = "";
         let foundCount = 0;
 
+        // 1. Ensure encryption key is ready (Prevents the 'null' imgData issue)
         if (!userEncryptionKey) await getEncryptionKey();
 
-        // Use Promise.all to scan IDs 0-25 in parallel (faster)
+        // 2. Parallel Scan (Faster & more resilient to RPC warnings)
+        const scanRange = 25;
         const scanPromises = [];
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < scanRange; i++) {
             scanPromises.push(
-                artContract.ownerOf(i).then(owner => ({ id: i, owner })).catch(() => null)
+                artContract.ownerOf(i)
+                    .then(owner => ({ id: i, owner }))
+                    .catch(() => null) // Silently ignore empty IDs to stop the warnings
             );
         }
 
@@ -1968,10 +1972,10 @@ async function loadGallery() {
                     foundCount++;
                     const uri = await artContract.tokenURI(res.id);
                     
-                    // DECRYPT: This is where the Auction House succeeds and Gallery often fails
+                    // 3. Mirror the working Auction House decryption logic
                     let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
                     
-                    // Ensure valid Data URI header
+                    // 4. Ensure the Base64 header is attached
                     if (imgData && !imgData.startsWith("data:image") && !imgData.startsWith("http")) {
                         imgData = "data:image/jpeg;base64," + imgData;
                     }
@@ -1982,25 +1986,25 @@ async function loadGallery() {
                     html += `
                         <div class="gallery-card" style="background:var(--panel); border:1px solid var(--border); padding:10px; border-radius:12px; display:flex; flex-direction:column; min-height:280px;">
                             <div class="art-container" style="width:100%; aspect-ratio:1/1; overflow:hidden; border-radius:8px; background:#000;">
-                                <img src="${imgData}" style="width:100%; height:100%; object-fit:cover; display:block;">
+                                <img src="${imgData}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.src='https://via.placeholder.com/300?text=Render+Error'">
                                 <div class="ui-watermark">TOKEN #${res.id}</div>
                             </div>
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px;">
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;">
                                 <button class="pill" onclick="showArtInfo(${res.id})">INFO</button>
                                 <button class="pill" onclick="listInAuction(${res.id})" style="background:var(--accent); color:#000;">SELL</button>
                             </div>
                         </div>`;
-                } catch (err) {
-                    console.warn(`Token #${res.id} metadata error:`, err);
+                } catch (innerE) {
+                    console.warn(`[GALLERY] Token #${res.id} skip:`, innerE);
                 }
             }
         }
 
-        container.innerHTML = foundCount > 0 ? html : "No assets found in Vault.";
+        container.innerHTML = foundCount > 0 ? html : '<div style="grid-column:1/-1; text-align:center; padding:20px;">No assets found in Vault.</div>';
         log(`[GALLERY] Sync Complete. ${foundCount} assets ready.`);
 
     } catch (e) {
-        log("Gallery Sync Error.");
+        log("Gallery Sync Error: Check connection.");
         console.error(e);
     }
 }
