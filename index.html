@@ -1940,7 +1940,11 @@ async function mintWithSocial() {
                     const provider = new ethers.BrowserProvider(window.ethereum);
                     const artContract = new ethers.Contract(CONFIG.artStudio, CONFIG.abi, provider);
                     let html = "";
-                    let found = false;
+                    let foundCount = 0;
+
+                    if (!userEncryptionKey) {
+                        await getEncryptionKey();
+                    }
             
                     // Manual scan 0-25 (Raccoon-era configuration)
                     for (let i = 0; i < 25; i++) {
@@ -1972,8 +1976,9 @@ async function mintWithSocial() {
             }
             } catch (e) { continue; }
         }
-container.innerHTML = found ? html : '<p>No assets found in vault.</p>';
-    } catch (e) { console.error("Gallery Sync Error"); }
+//container.innerHTML = found ? html : '<p>No assets found in vault.</p>';
+container.innerHTML = foundCount > 0 ? html : '<p style="grid-column:1/-1; text-align:center;">No assets found in this vault.</p>';
+        log(`[GALLERY] Scan complete. Found ${foundCount} assets.`);
 }
         
 async function listInAuction(tokenId) {
@@ -2198,6 +2203,7 @@ async function listInAuction(tokenId) {
     </script>
 </body>
 </html>
+
 
 
 
