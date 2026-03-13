@@ -960,19 +960,48 @@ function initArcadeEngine() {
                 contract: "0x479b15998f4E63901b089b033d47C62464D6856" // Your Referee Contract
             })
         });
-             const data = await response.json();
-             const bestMove = data.move; // e.g., "e7e5"
 
+            if (response.status === 429) {
+                throw new Error("Rate Limited (429)");
+            }
+            if (!response.ok) {
+                throw new Error(`Gateway Error (${response.status})`);
+            }
+                
+const data = await response.json();
+        const bestMove = data.move; 
+
+        if (bestMove) {
             chessGame.move(bestMove);
             chessBoard.position(chessGame.fen());
-            logAIVM(`<span style='color:var(--accent);'>[AIVM]</span> Plays: ${bestMove}`);
+            
+            logAIVM(`<span style='color:var(--accent);'>[AIVM]</span> PoI Verified Move: <b>${bestMove}</b>`);
             updateChessStatus();
-        } catch (err) {
-            logAIVM(`<span style='color:red;'>[ERR]</span> Engine failure: ${err.message}`);
-        } finally {
+        } else {
+            throw new Error("Empty move payload returned.");
+        }
+
+    } catch (err) {
+        console.error("Inference Error:", err);
+        
+        if (err.message.includes("429")) {
+            logAIVM(`<span style='color:var(--red);'>[ERR]</span> Gateway Busy (Error 429). Cooling down for 30s...`);
+            // Wait 32 seconds to be safe before trying exactly once more
+            setTimeout(() => {
+                logAIVM("<span style='color:#888;'>[SYS]</span> Cooldown complete. Retrying move...");
+                triggerAIVMMove();
+            }, 32000);
+        } else {
+            logAIVM(`<span style='color:var(--red);'>[ERR]</span> Inference Failed: ${err.message}`);
+            logAIVM("<span style='color:var(--text-dim);'>[SYS]</span> Connection reset. Please undo your move and try again.");
+            // We do NOT auto-retry on generic errors to prevent infinite loops
+        }
+    } finally {
+        if (!err || !err.message.includes("429")) {
             aivmIsThinking = false;
         }
     }
+}
     
     // 7. Utility Controls
     function startNewChessGame() {
