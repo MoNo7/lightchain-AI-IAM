@@ -1942,7 +1942,7 @@ async function loadGallery() {
     const container = document.getElementById('galleryGrid');
     if (!userWallet) return;
 
-    container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--accent);">Unlocking Vault Assets...</div>';
+    container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--accent);">Scanning Vault (Manual Sync)...</div>';
 
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
@@ -1950,30 +1950,32 @@ async function loadGallery() {
         let html = "";
         let foundCount = 0;
 
-        // Force one signature at start
+        // Ensure encryption key is ready before starting the loop
         if (!userEncryptionKey) await getEncryptionKey();
 
-        // Manual scan 0-25 (This matches the assets you found)
+        // MANUAL SCAN: Loop through IDs 0-25. 
+        // This avoids the 'tokenOfOwnerByIndex' RPC errors.
         for (let i = 0; i < 25; i++) {
             try {
                 const owner = await artContract.ownerOf(i);
+                
                 if (owner.toLowerCase() === userWallet.toLowerCase()) {
                     foundCount++;
                     const uri = await artContract.tokenURI(i);
                     
-                    // --- THE FIX: We are actually defining imgData now ---
+                    // Decrypt the data (Matches Auction House logic)
                     let imgData = uri.startsWith("U2Fsd") ? await decryptArt(uri) : uri;
                     
-                    // Standardize header
                     if (imgData && !imgData.startsWith("data:image") && !imgData.startsWith("http")) {
                         imgData = "data:image/jpeg;base64," + imgData;
                     }
 
+                    // Save to global for the INFO button
                     if(!window.userGallery) window.userGallery = [];
                     window.userGallery[i] = { id: i, uri: uri };
 
                     html += `
-                        <div class="gallery-card" style="background:var(--panel); border:1px solid var(--border); padding:10px; border-radius:12px; display:flex; flex-direction:column; min-height:280px;">
+                        <div class="gallery-card" style="background:var(--panel); border:1px solid var(--border); padding:10px; border-radius:12px; display:flex; flex-direction:column;">
                             <div class="art-container" style="width:100%; aspect-ratio:1/1; overflow:hidden; border-radius:8px; background:#000;">
                                 <img src="${imgData}" style="width:100%; height:100%; object-fit:cover; display:block;">
                                 <div class="ui-watermark">TOKEN #${i}</div>
@@ -1984,10 +1986,15 @@ async function loadGallery() {
                             </div>
                         </div>`;
                 }
-            } catch (e) { continue; }
+            } catch (e) {
+                // Token ID doesn't exist yet, skip to next
+                continue;
+            }
         }
-        container.innerHTML = foundCount > 0 ? html : "Vault is empty.";
-        log(`[GALLERY] Success: ${foundCount} assets displayed.`);
+
+        container.innerHTML = foundCount > 0 ? html : '<div style="grid-column:1/-1; text-align:center;">No assets found in Vault.</div>';
+        log(`[GALLERY] Manual Scan Complete. Found ${foundCount} assets.`);
+
     } catch (e) {
         log("Gallery Sync Error.");
         console.error(e);
