@@ -1884,10 +1884,8 @@ async function generateAIVMArt() {
     const finalPrompt = (basePrompt + styleSuffix).replace(/\s+/g, ' ');
     localStorage.setItem('last_render_time', Date.now());
     
-    // 2. USE THE STABILIZED ENDPOINT
-    const seed = Math.floor(Math.random() * 1000000);
-    const aiImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(basePrompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
-
+    const aiImageUrl = `https://aivm.lightchain.ai/api/v1/render?prompt=${encodeURIComponent(finalPrompt)}&model=${selectedModel}&promptId=${promptId}&wallet=${userWallet}`;
+    
     // UI Feedback
     document.getElementById('renderStatusText').style.display = 'none';
     document.getElementById('aivmOutputImage').style.display = 'none';
