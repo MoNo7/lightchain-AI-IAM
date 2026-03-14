@@ -2020,6 +2020,47 @@ async function saveArtToGallery() {
     }
 }
 
+async function mintArtNFT(uri) {
+    if (!uri) {
+        log("<span style='color:var(--red);'>[ERR]</span> No metadata URI provided for minting.");
+        return;
+    }
+
+    log("[STUDIO] Preparing to mint Vault asset to Lightchain...");
+    
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        
+        // Initialize contract with the mint function ABI
+        const artContract = new ethers.Contract(CONFIG.artStudio, [
+            "function mint(address to, string uri) public returns (uint256)"
+        ], signer);
+
+        // Execute the mint transaction
+        const tx = await artContract.mint(userWallet, uri);
+        
+        log(`[MINT] Transaction sent: <span style='color:var(--accent);'>${tx.hash.slice(0, 18)}...</span>`);
+        
+        // Wait for network confirmation
+        const receipt = await tx.wait();
+        
+        if (receipt.status === 1) {
+            log("<span style='color:var(--green);'>[SUCCESS]</span> Art successfully minted to your wallet!");
+            // Refresh the gallery to show the updated ownership/state
+            loadGallery(); 
+        } else {
+            throw new Error("Transaction reverted by the network.");
+        }
+
+    } catch (err) {
+        console.error("Minting Error:", err);
+        log(`<span style='color:var(--red);'>[MINT ERROR]</span> ${err.reason || err.message}`);
+    }
+}
+
+        
+        
 async function mintWithSocial() {
     const nick = document.getElementById('regNick').value.trim();
     const did = document.getElementById('regDid').value.trim();
@@ -2223,6 +2264,8 @@ async function loadGallery() {
                 }
 
                 window.userGallery[res.id] = { id: res.id, uri: uri };
+                // We escape the URI string to prevent syntax errors in the onclick handler
+                const safeUri = uri.replace(/'/g, "\\'");
 
                 html += `
                     <div class="gallery-card" style="background:var(--panel); border:1px solid var(--border); padding:10px; border-radius:12px;">
@@ -2231,7 +2274,7 @@ async function loadGallery() {
                             <div class="ui-watermark">TOKEN #${res.id}</div>
                         </div>
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:10px;">
-                            <button class="pill" onclick="mintArtNFT(${imgData})" style="background:var(--green); color:#000; border:none; font-size:0.6rem; font-weight:bold;">MINT</button>
+                            <button class="pill" onclick="mintArtNFT('${safeUri}')" style="background:var(--green); color:#000; border:none; font-size:0.6rem; font-weight:bold; cursor:pointer;">MINT</button>
                             <button class="pill" onclick="showArtInfo(${res.id})" style="background:transparent; border:1px solid #fff; color:#fff; font-size:0.6rem;">INFO</button>
                             <button class="pill" onclick="listInAuction(${res.id})" style="background:var(--accent); color:#000; border:none; cursor:pointer;">SELL</button>
                         </div>
