@@ -224,11 +224,21 @@ display: none; /* Managed by JS */
         }
 
         /* 🟢 Ensures the Gallery Grid uses all available width */
-        #galleryGrid, #auctionGrid {
+        #auctionGrid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
             width: 100%;
+        }
+
+        #galleryGrid {
+            display: grid !important;
+            /* 🟢 This forces it to fill as many columns as fit the screen width */
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+            gap: 25px;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         /* Utility Classes */
@@ -815,7 +825,7 @@ async function autoConnectWallet() {
             const isVerified = await contract.verified(userWallet);
             if (isVerified) {
                 hasInitializedVault = true;
-                clearInterval(identityCheck); 
+                clearInterval(identityCheck);
                 await checkRegistrationStatus(userWallet, contract);
             }
         }
