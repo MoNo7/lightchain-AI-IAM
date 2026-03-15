@@ -162,6 +162,8 @@
             top: 0;
             left: 0;
             z-index: 9999;
+            width:100%;
+            min-height: 80vh;
             overflow: hidden !important; 
             display: grid;
             grid-template-columns: 1fr 1fr 300px; /* Collection | Store | Leaderboard */
@@ -851,7 +853,7 @@ async function getStarterPack() {
         const signer = await provider.getSigner();
         
         // 🟢 MINTING: This calls your WarriorCards contract at 0xae7...
-        const tcgContract = new ethers.Contract("0xae7d46ce849a3f6ee2a26f6585f547c1ecfc9518", [
+        const tcgContract = new ethers.Contract("0xaE7d46Ce849A3F6ee2a26F6585f547c1eCfC9518", [
             "function mintAIVMStarterPack(string[] names, string[] types, uint256[] atks, uint256[] defs, uint256[] rarities) public payable"
         ], signer);
 
@@ -861,7 +863,7 @@ async function getStarterPack() {
             deck.map(c => c.atk),
             deck.map(c => c.def),
             deck.map(c => c.rarity),
-            { value: ethers.parseEther("0.1"), gasLimit: 3000000 } // Boosted gas for Lightchain
+            { value: ethers.parseEther("0.1"), gasLimit: 4000000 } // Boosted gas for Lightchain
         );
         
         log(`[PENDING] Tx: ${tx.hash.slice(0, 15)}...`);
@@ -2299,7 +2301,8 @@ async function generateAIVMArt() {
         'FLUX.1': '@cf/black-forest-labs/flux-1-schnell',
         'DEEPSEEK-V3': '@cf/deepseek-ai/deepseek-v3' // This will fail for images!
     };
-
+    let modelPath = "@cf/stabilityai/stable-diffusion-xl-base-1.0"; 
+    if (selected === "Flux-1") modelPath = "@cf/black-forest-labs/flux-1-schnell";
     const modelId = modelMap[userSelected] || modelMap['SDXL-TURBO'];
     
     // Ensure your fetch body uses this mapped ID
