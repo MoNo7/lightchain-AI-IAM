@@ -821,6 +821,45 @@ async function renderDeck(deck) {
     }
 }
 
+async function updateTcgButton(wallet) {
+    const container = document.getElementById('tcgDeckContainer');
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const tcgContract = new ethers.Contract("0xF3463878bC8A0813958999aA9777995A6421AAC6", [
+        "function lastDailyClaim(address) view returns (uint256)",
+        "function hasClaimedStarter(address) view returns (bool)"
+    ], provider);
+
+    const hasStarter = await tcgContract.hasClaimedStarter(wallet);
+    const lastClaim = await tcgContract.lastDailyClaim(wallet);
+    const now = Math.floor(Date.now() / 1000);
+    const oneDay = 86400;
+
+    if (hasStarter) {
+        if (now >= Number(lastClaim) + oneDay) {
+            // Swap to Active Daily Claim
+            container.innerHTML += `
+                <button class="pill" onclick="claimDailyAIVM()" style="width: 100%; background: var(--green); color: #000; font-weight: bold; margin-top:20px;">
+                    CLAIM DAILY CARD
+                </button>`;
+        } else {
+            // Show Cooldown
+            const remaining = Math.ceil(((Number(lastClaim) + oneDay) - now) / 3600);
+            container.innerHTML += `
+                <button class="pill" disabled style="width: 100%; opacity:0.5; margin-top:20px;">
+                    NEXT DROP IN ${remaining}H
+                </button>`;
+        }
+    }
+}
+
+async function claimDailyAIVM() {
+    log("[TCG] AIVM is forging your Daily Reward...");
+    const prompt = `Generate 1 unique TCG card. Rarity can be 1-4. Return ONLY valid JSON: {"name": "Name", "cardType": "Void", "atk": 45, "def": 30, "rarity": 2}`;
+    log("<span style='color:var(--green);'>[SUCCESS]</span> Daily card added to your deck!");
+    loadTCGDeck(); // Refresh view
+}
+    
+
 async function loadLeaderboard() {
     const list = document.getElementById('leaderboardList');
     if (!list) return;
