@@ -774,32 +774,50 @@ async function getStarterPack() {
 
 async function renderDeck(deck) {
     const container = document.getElementById('tcgDeckContainer');
-    container.innerHTML = ""; // Clear button
+    container.innerHTML = ""; // Clear the "Get Starter Pack" button
     
+    // Grid layout for the 7 cards
+    const grid = document.createElement('div');
+    grid.style = "display:flex; gap:12px; flex-wrap:wrap; justify-content:center; padding:10px;";
+    container.appendChild(grid);
+
     for (let i = 0; i < deck.length; i++) {
         const card = deck[i];
         const cardEl = document.createElement('div');
+        
+        // Dynamic styling based on Rarity
+        let rarityColor = "#888"; // Standard
+        let glow = "none";
+        if (card.rarity == 2) rarityColor = "var(--green)";
+        if (card.rarity == 3) { rarityColor = "#b700ff"; glow = "0 0 15px #b700ff"; }
+        if (card.rarity == 4) { rarityColor = "gold"; glow = "0 0 25px gold"; }
+
         cardEl.className = "glass-card";
         cardEl.style = `
-            width:130px; padding:15px; opacity:0; transform: translateY(20px);
-            transition: all 0.5s ease; border: 1px solid var(--border);
-            ${card.rarity >= 4 ? 'box-shadow: 0 0 20px var(--accent); border-color: gold;' : ''}
+            width:130px; padding:15px; opacity:0; transform: scale(0.5) rotateY(90deg);
+            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid ${rarityColor}; box-shadow: ${glow};
+            background: #0a0c10; border-radius: 12px; text-align: center;
         `;
         
         cardEl.innerHTML = `
-            <div style="font-size:0.6rem; color:gold;">${"⭐".repeat(card.rarity)}</div>
-            <h5 style="margin:5px 0; font-size:0.8rem;">${card.name}</h5>
-            <div style="font-size:0.7rem; color:var(--green);">ATK ${card.atk} | DEF ${card.def}</div>
+            <div style="font-size:0.6rem; color:${rarityColor}; font-weight:bold;">${"⭐".repeat(card.rarity)}</div>
+            <div style="font-size:2rem; margin:10px 0; color:${rarityColor};"><i class="fas fa-shield-halved"></i></div>
+            <h5 style="margin:5px 0; color:#fff; font-size:0.8rem;">${card.name}</h5>
+            <div style="display:flex; justify-content:space-between; font-size:0.7rem; margin-top:10px; font-family:monospace;">
+                <span style="color:var(--red);">ATK ${card.atk}</span>
+                <span style="color:var(--green);">DEF ${card.def}</span>
+            </div>
         `;
         
-        container.appendChild(cardEl);
+        grid.appendChild(cardEl);
         
-        // Staggered Reveal Animation
-        await new Promise(r => setTimeout(r, 200)); 
+        // Reveal Stagger
+        await new Promise(r => setTimeout(r, 300)); 
         cardEl.style.opacity = "1";
-        cardEl.style.transform = "translateY(0)";
+        cardEl.style.transform = "scale(1) rotateY(0deg)";
         
-        if (card.rarity >= 4) log(`[LEGENDARY] You pulled ${card.name}!`);
+        if (card.rarity >= 4) log(`<span style='color:gold;'>[LEGENDARY]</span> AIVM forged: ${card.name}!`);
     }
 }
 
