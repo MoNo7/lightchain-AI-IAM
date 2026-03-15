@@ -947,6 +947,32 @@ async function showLeaderboard() {
     }
 }
 
+async function buyPack(tier = 'standard') {
+    log(`[STORE] Purchasing ${tier} pack...`);
+    try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const tcgContract = new ethers.Contract("0xF3463878bC8A0813958999aA9777995A6421AAC6", [
+            "function buyBoosterPack() public payable"
+        ], signer);
+
+        const price = tier === 'elite' ? "0.15" : "0.05";
+        const tx = await tcgContract.buyBoosterPack({ value: ethers.parseEther(price) });
+        await tx.wait();
+
+        // After purchase, trigger a single-card AIVM forge
+        log("[AIVM] Pack opened! Forging your reward...");
+        await claimDailyAIVM(); 
+    } catch (e) {
+        log(`[STORE ERR] ${e.message}`);
+    }
+}
+
+function openForgeMenu() {
+    log("[FORGE] Select two cards of the same rarity to combine.");
+    // This would open a modal where the user clicks two cards
+    // Then calls tcgContract.forgeCards(id1, id2)
+}
         
 
 
