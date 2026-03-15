@@ -2881,6 +2881,12 @@ async function listInAuction(tokenId) {
                 if (viewId === 'galleryView') loadGallery();
                 if (viewId === 'marketView') renderAuctions();
             }
+        document.querySelectorAll('.nav-item').forEach(nav => {
+        nav.classList.remove('active');
+        if (nav.getAttribute('onclick')?.includes(viewId)) {
+            nav.classList.add('active');
+        }
+    });
         }
 
         function log(m) {
