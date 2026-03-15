@@ -174,7 +174,7 @@
             width: 95%;
             max-width: 1100px;
             margin: 0 auto 20px auto !important; /* Forces horizontal centering */
-            display: none; /* Managed by JS */
+            /*display: none; /* Managed by JS */
         }
         
         .view-section.active {
@@ -2740,8 +2740,6 @@ async function loadGallery() {
             "function tokenURI(uint256 tokenId) view returns (string)"
         ], provider);
         
-        if (!userEncryptionKey) await getEncryptionKey();
-
         const scanPromises = [];
         for (let i = 0; i < 25; i++) {
             // We use ownerOf to find which tokens belong to the user
