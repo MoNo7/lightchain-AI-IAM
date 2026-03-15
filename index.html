@@ -799,8 +799,8 @@ async function autoConnectWallet() {
             const isVerified = await contract.verified(userWallet);
             clearInterval(identityCheck);
             if (isVerified) {
-                hasInitializedVault = true; // LOCK THIS so it stops looping
-                clearInterval(identityCheck); // STOP the timer entirely
+                clearInterval(identityCheck); 
+                hasInitializedVault = true;
                 await checkRegistrationStatus(userWallet, contract);
             }
         }
