@@ -187,6 +187,14 @@
             display: none !important;
         }
 
+        /* Ensure the Gallery Card is actually visible when called */
+        #galleryView.view-section.active {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            min-height: 400px;
+        }
+
         #galleryGrid, #auctionGrid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -777,13 +785,19 @@ async function autoConnectWallet() {
         selectedProvider = window.ethereum;
     }
 
-    setInterval(() => {
-        // ONLY run if we haven't found the identity yet. 
-        // Once found, hasInitializedVault becomes true and the loop goes silent.
-        if (!hasInitializedVault && userWallet) {
-            verifyIdentity();
+    const identityCheck = setInterval(async () => {
+        if (userWallet && !hasInitializedVault) {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const contract = new ethers.Contract(CONFIG.contract, CONFIG.abi, provider);
+            
+            const isVerified = await contract.verified(userWallet);
+            if (isVerified) {
+                hasInitializedVault = true; // LOCK THIS so it stops looping
+                clearInterval(identityCheck); // STOP the timer entirely
+                await checkRegistrationStatus(userWallet, contract);
+            }
         }
-    }, 5000); // 5 seconds is safer for RPC stability
+    }, 5000);
     if (!window.ethereum) return;
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         
@@ -2713,6 +2727,13 @@ async function loadGallery() {
     container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Scanning Vault...</div>';
 
     try {
+        if (!userEncryptionKey) {
+            const key = await getEncryptionKey();
+            if (!key) {
+                container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Decryption Cancelled.</div>';
+                return;
+            }
+        }
         const provider = new ethers.BrowserProvider(window.ethereum);
         const artContract = new ethers.Contract(CONFIG.artStudio, [
             "function ownerOf(uint256 tokenId) view returns (address)",
