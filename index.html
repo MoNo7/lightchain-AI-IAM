@@ -154,11 +154,10 @@
             overflow: hidden !important;
         }
         
+/* Fixes the TCG Layout to be centered and expansive */
 #warriorTCGView {
-    display: none !important;
-    /* Row 1: Title Bar | Row 2: Game Content */
-    grid-template-rows: auto 1fr; 
-    /* Three Columns for Collection, Store, Leaderboard */
+    display: none; /* Managed by JS */
+    grid-template-rows: auto 1fr;
     grid-template-columns: 1fr 1.2fr 1fr; 
     grid-template-areas: 
         "header header header"
@@ -167,15 +166,14 @@
     padding: 30px;
     background: #050608;
     border: 1px solid var(--accent);
+    border-radius: 12px;
+    width: 98%; /* 🟢 Corrected from 95%% */
+    max-width: 1600px;
+    margin: 0 auto; 
     min-height: 80vh;
-    width: 95%;
-    max-width: 1400px;
-    margin: 0 auto;
-    height: auto;
-    min-height: 700px;
     box-sizing: border-box;
-    position: relative;
 }
+        
 /* Assign elements to the grid areas */
 .tcg-header-row { grid-area: header; width:100%;margin-bottom: 10px;}
 .tcg-collection { grid-area: collection; }
@@ -190,18 +188,14 @@
     flex-direction: column;
 }
 
-        .view-section.card {
-            width: 95%;
-            max-width: 1200px;
-            margin: 0 auto 20px auto !important;
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 25px;
-            box-sizing: border-box;
-            flex-direction: column;
-            display: none; /* Managed by showView() */
-        }
+/* Fixes Gallery and Auction to fill the center workspace */
+.view-section.card {
+    width: 100% !important;
+    max-width: 1400px;
+    margin: 0 auto 20px auto;
+    display: none;
+    flex-direction: column;
+}
         
         .view-section.active {
             display: block !important;
@@ -221,12 +215,12 @@
             min-height: 400px;
         }
 
+        /* 🟢 Ensures the Gallery Grid uses all available width */
         #galleryGrid, #auctionGrid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
             width: 100%;
-            margin-top: 20px;
         }
 
         /* Utility Classes */
@@ -844,12 +838,19 @@ async function getStarterPack() {
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
+
+        const data = await response.json();
+        const content = data.choices[0].message.content;
+        
+        // 🟢 REGEX FIX: Strips out AI chatter like "Sure, here's your JSON..."
+        const jsonMatch = content.match(/\[.*\]/s);
+        if (!jsonMatch) throw new Error("AIVM response was not in a valid deck format.");
+        const deck = JSON.parse(jsonMatch[0]);
         
         // 🟢 ADDRESS SYNC: Ensure this matches your Remix 'WarriorCards' address
-        const cardContractAddr = "0xaE7d46Ce849A3F6ee2a26F6585f547c1eCfC9518";
-        const tcgContract = new ethers.Contract(cardContractAddr, [
+         const tcgContract = new ethers.Contract("0xaE7d46Ce849A3F6ee2a26F6585f547c1eCfC9518", [
             "function mintAIVMStarterPack(string[] names, string[] types, uint256[] atks, uint256[] defs, uint256[] rarities) public payable"
-        ], signer);
+        ], signer);;
 
         // AIVM Data Request
         const prompt = `Generate 7 TCG cards: 4 Common, 1 Rare, 1 Epic, 1 Legendary. Return ONLY JSON array: [{"name":"N","cardType":"AI","atk":10,"def":10,"rarity":1}]`;
