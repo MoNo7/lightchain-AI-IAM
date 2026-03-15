@@ -44,9 +44,14 @@
                 main { flex: 1; padding: 25px; overflow-y: auto; }
         main {
             flex: 1;
+            padding: 25px;
             display: flex;
-            align-items: center; 
-            padding-bottom: 160px; /* Space for the fixed console */
+            flex-direction: column; /* This stacks cards vertically and keeps them in the window */
+            align-items: center;    /* This centers the gallery in the portal */
+            overflow-y: auto;
+            padding-bottom: 160px;  /* Leaves room for your bottom console */
+            box-sizing: border-box;
+            width: 100%;
         }
         .card {
             background: var(--panel);
