@@ -691,25 +691,27 @@ let chessGame = new Chess();
 let chessBoard = null;
 let aivmIsThinking = false;
 let userWallet;
-let isRegistered = false;
+let isRegistered = false
+let isPrompting = false;
 
-// Ask MetaMask for a signature to create a unique password
 async function getEncryptionKey() {
-    if (userEncryptionKey) return userEncryptionKey; // Use cached key if already signed
+    if (userEncryptionKey) return userEncryptionKey;
+    if (isPrompting) return null; // Prevent double-triggering
+    
+    isPrompting = true;
     try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         log("[PRIVACY] Please sign the message to unlock your encryption key...");
         
-        // This signature is unique to the user's wallet
         const signature = await signer.signMessage("Unlock Lightchain AIVM Private Gallery");
-        
-        // Hash it so we have a clean 256-bit AES key
         userEncryptionKey = CryptoJS.SHA256(signature).toString();
         return userEncryptionKey;
     } catch (e) {
         log("Encryption signature rejected.");
         return null;
+    } finally {
+        isPrompting = false; // Reset lock
     }
 }
 
@@ -2667,16 +2669,19 @@ async function renderAuctions() {
 async function loadGallery() {
     const container = document.getElementById('galleryGrid');
     if (!userWallet) return;
+
+    if (!userEncryptionKey) {
+        const key = await getEncryptionKey();
+        if (!key) {
+            container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Decryption Cancelled.</div>';
+            return;
+        }
+    }
+
     container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Scanning Vault...</div>';
 
     try {
-        if (!userEncryptionKey) {
-            const key = await getEncryptionKey();
-            if (!key) {
-                container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">Decryption Cancelled.</div>';
-                return;
-            }
-        }
+
         const provider = new ethers.BrowserProvider(window.ethereum);
         const artContract = new ethers.Contract(CONFIG.artStudio, [
             "function ownerOf(uint256 tokenId) view returns (address)",
